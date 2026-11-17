@@ -39,11 +39,16 @@ export async function openBench(services: Services, account: string, stack: 'ard
   const hub = services.hub(account);
   const tabId = `tab_${Math.random().toString(36).slice(2, 8)}`;
   const bench = new Bench(runtime, { mirror: m => { hub.mirror = m; }, reply: (id, ok, payload) => hub.settle(id, ok, payload) }, { stateEveryMs: 20 });
-  hub.attach({ id: tabId, bench: true, active: Date.now(), send: message => { if (message.type === 'rpc') void bench.handle(message.id, message.request); } });
+  const executed: string[] = [];
+  hub.attach({ id: tabId, bench: true, active: Date.now(), send: message => {
+    if (message.type === 'rpc') void bench.handle(message.id, message.request);
+    // A proposal a standing permission approved: the tab carries it out, as the real tab does.
+    else if (message.event === 'execute') { const p = message.data as any; executed.push(p.id); void bench.execute(p, p.grantConditions ?? []).then(outcome => services.complete(account, p.id, outcome)); }
+  } });
   await runtime.connect(source);
   bench.flush();
   return {
-    runtime, bench, sim: source.sim as SimHandle, tabId,
+    runtime, bench, sim: source.sim as SimHandle, tabId, executed,
     /** What the person does: approve in the signed-in tab, confirm conditions, and let the tab carry it out. */
     async approve(proposalId: string, conditions: Condition[] = [], prompt?: Parameters<Bench['execute']>[2]): Promise<ProposalOutcome> {
       const proposal = await services.decide(account, proposalId, true);
@@ -130,7 +135,14 @@ export async function openTab(browser: Browser, stack: 'ardupilot' | 'betaflight
   const runtime = new Runtime(FAST);
   const send = (message: unknown) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(message)); };
   const bench = new Bench(runtime, { mirror: mirror => send({ type: 'mirror', mirror }), reply: (id, ok, payload) => send({ type: 'reply', id, ok, payload }) }, { stateEveryMs: 30 });
-  ws.on('message', raw => { const m = JSON.parse(String(raw)); if (m.type === 'rpc') void bench.handle(m.id, m.request); else if (m.type === 'event') events.push(m); });
+  ws.on('message', raw => {
+    const m = JSON.parse(String(raw));
+    if (m.type === 'rpc') void bench.handle(m.id, m.request);
+    else if (m.type === 'event') {
+      events.push(m);
+      if (m.event === 'execute') void bench.execute(m.data, m.data.grantConditions ?? []).then(outcome => browser.post(`/api/proposals/${m.data.id}/result`, outcome));
+    }
+  });
   send({ type: 'hello', tab: `tab_${Math.random().toString(36).slice(2, 8)}` });
   await runtime.connect(source);
   bench.flush();

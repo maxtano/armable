@@ -48,6 +48,7 @@ export async function start() {
   bench = new Bench(runtime, { mirror: m => live!.mirror(m), reply: (id, ok, payload) => live!.send({ type: 'reply', id, ok, payload }) }, { capture: captureView });
   live.open();
   const [activity, proposals] = await Promise.all([api('GET', '/activity'), api('GET', '/proposals'), refreshDocs()]);
+  void refreshGrants();
   set({ activity: activity.reverse(), proposals: proposals.filter((p: ProposalCard) => p.status === 'awaiting_approval' || p.status === 'approved') });
 }
 let focusTimer: ReturnType<typeof setTimeout> | undefined;
@@ -82,6 +83,8 @@ function onServer(message: ServerMessage) {
     if (data.status === 'awaiting_approval' && get().follow) { go('drone', (data.part ?? partOfId(data.changes?.[0]?.id)) as PartId, motorOf(data)); toast(`${data.by} proposes a change`, 'info'); }
   } else if (event === 'document') { void refreshDocs(); set(s => ({ docRevision: s.docRevision + 1 })); if (data.by && data.by !== 'you') { mark(data.id, 'changed', data.by); toast(`${data.by} edited ${data.name ?? 'a document'}`, 'info'); } }
   else if (event === 'show') showTarget(String(data.target), data.reference);
+  else if (event === 'grants') void refreshGrants();
+  else if (event === 'execute') void executeUnderGrant(data);
 }
 const motorOf = (p: ProposalCard) => { const m = (p.changes?.[0]?.id ?? '').match(/^esc\.(\d+)\./); return m ? Number(m[1]) : p.test?.args?.motor ? Number(p.test.args.motor) : undefined; };
 function showTarget(target: string, reference?: any) {
@@ -206,5 +209,19 @@ export async function decline(card: ProposalCard) {
   await api('POST', `/proposals/${card.id}/decision`, { approve: false }).catch(() => {});
   set(s => ({ proposals: s.proposals.filter(p => p.id !== card.id) }));
 }
+/** A proposal your standing permission approved. This tab has the drone, so it carries it out and reports back. */
+async function executeUnderGrant(card: ProposalCard & { grantConditions?: Condition[] }) {
+  if (runtime.status !== 'connected') return;
+  const outcome = await bench!.execute(card as ProposalLike, card.grantConditions ?? [], prompt);
+  await api('POST', `/proposals/${card.id}/result`, outcome).catch(() => {});
+  for (const c of outcome.changes ?? []) if (c.ok) { mark(c.id, 'changed', card.by); const part = partOfId(c.id); if (part) mark(part, 'changed', card.by); }
+  toast(`${card.by}: ${outcome.summary} (your permission)`, outcome.ok === false ? 'bad' : 'ok');
+  set(s => ({ settings: runtime.settings(), snap: runtime.snapshot(), proposals: s.proposals.filter(p => p.id !== card.id) }));
+}
+export async function refreshGrants() { set({ grants: await api('GET', '/grants').catch(() => []) }); }
+export async function createGrant(input: { parts: string[]; tests: string[]; minutes: number; maxChanges: number; conditions: Condition[] }) {
+  try { await api('POST', '/grants', input); await refreshGrants(); toast('Permission on', 'ok'); } catch (error) { toast(words(error), 'bad'); }
+}
+export async function revokeGrant(id: string) { await api('DELETE', `/grants/${id}`).catch(() => {}); await refreshGrants(); }
 export async function setMode(mode: 'off' | 'observe' | 'propose') { await api('PUT', '/mode', { mode }); set({ me: { ...get().me!, mode } }); }
 export async function signOut() { await api('POST', '/logout'); location.reload(); }

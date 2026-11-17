@@ -23,8 +23,20 @@ export interface Proposal {
   status: ProposalStatus; createdAt: number; expiresAt: number; decidedAt?: number;
   /** Set when a person's standing permission approved this without a click. */
   grant?: string;
+  /** The physical conditions the person confirmed when they created that permission. */
+  grantConditions?: Condition[];
   result?: { ok: boolean | null; summary: string; changes?: ChangeResult[]; test?: TestResult };
 }
+/** A person's standing permission: proposals inside it run without a click, until it expires or is used up. */
+export interface Grant {
+  id: string; createdAt: number; expiresAt: number; revokedAt?: number;
+  /** Bound to the aircraft connected when it was created. */
+  aircraftId: string; aircraftName: string;
+  parts: string[]; tests: string[]; conditions: Condition[];
+  maxChanges: number; used: number;
+}
+export const GRANT_PARTS = ['tuning', 'safety', 'battery', 'receiver', 'gps', 'motors', 'fc', 'osd', 'vtx', 'lights', 'ports', 'compass', 'logging', 'other'];
+export const GRANT_TESTS = ['esc.read', 'cal.level', 'cal.accel', 'cal.accel.simple', 'cal.gyro', 'cal.baro', 'fc.restart'];
 export interface Focus { tab: string; at: number; route?: string; part?: string; setting?: string; document?: string; selection?: unknown; playhead?: number }
 export type TabMessage =
   | { type: 'rpc'; id: string; request: RemoteRequest | { op: 'capture'; view: string } }
@@ -181,10 +193,18 @@ export class Services {
   }
   async propose(account: string, input: Omit<Proposal, 'id' | 'status' | 'createdAt' | 'expiresAt'>): Promise<Proposal> {
     const id = `prop_${newId(6)}`;
-    const proposal: Proposal = { ...input, id, status: 'awaiting_approval', createdAt: this.now(), expiresAt: this.now() + PROPOSAL_TTL };
+    let proposal: Proposal = { ...input, id, status: 'awaiting_approval', createdAt: this.now(), expiresAt: this.now() + PROPOSAL_TTL };
     await this.store.put('proposals', account, id, proposal, { expectedRev: 0 });
     void this.trackProposal(account, proposal);
+    const grant = await this.matchGrant(account, proposal);
+    if (grant) {
+      proposal = { ...proposal, status: 'approved', decidedAt: this.now(), grant: grant.id, grantConditions: grant.conditions };
+      await this.store.put('proposals', account, id, proposal);
+      void this.trackProposal(account, proposal);
+    }
     this.hub(account).notify('proposal', proposal);
+    // Only the tab with the drone carries it out.
+    if (grant) this.hub(account).benchTab()?.send({ type: 'event', event: 'execute', data: proposal });
     await this.log(account, { who: input.by, kind: 'proposal', part: input.part, ids: input.changes?.map(c => c.id), title: input.kind === 'change' ? `Proposed ${input.changes!.length === 1 ? input.changes![0].title ?? input.changes![0].id : `${input.changes!.length} changes`}` : `Asked to run ${input.test!.name}`, detail: { proposal: id } });
     return proposal;
   }
@@ -228,6 +248,55 @@ export class Services {
     });
     return done;
   }
+  // ---- Standing permissions ----------------------------------------------------------------------------------------
+
+  async grants(account: string): Promise<Grant[]> {
+    return (await this.store.list<Grant>('grants', account, 50)).map(r => r.data).filter(g => !g.revokedAt && g.expiresAt > this.now() && g.used < g.maxChanges);
+  }
+  /** Called only from the signed-in browser route. There is no tool for this. */
+  async createGrant(account: string, input: { parts: string[]; tests: string[]; minutes: number; maxChanges: number; conditions: Condition[] }): Promise<Grant> {
+    const aircraft = this.currentAircraft(account), identity = this.hub(account).mirror?.snapshot.identity;
+    if (!aircraft || !identity) throw new ToolError('no_aircraft', 'Connect the drone first. A permission is tied to one aircraft.');
+    const parts = input.parts.filter(p => GRANT_PARTS.includes(p)), tests = input.tests.filter(t => GRANT_TESTS.includes(t));
+    if (!parts.length && !tests.length) throw new ToolError('invalid', 'Choose at least one part or procedure.');
+    if (!(input.minutes >= 1 && input.minutes <= 120)) throw new ToolError('invalid', 'A permission lasts 1 to 120 minutes.');
+    if (!(Number.isInteger(input.maxChanges) && input.maxChanges >= 1 && input.maxChanges <= 50)) throw new ToolError('invalid', 'Allow 1 to 50 changes.');
+    const grant: Grant = { id: `grant_${newId(6)}`, createdAt: this.now(), expiresAt: this.now() + input.minutes * 60_000, aircraftId: aircraft,
+      aircraftName: identity.craftName ?? `${identity.firmware} ${identity.version}`, parts, tests, conditions: input.conditions, maxChanges: input.maxChanges, used: 0 };
+    await this.store.put('grants', account, grant.id, grant, { expectedRev: 0 });
+    this.hub(account).notify('grants');
+    await this.log(account, { who: 'you', kind: 'proposal', title: `Allowed ${[...parts, ...tests].join(', ')} for ${input.minutes} min`, detail: { grant: grant.id } });
+    return grant;
+  }
+  async revokeGrant(account: string, id: string) {
+    const row = await this.store.get<Grant>('grants', account, id);
+    if (!row) throw new ToolError('not_found', 'No such permission.');
+    await this.store.put('grants', account, id, { ...row.data, revokedAt: this.now() });
+    this.hub(account).notify('grants');
+  }
+  /** Does a standing permission cover this proposal? Uses it up by one if so. */
+  private async matchGrant(account: string, p: Proposal): Promise<Grant | undefined> {
+    if (p.level !== 2) return undefined; // Anything that energises the aircraft always waits for a person.
+    const aircraft = this.currentAircraft(account);
+    if (!aircraft) return undefined;
+    const settings = this.hub(account).mirror?.settings ?? [];
+    for (const row of await this.store.list<Grant>('grants', account, 50)) {
+      const g = row.data;
+      if (g.revokedAt || g.expiresAt <= this.now() || g.aircraftId !== aircraft) continue;
+      if (!p.needs.every(n => g.conditions.includes(n))) continue;
+      const covered = p.kind === 'change'
+        ? p.changes!.every(c => { const part = settings.find(x => x.id === c.id)?.part; return !!part && g.parts.includes(part); })
+        : g.tests.includes(p.test!.id);
+      const cost = p.kind === 'change' ? p.changes!.length : 1;
+      if (!covered || g.used + cost > g.maxChanges) continue;
+      try { await this.store.put('grants', account, g.id, { ...g, used: g.used + cost }, { expectedRev: row.rev }); }
+      catch (error) { if (error instanceof ConflictError) continue; throw error; }
+      this.hub(account).notify('grants');
+      return g;
+    }
+    return undefined;
+  }
+
   private trackProposal(account: string, p: Proposal) {
     return this.tracker.proposal({ proposalId: p.id, account, assistant: p.by, kind: p.kind, status: p.status, level: p.level, needs: p.needs, reason: p.reason,
       changes: p.changes, test: p.test, result: p.result, grantId: p.grant, aircraftId: this.currentAircraft(account) });

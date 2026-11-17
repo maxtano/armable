@@ -318,6 +318,7 @@ select, .lu-text { height: 34px; padding: 0 10px; border: 1px solid var(--ds-bor
 .lu-tools li { display: flex; gap: 10px; align-items: baseline; }
 .lu-tools span { color: var(--ds-text-muted); }
 .lu-composer { gap: 16px; }
+.lu-grant { gap: 14px; }
 .lu-title { flex: 1; min-width: 140px; font-weight: 700; font-size: 15px; }
 .lu-tempo { display: flex; align-items: center; gap: 8px; color: var(--ds-text-subtle); font-size: 12.5px; }
 .lu-tempo b { color: var(--ds-text); width: 30px; font-variant-numeric: tabular-nums; }
