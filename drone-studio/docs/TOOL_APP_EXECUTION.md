@@ -26,7 +26,7 @@ Deliberately not built yet: mission upload and flight, and drone-show flying. **
 - **Every phase ends in something a non-technical person can use.** No phase is pure plumbing.
 - **Design leads.** The diagram and its motion are prototyped before the screens are built, and each phase ships its part of the diagram, not a temporary text screen to be replaced later.
 - **Read before write, hardware before shows.** The motivating example is a device setting, so the device path is built first. Show editing follows on the same foundation.
-- **The current local app keeps working until the hosted one replaces it.** Nothing is deleted until its replacement is proven.
+- **The old local app is archived, not deleted.** It now lives in `archive/local-workspace/` with its tests and documents; its storyboard editor, 3D stage and sound tools carry on inside the hosted app.
 - **Mock aircraft first, bench second.** Every device behaviour is proven against the existing fixtures before a real aircraft, and bench results are reported separately from software results.
 - **Sizes, not dates.** Phases are marked small, medium, or large relative to each other. Nothing has been measured that would justify calendar estimates.
 

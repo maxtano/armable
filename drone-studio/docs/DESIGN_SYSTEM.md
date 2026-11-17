@@ -9,7 +9,7 @@ Lucidity uses a compact, technical interface: clear action hierarchy, restrained
 | [`tokens.css`](../src/design-system/tokens.css) | Palette, theme scopes, typography, spacing, dimensions, motion, layers, compatibility aliases |
 | [`primitives.css`](../src/design-system/primitives.css) | Shared button, card, badge, notice, field, and focus treatments |
 | [`index.tsx`](../src/design-system/index.tsx) | React `Button`, `Card`, `Badge`, and `Notice` |
-| [`ThemeControl.tsx`](../src/platform/ThemeControl.tsx), [`theme.css`](../src/platform/theme.css) | Persistent bottom-left light/dark switch, system preference, and the fixed-dark 3D stage scope |
+| [`App.tsx`](../src/web/App.tsx) (`toggleTheme`) | Light/dark switch in the rail, following the system preference until changed. The old workspace's `ThemeControl` is in `archive/local-workspace` |
 | [`DesignSystemPreview.tsx`](../src/design-system/DesignSystemPreview.tsx) | Development catalog using the shared implementation |
 
 Open [the development catalog](http://127.0.0.1:5173/test-fixtures/design-system.html) while Vite is running. It previews colors, button variants/sizes, fields, feedback, spacing, and a sample storyboard card. Its theme switch affects that document only; it does not save an appearance preference, connect to an aircraft, or send commands. The entry renders the catalog only in development.

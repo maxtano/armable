@@ -2,7 +2,9 @@
 
 **Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** Design for the direction in [TOOL_APP_VISION.md](TOOL_APP_VISION.md) and the interface in [TOOL_APP_DESIGN.md](TOOL_APP_DESIGN.md). Sections marked *exists* describe code in the repository today; everything else is proposed. Build order is in [TOOL_APP_EXECUTION.md](TOOL_APP_EXECUTION.md).
 
-## Where the code is today
+## Where the code was when this plan was written
+
+This table describes the old local workspace, which is now in `archive/local-workspace/`. It is kept to explain the decisions below.
 
 | Area | Today | Consequence |
 | --- | --- | --- |
@@ -163,7 +165,7 @@ type Entry =
 - **Per aircraft.** An entry appears only if the connected hardware and firmware support it. An unsupported entry that someone asks for by name is returned as unavailable, with the reason.
 - **Search is local and instant.** A prebuilt index over ids, names, synonyms, and symptoms. No model, no network call; a few milliseconds.
 - **Playbooks and references are authored data,** kept in the repository and reviewed like code. Playbooks also drive the UI's guided checks. References hold links, titles, timestamps, and Lucidity's own notes, tagged by firmware version. Lucidity stores no third-party video or transcript.
-- **Parameter documentation** is imported from the firmware project's published metadata, matched to the aircraft's version. This fills a gap [WORKSPACE.md](WORKSPACE.md) already lists.
+- **Parameter documentation** is imported from the firmware project's published metadata, matched to the aircraft's version. This fills a gap [WORKSPACE.md](../../archive/local-workspace/docs/WORKSPACE.md) already lists.
 
 The diagram is SVG, generated from the same model: frame class and type give motor positions and spin directions; port settings give the attached parts. Each part is one element bound to its readings and settings by the same ids the assistant uses. When the assistant reads `esc.3.direction`, the part with that id shows the reading ring. That link is the whole mechanism behind "watch the assistant work".
 
