@@ -122,7 +122,8 @@ export function App() {
       </nav>
       <main className="lu-main">
         <TopBar />
-        {!live && <div className="lu-offline" role="status">Reconnecting to Lucidity…</div>}
+        {me.offline ? <div className="lu-offline" role="status">Offline. The drone tools still work; your changes sync when you are back online.</div>
+          : !live && <div className="lu-offline" role="status">Reconnecting to Lucidity…</div>}
         <div className="lu-view">
           {view === 'drone' && <DroneView />}
           {view === 'signals' && <Signals />}

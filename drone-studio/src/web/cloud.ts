@@ -31,3 +31,22 @@ export class Live {
   send(message: Record<string, unknown>) { if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(message)); }
   mirror(mirror: Mirror) { this.lastMirror = mirror; this.send({ type: 'mirror', mirror }); }
 }
+
+/** Things the person did while offline, kept until the server can take them. */
+const OUTBOX = 'lucidity.outbox.v1';
+export function queue(method: string, path: string, body: unknown) {
+  try { const list = JSON.parse(localStorage.getItem(OUTBOX) ?? '[]'); list.push({ method, path, body, at: Date.now() }); localStorage.setItem(OUTBOX, JSON.stringify(list.slice(-500))); } catch { /* storage unavailable */ }
+}
+export async function flushOutbox(): Promise<number> {
+  let list: { method: string; path: string; body: unknown }[];
+  try { list = JSON.parse(localStorage.getItem(OUTBOX) ?? '[]'); } catch { return 0; }
+  let sent = 0;
+  while (list.length) {
+    try { await api(list[0].method, list[0].path, list[0].body); } catch (error) { if (error instanceof TypeError) break; }
+    list.shift(); sent++;
+    try { localStorage.setItem(OUTBOX, JSON.stringify(list)); } catch { /* storage unavailable */ }
+  }
+  return sent;
+}
+/** True when the request failed because there is no network, not because the server said no. */
+export const offlineError = (error: unknown) => error instanceof TypeError || (typeof navigator !== 'undefined' && navigator.onLine === false);

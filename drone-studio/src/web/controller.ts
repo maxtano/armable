@@ -6,7 +6,7 @@ import { Runtime } from '../device/runtime';
 import { ardupilotDemo, betaflightDemo, type PortSource } from '../device/sim/demo';
 import { WebSerialTransport } from '../device/transport';
 import type { Change, Condition, PartId, PromptRequest, TestSpec } from '../device/types';
-import { api, ApiError, Live, type ServerMessage } from './cloud';
+import { api, ApiError, flushOutbox, Live, offlineError, queue, type ServerMessage } from './cloud';
 import { captureView } from './capture';
 import { clearMark, EMPTY_SNAP, get, mark, set, toast, type ProposalCard, type View } from './store';
 
@@ -31,13 +31,39 @@ const partOfId = (id: string | undefined): string | undefined => {
 const PARTS = ['fc', 'motors', 'battery', 'receiver', 'gps', 'link', 'tuning', 'safety', 'osd', 'vtx', 'lights', 'ports', 'compass', 'logging'];
 const VIEWS: View[] = ['drone', 'signals', 'flights', 'show', 'sound', 'settings', 'connect'];
 
-export async function refreshMe() { const me = await api('GET', '/me'); set({ me }); return me; }
+const ME = 'lucidity.me.v1';
+/** Who is signed in. Offline, the last answer is used so the bench still opens. */
+export async function refreshMe() {
+  try {
+    const me = await api('GET', '/me');
+    try { if (me.signedIn) localStorage.setItem(ME, JSON.stringify({ email: me.email })); else localStorage.removeItem(ME); } catch { /* storage unavailable */ }
+    set({ me }); return me;
+  } catch (error) {
+    if (!offlineError(error)) throw error;
+    let cached: { email?: string } | undefined;
+    try { cached = JSON.parse(localStorage.getItem(ME) ?? 'null') ?? undefined; } catch { cached = undefined; }
+    const me = cached ? { signedIn: true, offline: true, email: cached.email, mode: 'off' as const, assistants: [] } : { signedIn: false, offline: true };
+    set({ me }); return me;
+  }
+}
 export async function refreshDocs() { set({ docs: await api('GET', '/docs') }); }
 
 /** Start everything that needs a signed-in person. */
 export async function start() {
   const me = await refreshMe();
   if (!me.signedIn) return;
+  if (me.offline) {
+    // No server: the drone tools still work in this tab. Come back online to sync and to reach assistants.
+    runtime.on(event => {
+      if (event.type === 'progress') set({ progress: { label: event.label, done: event.done, total: event.total } });
+      else if (event.type === 'settings') set({ settings: runtime.settings(), snap: runtime.snapshot(), log: runtime.lastLogAnalysis() });
+      else set({ snap: runtime.snapshot() });
+    });
+    bench = new Bench(runtime, { mirror: () => {}, reply: () => {} });
+    window.addEventListener('online', () => location.reload(), { once: true });
+    return;
+  }
+  void flushOutbox();
   runtime.on(event => {
     if (event.type === 'progress') set({ progress: { label: event.label, done: event.done, total: event.total } });
     else if (event.type === 'settings') set({ settings: runtime.settings(), snap: runtime.snapshot(), log: runtime.lastLogAnalysis() });
@@ -147,7 +173,11 @@ async function enrich() {
 // ---- Doing things ----------------------------------------------------------------------------------------------------
 
 export const words = (error: unknown) => error instanceof DeviceError || error instanceof ApiError ? (error.hint ? `${error.message} ${error.hint}` : error.message) : error instanceof Error ? error.message : 'Something went wrong.';
-async function log(kind: string, title: string, part?: string, ok?: boolean | null, extra: Record<string, unknown> = {}) { await api('POST', '/activity', { kind, title, part, ok, ...extra }).catch(() => {}); }
+async function log(kind: string, title: string, part?: string, ok?: boolean | null, extra: Record<string, unknown> = {}) {
+  const body = { kind, title, part, ok, ...extra };
+  // Offline, keep it and send it later, so history and tracking stay complete.
+  await api('POST', '/activity', body).catch(error => { if (offlineError(error) || get().me?.offline) queue('POST', '/activity', body); });
+}
 const prompt = (request: PromptRequest) => new Promise<unknown>(resolve => set({ prompt: { request, resolve: value => { set({ prompt: undefined }); resolve(value); } } }));
 /** Answer a prompt from a click. File bytes, a serial port, or a USB bootloader, depending on what was asked. */
 export async function answerPrompt(input?: File | 'cancel') {
@@ -183,8 +213,8 @@ export async function runTest(spec: TestSpec, args: Record<string, unknown> = {}
     toast(outcome.summary, outcome.ok === false ? 'bad' : outcome.ok ? 'ok' : 'info');
     if (spec.id === 'settings.snapshot' && (outcome.test?.data as { values?: unknown } | undefined)?.values) {
       const id = runtime.snapshot().identity;
-      await api('POST', '/docs', { kind: 'snapshot', name: `${id?.craftName ?? id?.firmware ?? 'Aircraft'} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, content: outcome.test!.data });
-      void refreshDocs();
+      const doc = { kind: 'snapshot', name: `${id?.craftName ?? id?.firmware ?? 'Aircraft'} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, content: outcome.test!.data };
+      await api('POST', '/docs', doc).then(() => refreshDocs(), error => { if (offlineError(error) || get().me?.offline) queue('POST', '/docs', doc); });
     }
     void log('test', spec.name, spec.part, outcome.ok, { testId: spec.id, args, detail: { summary: outcome.summary } });
     return outcome;

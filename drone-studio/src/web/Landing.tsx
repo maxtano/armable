@@ -89,7 +89,7 @@ export function Landing({ onSignedIn }: { onSignedIn(): void }) {
           <button type="button" className="lu-link" onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}>{mode === 'signup' ? 'I have an account' : 'Create an account'}</button>
         </form>
       </section>
-      <footer className="in-foot">Open source · Apache 2.0 · You approve every change to your aircraft</footer>
+      <footer className="in-foot">Open source · Apache 2.0 · You approve every change to your aircraft · <a href="/privacy.html">Privacy</a></footer>
     </div>
   );
 }
