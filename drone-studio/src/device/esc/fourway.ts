@@ -1,6 +1,7 @@
 import { ascii, concat, deferred, DeviceError, equal, hex, sleep } from '../bytes';
 import { encodeMsp } from '../msp/codec';
 import type { EscInfo, Setting } from '../types';
+import { am32Settings, ARM_MODE, encodeAm32Field, flashAm32, patchAm32, readAm32 } from './am32';
 
 /**
  * BLHeli four-way interface, through the flight controller's ESC passthrough.
@@ -124,6 +125,12 @@ export class FourWay {
       throw new DeviceError('not_approved', 'ESC write is not approved or is outside the application area.');
     await this.four(CMD.write, address, data);
   }
+  /** ARM bootloaders erase a page when a write starts it. Writes stay above the bootloader and inside 64 KB. */
+  async writeArm(address: number, data: Uint8Array) {
+    if (!this.allowWrites || !Number.isInteger(address) || address < 0x1000 || data.length < 1 || data.length > 256 || address + data.length > 0x10000)
+      throw new DeviceError('not_approved', 'ESC write is not approved or is outside the application area.');
+    await this.four(CMD.write, address, data);
+  }
   async reset(index: number) { await this.four(CMD.reset, 0, Uint8Array.of(index)); }
   async exit() { await this.four(CMD.exit, 0, Uint8Array.of(0)); }
 }
@@ -174,6 +181,7 @@ export function describeEsc(index: number, signature: number, mode: number, data
   };
 }
 export function escSettings(info: EscInfo, block: Uint8Array): Setting[] {
+  if (info.interfaceMode === ARM_MODE) return info.firmware === 'AM32' ? am32Settings(info, block) : [];
   if (info.firmware !== 'BLHeli_S' && info.firmware !== 'Bluejay') return [];
   return ESC_FIELDS.filter(f => f.firmwares.includes(info.firmware as 'BLHeli_S' | 'Bluejay')).map(f => ({
     id: `esc.${info.index}.${f.key}`, name: f.key, part: 'motors' as const, group: `ESC ${info.index}`,
@@ -186,6 +194,7 @@ export function escSettings(info: EscInfo, block: Uint8Array): Setting[] {
 }
 /** Turn a requested value into the byte to store, or throw with the allowed values. */
 export function encodeEscField(key: string, value: string | number, firmware: EscInfo['firmware']): { offset: number; byte: number } {
+  if (firmware === 'AM32') return encodeAm32Field(key, value);
   const field = ESC_FIELDS.find(f => f.key === key && f.firmwares.includes(firmware as 'BLHeli_S'));
   if (!field) throw new DeviceError('unsupported', `ESC setting "${key}" is not supported on ${firmware}.`);
   if (field.options) {
@@ -201,6 +210,7 @@ export function encodeEscField(key: string, value: string | number, firmware: Es
 /** Read identity and settings for one ESC. The ESC is left selected. */
 export async function readEsc(link: FourWay, index0: number, now: () => number): Promise<EscRead> {
   const { signature, mode } = await link.init(index0);
+  if (mode === ARM_MODE) return readAm32(link, index0, signature, now);
   const address = settingsAddress(signature, mode);
   if (address === null)
     return { info: { index: index0 + 1, at: now(), firmware: 'Unknown', writable: false, signature: `0x${signature.toString(16).toUpperCase()}`, interfaceMode: mode,
@@ -229,7 +239,8 @@ async function writePage(link: FourWay, page: number, image: Uint8Array) {
  * Change settings bytes on the selected ESC: read the whole settings page, patch it, erase, write, read back.
  * Returns the new page. Everything but the patched bytes is written back exactly as it was read.
  */
-export async function patchEscSettings(link: FourWay, patches: { offset: number; byte: number }[]): Promise<Uint8Array> {
+export async function patchEscSettings(link: FourWay, patches: { offset: number; byte: number }[], read?: EscRead): Promise<Uint8Array> {
+  if (read?.info.interfaceMode === ARM_MODE) return patchAm32(link, read, patches);
   const page = new Uint8Array(BB2.page);
   for (let offset = 0; offset < BB2.page; offset += 128) page.set(await link.read(BB2.settings + offset, 128), offset);
   if (page[0x0d] !== 0x55 || page[0x0e] !== 0xaa) throw new DeviceError('mismatch', 'The ESC settings block is not valid. Nothing was written.');
@@ -270,6 +281,7 @@ export function parseEscHex(text: string): Uint8Array {
  * Follows ESC Configurator's order: a recovery marker first, the reset vector last, the bootloader never.
  */
 export async function flashEsc(link: FourWay, current: EscRead, firmware: Uint8Array, progress: (label: string, done?: number, total?: number) => void): Promise<Uint8Array> {
+  if (current.info.interfaceMode === ARM_MODE) { await flashAm32(link, current, firmware, progress); return firmware; }
   const info = current.info;
   if (!info.writable || !current.block) throw new DeviceError('unsupported', 'This ESC cannot be flashed by Lucidity yet.');
   if (firmware.length !== BB2.size) throw new DeviceError('invalid', 'Firmware image has the wrong size.');

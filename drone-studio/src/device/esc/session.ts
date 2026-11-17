@@ -1,6 +1,7 @@
 import { DeviceError } from '../bytes';
 import type { Change, ChangeResult, RunContext, TestResult } from '../types';
 import { encodeEscField, escSettings, flashEsc, parseEscHex, patchEscSettings, readEsc, type EscRead, type FourWay } from './fourway';
+import { ARM_MODE, parseAm32Hex } from './am32';
 
 /** What a driver does once passthrough is open. The same code serves ArduPilot and Betaflight. */
 export type EscSession = <T>(write: boolean, ctx: RunContext, fn: (link: FourWay, count: number) => Promise<T>) => Promise<T>;
@@ -39,7 +40,7 @@ export async function writeEscChanges(session: EscSession, ctx: RunContext, now:
           const current = Object.fromEntries(escSettings(before.info, before.block).map(s => [s.id, s.value]));
           const stale = list.find(c => c.expected !== undefined && String(current[c.id]) !== String(c.expected).toLowerCase());
           if (stale) { fail(`${stale.id} is now ${current[stale.id]}, not ${stale.expected}. Nothing was written.`); await link.reset(index - 1).catch(() => {}); continue; }
-          await patchEscSettings(link, list.map(c => encodeEscField(c.id.split('.').slice(2).join('.'), c.value, before.info.firmware)));
+          await patchEscSettings(link, list.map(c => encodeEscField(c.id.split('.').slice(2).join('.'), c.value, before.info.firmware)), before);
           const after = await readEsc(link, index - 1, now);
           const fresh = Object.fromEntries(escSettings(after.info, after.block!).map(s => [s.id, s.value]));
           reads = merge(reads, after);
@@ -61,7 +62,9 @@ export async function writeEscChanges(session: EscSession, ctx: RunContext, now:
 export async function flashEscs(session: EscSession, ctx: RunContext, now: () => number, only: number | undefined, known: EscRead[]): Promise<{ reads: EscRead[]; result: TestResult }> {
   const file = await ctx.prompt?.({ kind: 'file', label: 'Choose the ESC firmware (.hex)', accept: '.hex' });
   if (!(file instanceof Uint8Array)) throw new DeviceError('invalid', 'No firmware file was chosen.');
-  const firmware = parseEscHex(new TextDecoder().decode(file));
+  const text = new TextDecoder().decode(file);
+  // The same file type serves two kinds of ESC; parse it for the kind found, so a mismatch is caught per ESC.
+  const firmwareFor = (read: EscRead) => read.info.interfaceMode === ARM_MODE ? parseAm32Hex(text) : parseEscHex(text);
   const done: { esc: number; ok: boolean; note: string }[] = [];
   let reads = known;
   await session(true, ctx, async (link, count) => {
@@ -69,7 +72,7 @@ export async function flashEscs(session: EscSession, ctx: RunContext, now: () =>
       if (only !== undefined && only !== i + 1) continue;
       try {
         const current = await readEsc(link, i, now);
-        await flashEsc(link, current, firmware, (label, a, b) => ctx.progress?.(`ESC ${i + 1}: ${label}`, a, b));
+        await flashEsc(link, current, firmwareFor(current), (label, a, b) => ctx.progress?.(`ESC ${i + 1}: ${label}`, a, b));
         const after = await readEsc(link, i, now);
         reads = merge(reads, after);
         done.push({ esc: i + 1, ok: true, note: `${after.info.firmware} ${after.info.version}` });

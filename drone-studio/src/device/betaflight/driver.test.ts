@@ -157,6 +157,17 @@ describe('Betaflight driver against a simulated flight controller', () => {
     expect((await driver.run('link.check')).ok).toBe(true);
   });
 
+  it('changes AM32 ESC settings through passthrough, next to BLHeli_S ESCs', async () => {
+    const { driver, sim } = await bench({ escKinds: ['AM32', 'AM32', 'BLHeli_S', 'AM32'], escDirections: [1, 2, 1, 1] });
+    await driver.run('esc.read', { grant: grant('esc.read', 'propsRemoved', 'directUsb', 'batteryConnected') });
+    expect(driver.escs().map(e => e.firmware)).toEqual(['AM32', 'AM32', 'BLHeli_S', 'AM32']);
+    expect(driver.settings().find(s => s.id === 'esc.2.direction')?.value).toBe('reversed');
+    const results = await driver.write([{ id: 'esc.2.direction', value: 'normal', expected: 'reversed' }, { id: 'esc.4.beep_strength', value: 9 }], { grant: grant('write', 'propsRemoved', 'directUsb') });
+    expect(results.map(r => r.ok)).toEqual([true, true]);
+    expect(sim.escBank.images[1][0x7c00 + 0x11]).toBe(0);
+    expect(sim.escBank.images[3][0x7c00 + 0x1e]).toBe(9);
+  });
+
   it('calibrates the accelerometer and takes a full snapshot with a restorable backup', async () => {
     const { driver, sim } = await bench();
     expect((await driver.run('cal.accel', { grant: grant('cal.accel', 'level', 'still') })).ok).toBe(true);
