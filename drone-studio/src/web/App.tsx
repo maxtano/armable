@@ -1,5 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Activity, AudioLines, Bot, Cable, ChartSpline, Eye, FileUp, LogOut, Moon, Navigation, Plug, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
+import { Activity, AudioLines, Bot, Cable, ChartSpline, Eye, FileUp, History as HistoryIcon, LogOut, Moon, Navigation, Plug, Radio, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
+import { useState } from 'react';
+import { History } from './History';
+import { OsdEditor } from './OsdEditor';
+import { RadioFlash } from './RadioFlash';
 import type { PartId } from '../device/types';
 import { Connect, Consent, ModeSwitch } from './Connect';
 import { answerPrompt, connectDemo, connectUsb, disconnect, go, select, signOut, start, stopAll } from './controller';
@@ -15,7 +19,7 @@ import { Sound } from './Sound';
 import { set, useStore, type View } from './store';
 import { Timeline } from './Timeline';
 
-const VIEWS: [View, typeof Activity, string][] = [['drone', Navigation, 'Drone'], ['signals', Activity, 'Signals'], ['flights', ChartSpline, 'Flights'], ['show', Sparkles, 'Show'], ['sound', AudioLines, 'Sound'], ['settings', SlidersHorizontal, 'Settings']];
+const VIEWS: [View, typeof Activity, string][] = [['drone', Navigation, 'Drone'], ['signals', Activity, 'Signals'], ['flights', ChartSpline, 'Flights'], ['show', Sparkles, 'Show'], ['sound', AudioLines, 'Sound'], ['settings', SlidersHorizontal, 'Settings'], ['history', HistoryIcon, 'History']];
 const theme = () => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
 function toggleTheme() { const next = theme() === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = next; try { localStorage.setItem('lucidity.appearance.v1', next); } catch { /* private mode */ } }
 
@@ -56,15 +60,19 @@ function TopBar() {
 function DroneView() {
   const snap = useStore(s => s.snap), busy = useStore(s => s.busy), progress = useStore(s => s.progress), part = useStore(s => s.part);
   const orphans = useStore(s => s.proposals.filter(p => p.status === 'awaiting_approval' && !p.part));
+  const hasOsd = useStore(s => s.settings.some(x => x.id.startsWith('bf.osd_') && x.id.endsWith('_pos')));
+  const [radio, setRadio] = useState(false);
   return (
     <div className={`lu-drone${part ? ' has-panel' : ''}`}>
       <div className="lu-stage" onClick={event => { if (event.target === event.currentTarget) select(undefined); }}>
-        <Diagram />
+        {part === 'osd' && hasOsd ? <OsdEditor /> : <Diagram />}
+        {radio && <RadioFlash onClose={() => setRadio(false)} />}
         {snap.status === 'idle' && (
           <div className="lu-idle">
             <h1>Plug in your drone</h1>
             <button className="lu-btn is-primary is-big" disabled={!!busy} onClick={connectUsb}><Cable size={18} /> Connect over USB</button>
             <div className="lu-row"><span>No drone handy?</span><button className="lu-link" data-demo="betaflight" onClick={() => connectDemo('betaflight')}>Try a Betaflight demo</button><button className="lu-link" data-demo="ardupilot" onClick={() => connectDemo('ardupilot')}>ArduPilot demo</button></div>
+            <button className="lu-link" onClick={() => setRadio(true)}><Radio size={14} /> Flash a receiver or radio over USB</button>
           </div>
         )}
         {snap.status !== 'idle' && busy && !part && <div className="lu-progress is-floating" role="status"><span>{progress?.label ?? busy}</span>{progress?.total ? <progress value={progress.done ?? 0} max={progress.total} /> : <i />}</div>}
@@ -131,6 +139,7 @@ export function App() {
           {view === 'show' && <Show />}
           {view === 'sound' && <Sound />}
           {view === 'settings' && <SettingsView />}
+          {view === 'history' && <History />}
           {view === 'connect' && <><div className="lu-mode-bar"><ModeSwitch /></div><Connect /></>}
         </div>
         {view !== 'show' && <Timeline />}

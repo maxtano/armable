@@ -68,6 +68,25 @@ describe('runtime', () => {
     expect(runtime.snapshot().state?.linkOk).toBe(true);
   });
 
+  it('on Betaflight, confirms values written in another form after the restart, and reads every setting again', async () => {
+    const { runtime, sim } = await betaflight();
+    await runtime.load();
+    const results = await runtime.write([{ id: 'bf.osd_vbat_pos', value: '4,13,on' }, { id: 'bf.vtxtable', value: 'Tramp' }, { id: 'bf.failsafe_procedure', value: 'gps-rescue' }], runtime.approve('write'));
+    expect(results.map(r => [r.id, r.ok, r.note])).toEqual([
+      ['bf.osd_vbat_pos', true, 'Saved and confirmed after the restart.'], ['bf.vtxtable', true, 'Saved and confirmed after the restart.'], ['bf.failsafe_procedure', true, 'Saved and confirmed after the restart.'],
+    ]);
+    expect(results[1].after).toBe('Tramp');
+    expect(runtime.snapshot().settingsLoaded).toBe('complete');
+    expect(runtime.settings().find(x => x.id === 'bf.vtx_band')?.options?.length).toBe(6);
+    expect(sim.settings.failsafe_procedure.value).toBe('GPS-RESCUE');
+  });
+
+  it('shares one settings read between two callers instead of answering "busy"', async () => {
+    const { runtime } = await betaflight();
+    await Promise.all([runtime.load(), runtime.load(), runtime.remote({ op: 'load' })]);
+    expect(runtime.snapshot().settingsLoaded).toBe('complete');
+  });
+
   it('restarts an ArduPilot flight controller and comes back', async () => {
     const { runtime, sim } = await ardupilot();
     const result = await runtime.run('fc.restart', {}, runtime.approve('fc.restart'));

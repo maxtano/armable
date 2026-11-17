@@ -119,4 +119,110 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     expect(errors).toEqual([]);
     await page.close();
   });
+
+  it('moves OSD elements on the screen picture and saves them to the flight controller', async () => {
+    const { page, errors } = await signedInPage();
+    await page.click('[data-demo=betaflight]');
+    await page.waitForSelector('.lu-status.is-connected');
+    await page.click('.lu-chips.is-quiet button:has-text("On-screen display")');
+    const vbat = page.locator('[data-osd="vbat"]');
+    await vbat.waitFor();
+    await vbat.focus();
+    for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowUp');
+    expect(await vbat.getAttribute('aria-label')).toContain('column 4, row 13');
+    await page.getByRole('button', { name: 'Hide RSSI' }).click();
+    await page.getByRole('button', { name: /^Save 2$/ }).click();
+    await page.waitForSelector('.lu-toast.is-ok', { timeout: 20000 });
+    // The flight controller restarted to save; after reconnecting, the editor shows what it reads back.
+    await page.waitForSelector('.lu-status.is-connected', { timeout: 20000 });
+    await page.waitForFunction(() => document.querySelector('[data-osd="vbat"]')?.getAttribute('aria-label')?.includes('column 4, row 13'), undefined, { timeout: 20000 });
+    expect(await page.locator('[data-osd="rssi"]').count()).toBe(0);
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('gives the video transmitter a table, then shows bands and frequencies by name', async () => {
+    const { page, errors } = await signedInPage();
+    await page.click('[data-demo=betaflight]');
+    await page.waitForSelector('.lu-status.is-connected');
+    await page.click('.lu-chips.is-quiet button:has-text("Video")');
+    const table = page.locator('[data-setting="bf.vtxtable"]');
+    await table.waitFor();
+    await table.locator('select').selectOption('Tramp');
+    await table.getByRole('button', { name: /Apply/ }).click();
+    await page.waitForSelector('.lu-status.is-connected', { timeout: 20000 });
+    await page.waitForFunction(() => document.querySelector('[data-setting="bf.vtx_band"] select')?.textContent?.includes('raceband'), undefined, { timeout: 20000 });
+    expect(await page.locator('.lu-readings').innerText()).toMatch(/5917 MHz[\s\S]*25 mW|5917 MHz/);
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('downloads and analyses a Betaflight blackbox log, and opens a log file from disk', async () => {
+    const { page, errors } = await signedInPage();
+    await page.click('[data-demo=betaflight]');
+    await page.waitForSelector('.lu-status.is-connected');
+    await page.click('.lu-rail button:has-text("Flights")');
+    await page.click('button:has-text("Analyse latest")');
+    await page.waitForSelector('.lu-findings', { timeout: 30000 });
+    expect(await page.locator('.lu-page-head').innerText()).toContain('Betaflight Blackbox');
+    expect(await page.locator('.lu-chips button').count()).toBe(2);
+    const { syntheticBlackbox } = await import('../src/device/blackbox/encode');
+    await page.setInputFiles('[data-log-file]', { name: 'flight.bbl', mimeType: 'application/octet-stream', buffer: Buffer.from(syntheticBlackbox(3, 1)) });
+    await page.waitForSelector('.lu-toast:has-text("flight.bbl analysed")');
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('lets a standing permission carry an assistant change through with no click, and records it in History', async () => {
+    const { page, context, errors } = await signedInPage();
+    await page.click('[data-demo=betaflight]');
+    await page.waitForSelector('.lu-status.is-connected');
+    await page.click('.lu-rail button:has-text("Assistant")');
+    await page.getByRole('button', { name: 'Allow' }).click();
+    await page.waitForSelector('.lu-toast:has-text("Permission on")');
+    const person = new Browser(app.base);
+    person.cookie = (await context.cookies()).map((c: { name: string; value: string }) => `${c.name}=${c.value}`).join('; ');
+    const claude = await assistant(app.base, (await person.connectAssistant('Claude')).access_token!);
+    try {
+      await claude.call('read', { ids: ['settings.load'] });
+      const p = await claude.call('propose_change', { changes: [{ id: 'bf.p_roll', value: 48 }] });
+      expect(p.status).toBe('approved');
+      expect((await claude.call('wait', { proposal: p.proposal, seconds: 30 })).status).toBe('done');
+      await page.click('.lu-rail button:has-text("History")');
+      await page.waitForSelector('.lu-hrow:has-text("propose_change")');
+      await page.click('.lu-chips button:has-text("Changes")');
+      await page.waitForSelector('.lu-hrow:has-text("bf.p_roll")');
+      expect(await page.locator('.lu-hrow:has-text("bf.p_roll")').innerText()).toMatch(/Claude[\s\S]*45[\s\S]*48[\s\S]*confirmed/);
+      expect(errors).toEqual([]);
+    } finally { await claude.close(); await page.close(); }
+  });
+
+  it('keeps working offline once loaded, and syncs the history when back online', async () => {
+    const { page, context, errors } = await signedInPage();
+    await page.waitForFunction(() => navigator.serviceWorker?.controller !== null || navigator.serviceWorker?.ready, undefined, { timeout: 10000 });
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.reload();
+    await page.waitForSelector('[data-demo=ardupilot]');
+    await context.setOffline(true);
+    await page.reload();
+    await page.waitForSelector('.lu-offline:has-text("Offline")');
+    await page.click('[data-demo=ardupilot]');
+    await page.waitForSelector('.lu-status.is-connected');
+    await page.click('[aria-label^="Battery"]');
+    const capacity = page.locator('[data-setting="param.BATT_CAPACITY"]');
+    await capacity.waitFor();
+    await capacity.getByRole('button', { name: /Raise/ }).click();
+    await capacity.getByRole('button', { name: /Apply/ }).click();
+    await page.waitForSelector('.lu-toast.is-ok');
+    await context.setOffline(false);
+    // Back online without a reload: the drone stays connected and the offline change reaches the history.
+    await page.waitForSelector('.lu-toast:has-text("Back online")', { timeout: 10000 });
+    expect(await page.locator('.lu-status.is-connected').count()).toBe(1);
+    await page.click('.lu-rail button:has-text("History")');
+    await page.click('.lu-chips button:has-text("Changes")');
+    await page.waitForSelector('.lu-hrow:has-text("param.BATT_CAPACITY")', { timeout: 10000 });
+    expect(errors.filter(e => !/Failed to fetch|NetworkError|ERR_INTERNET/.test(e))).toEqual([]);
+    await page.close();
+  });
 });

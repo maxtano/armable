@@ -29,7 +29,7 @@ const partOfId = (id: string | undefined): string | undefined => {
   return ({ battery: 'battery', gps: 'gps', rc: 'receiver', motor: 'motors', esc: 'motors', escs: 'motors', airframe: 'motors', attitude: 'fc', fc: 'fc', sensors: 'fc', link: 'link', arming: 'safety', log: 'logging' } as Record<string, string>)[head];
 };
 const PARTS = ['fc', 'motors', 'battery', 'receiver', 'gps', 'link', 'tuning', 'safety', 'osd', 'vtx', 'lights', 'ports', 'compass', 'logging'];
-const VIEWS: View[] = ['drone', 'signals', 'flights', 'show', 'sound', 'settings', 'connect'];
+const VIEWS: View[] = ['drone', 'signals', 'flights', 'show', 'sound', 'settings', 'history', 'connect'];
 
 const ME = 'lucidity.me.v1';
 /** Who is signed in. Offline, the last answer is used so the bench still opens. */
@@ -48,28 +48,41 @@ export async function refreshMe() {
 }
 export async function refreshDocs() { set({ docs: await api('GET', '/docs') }); }
 
+let listening = false;
 /** Start everything that needs a signed-in person. */
 export async function start() {
   const me = await refreshMe();
   if (!me.signedIn) return;
-  if (me.offline) {
-    // No server: the drone tools still work in this tab. Come back online to sync and to reach assistants.
+  if (!listening) {
+    listening = true;
     runtime.on(event => {
       if (event.type === 'progress') set({ progress: { label: event.label, done: event.done, total: event.total } });
       else if (event.type === 'settings') set({ settings: runtime.settings(), snap: runtime.snapshot(), log: runtime.lastLogAnalysis() });
       else set({ snap: runtime.snapshot() });
+      if (event.type === 'status' && runtime.status === 'connected' && live) void enrich();
     });
-    bench = new Bench(runtime, { mirror: () => {}, reply: () => {} });
-    window.addEventListener('online', () => location.reload(), { once: true });
+  }
+  if (me.offline) {
+    // No server: the drone tools still work in this tab, and a connected drone stays connected when the network returns.
+    bench ??= new Bench(runtime, { mirror: () => {}, reply: () => {} });
+    window.addEventListener('online', () => void comeBackOnline(), { once: true });
     return;
   }
+  await goOnline();
+}
+/** The network is back: sync what was done offline and join the cloud, without dropping the drone. */
+async function comeBackOnline() {
+  try {
+    const me = await refreshMe();
+    if (me.offline) { window.addEventListener('online', () => void comeBackOnline(), { once: true }); return; }
+    await goOnline();
+    if (runtime.status === 'connected') void enrich();
+    toast('Back online. Your changes are synced.', 'ok');
+  } catch { window.addEventListener('online', () => void comeBackOnline(), { once: true }); }
+}
+async function goOnline() {
   void flushOutbox();
-  runtime.on(event => {
-    if (event.type === 'progress') set({ progress: { label: event.label, done: event.done, total: event.total } });
-    else if (event.type === 'settings') set({ settings: runtime.settings(), snap: runtime.snapshot(), log: runtime.lastLogAnalysis() });
-    else set({ snap: runtime.snapshot() });
-    if (event.type === 'status' && runtime.status === 'connected') void enrich();
-  });
+  bench?.dispose();
   live = new Live(onServer, open => set({ live: open }));
   bench = new Bench(runtime, { mirror: m => live!.mirror(m), reply: (id, ok, payload) => live!.send({ type: 'reply', id, ok, payload }) }, { capture: captureView });
   live.open();

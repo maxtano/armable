@@ -11,13 +11,13 @@ export const PART_NAME: Record<PartId, string> = {
 export const CHIP_PARTS: PartId[] = ['tuning', 'safety', 'ports', 'vtx', 'osd', 'lights', 'compass', 'logging'];
 const ORDER: Partial<Record<PartId, string[]>> = {
   motors: ['motor.spin', 'esc.read', 'esc.flash'], fc: ['diagnostics.full', 'cal.level', 'cal.accel', 'fc.restart', 'cal.gyro', 'cal.accel.simple', 'cal.baro', 'settings.snapshot', 'settings.restore', 'firmware.flash', 'sensors.check'],
-  battery: ['battery.check'], receiver: ['radio.check'], safety: ['prearm.check'], link: ['link.check'], compass: ['cal.compass'], logging: ['logs.analyze', 'logs.list'],
+  battery: ['battery.check'], receiver: ['radio.check', 'receiver.bind', 'receiver.flash'], safety: ['prearm.check'], link: ['link.check'], compass: ['cal.compass'], logging: ['logs.analyze', 'logs.list', 'logs.erase'],
 };
 /** Short button words for tests. */
 export const BUTTON: Record<string, string> = {
   'motor.spin': 'Test', 'esc.read': 'Read ESCs', 'esc.flash': 'Flash ESCs', 'diagnostics.full': 'Check all', 'cal.level': 'Level', 'cal.accel': 'Level', 'cal.accel.simple': 'Calibrate accel',
   'cal.gyro': 'Calibrate gyro', 'cal.baro': 'Zero altitude', 'cal.compass': 'Calibrate', 'fc.restart': 'Restart', 'settings.snapshot': 'Back up', 'settings.restore': 'Restore',
-  'firmware.flash': 'Flash firmware', 'battery.check': 'Check', 'radio.check': 'Check', 'prearm.check': 'Check', 'link.check': 'Check', 'sensors.check': 'Check sensors', 'logs.analyze': 'Analyse latest', 'logs.list': 'List logs',
+  'firmware.flash': 'Flash firmware', 'battery.check': 'Check', 'radio.check': 'Check', 'prearm.check': 'Check', 'link.check': 'Check', 'sensors.check': 'Check sensors', 'logs.analyze': 'Analyse latest', 'logs.list': 'Check storage', 'logs.erase': 'Erase logs', 'receiver.bind': 'Bind', 'receiver.flash': 'Flash receiver',
 };
 export function testsFor(part: PartId, tests: TestSpec[]): TestSpec[] {
   const order = ORDER[part] ?? [];

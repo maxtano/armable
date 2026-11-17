@@ -167,7 +167,17 @@ export class Runtime {
   }
   settings(): Setting[] { return this.driver?.settings() ?? []; }
   tests(): TestSpec[] { return this.driver ? [...this.driver.tests(), ...(this.driver.enterBootloader ? [FLASH] : [])] : []; }
-  async load() { return this.need().loadSettings((label, done, total) => this.emit({ type: 'progress', label, done, total })); }
+  private loading?: Promise<void>;
+  /** Read every setting. A second caller while a read is running shares it instead of being told "busy". */
+  async load() {
+    const driver = this.need();
+    if (!this.loading) this.loading = driver.loadSettings((label, done, total) => this.emit({ type: 'progress', label, done, total })).finally(() => { this.loading = undefined; });
+    return this.loading;
+  }
+  /** After a restart the new connection knows no settings yet; read them again so everyone sees the full list. */
+  private async reloadIfNeeded() {
+    if (this.driver && this.status === 'connected' && this.driver.settingsLoaded() !== 'complete') await this.load().catch(() => {});
+  }
   async refresh(ids: string[]) { return this.need().refresh(ids); }
   lastLogAnalysis() { return this.driver?.lastLogAnalysis(); }
 
@@ -184,12 +194,16 @@ export class Runtime {
       try {
         const fresh = await (await this.reconnected()).refresh(saved.map(r => r.id));
         for (const r of saved) {
-          const now = fresh.find(s => s.id === r.id);
+          // Compare with what the flight controller read back before saving: the request may have been written in
+          // another form (an option label, "x,y,on" for an OSD position, a video table preset name).
+          const before = r.after, now = fresh.find(x => x.id === r.id);
+          const same = (a: unknown, b: unknown) => String(a).toLowerCase() === String(b).toLowerCase() || (a !== null && b !== null && String(a).trim() !== '' && Number(a) === Number(b));
           r.after = now?.value ?? null;
-          r.ok = now !== undefined && String(now.value).toLowerCase() === String(r.after).toLowerCase() && (String(now.value).toLowerCase() === String(r.requested).toLowerCase() || Number(now.value) === Number(r.requested));
+          r.ok = now !== undefined && same(now.value, before);
           r.note = r.ok ? 'Saved and confirmed after the restart.' : 'The value did not survive the restart.';
         }
       } catch (error) { for (const r of saved) { r.ok = false; r.note = error instanceof Error ? error.message : 'Could not confirm after the restart.'; } }
+      await this.reloadIfNeeded();
     }
     this.emit({ type: 'settings', ids: changes.map(c => c.id) });
     return results;
@@ -201,8 +215,8 @@ export class Runtime {
     const g = spec.level > 0 ? this.consume(grant, id) : undefined;
     if (id === 'firmware.flash') return this.flash(driver, g!, prompt);
     const result = await driver.run(id, { args, grant: g, prompt, progress: this.progress });
-    if (this.rebootExpected && id !== 'fc.restart') await this.reconnected().catch(() => {});
-    if (id === 'fc.restart') { await this.reconnected(); return { ...result, summary: 'Restarted and reconnected.' }; }
+    if (this.rebootExpected && id !== 'fc.restart') { await this.reconnected().catch(() => {}); await this.reloadIfNeeded(); }
+    if (id === 'fc.restart') { await this.reconnected(); await this.reloadIfNeeded(); return { ...result, summary: 'Restarted and reconnected.' }; }
     return result;
   }
   private async flash(driver: Driver, grant: Grant, prompt?: (request: PromptRequest) => Promise<unknown>): Promise<TestResult> {

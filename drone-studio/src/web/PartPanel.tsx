@@ -74,7 +74,7 @@ function Reverse({ motor }: { motor: number }) {
 }
 
 function Readings({ part, motor }: { part: PartId; motor?: number }) {
-  const snap = useStore(s => s.snap), st = snap.state;
+  const snap = useStore(s => s.snap), st = snap.state, settings = useStore(s => s.settings);
   const rows: [string, string][] = [];
   if (part === 'battery') { const b = st?.battery; rows.push(['Voltage', format(b && b.voltage >= 2 ? Number(b.voltage.toFixed(2)) : undefined, 'V')], ['Current', format(b?.current, 'A')], ['Left', format(b?.remaining, '%')]); }
   else if (part === 'gps') rows.push(['Satellites', format(st?.gps?.sats)], ['Fix', st?.gps ? (st.gps.fix >= 3 ? '3D' : 'None') : '—'], ['Accuracy', format(st?.gps?.hdop)]);
@@ -82,6 +82,12 @@ function Readings({ part, motor }: { part: PartId; motor?: number }) {
   else if (part === 'fc') rows.push(['Roll', format(st?.attitude?.roll, '°')], ['Pitch', format(st?.attitude?.pitch, '°')], ['Mode', st?.mode ?? '—']);
   else if (part === 'motors' && motor) { const m = snap.airframe?.motors.find(x => x.number === motor), esc = snap.escs.find(e => e.index === motor); rows.push(['Turns', m?.spin === 'cw' ? '↻ CW' : m?.spin === 'ccw' ? '↺ CCW' : 'Unknown'], ['Output', format(st?.motors?.outputs[motor - 1], 'µs')], ['ESC', esc ? `${esc.firmware} ${esc.version ?? ''}`.trim() : 'Not read']); }
   else if (part === 'link') rows.push(['Port', snap.label ?? '—'], ['Link', st?.linkOk ? 'Live' : 'Silent'], ['Load', format(st?.cpuLoad, '%')]);
+  else if (part === 'vtx') {
+    const ch = settings.find(x => x.id === 'bf.vtx_channel'), label = ch?.options?.find(o => String(o.value) === String(ch.value))?.label;
+    const power = settings.find(x => x.id === 'bf.vtx_power'), plabel = power?.options?.find(o => String(o.value) === String(power.value))?.label;
+    rows.push(['Frequency', label?.match(/(\d{4}) MHz/)?.[0] ?? format(settings.find(x => x.id === 'bf.vtx_freq')?.value, 'MHz')], ['Power', plabel ?? format(power?.value)], ['Table', String(settings.find(x => x.id === 'bf.vtxtable')?.value ?? '—')]);
+  }
+  else if (part === 'osd') { const n = settings.filter(x => x.id.startsWith('bf.osd_') && x.id.endsWith('_pos')); rows.push(['Elements', String(n.length)], ['Shown', String(n.filter(x => (Number(x.value) & 0x800) !== 0).length)], ['System', String(settings.find(x => x.id === 'bf.vcd_video_system')?.value ?? '—')]); }
   else if (part === 'safety') rows.push(['Armed', st?.armed ? 'Yes' : 'No'], ['Blocks', String(st?.armingBlocks.length ?? 0)]);
   if (!rows.length) return null;
   return <dl className="lu-readings">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>;
@@ -99,7 +105,8 @@ export function PartPanel() {
   const main = part === 'motors' ? tests.filter(t => t.id !== 'motor.spin' && t.id !== 'esc.read').slice(0, 0) : tests.slice(0, 3);
   const rest = part === 'motors' ? tests.filter(t => t.id !== 'motor.spin') : tests.slice(3);
   const escSettings = part === 'motors' && motor ? settings.filter(s => s.id.startsWith(`esc.${motor}.`)) : [];
-  const key = featured(part, stack, settings);
+  // OSD positions are edited on the screen picture, not as numbers.
+  const key = featured(part, stack, settings).filter(s => !(part === 'osd' && s.id.endsWith('_pos')));
   const count = settings.filter(s => s.part === part).length;
   const blocks = snap.state?.armingBlocks ?? [];
   return (
