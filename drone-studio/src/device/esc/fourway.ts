@@ -29,7 +29,7 @@ export const ESC_TIMING: EscTiming = { responseMs: 4000, settleMs: 1200, retryMs
 export const BB2 = { size: 0x2000, page: 512, settings: 0x1a00, settingsPage: 13, bootloader: 0x1c00 } as const;
 
 export class FourWay {
-  private buffer = new Uint8Array(0);
+  private buffer: Uint8Array = new Uint8Array(0);
   private pending?: { protocol: 'msp' | 'four'; command: number; address: number; finish: (error?: Error, payload?: Uint8Array) => void };
   private off: () => void;
   /** Set true only inside an approved write session. */

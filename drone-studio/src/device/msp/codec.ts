@@ -22,7 +22,7 @@ export function encodeMspV2(command: number, payload: Uint8Array = new Uint8Arra
 }
 
 export class MspParser {
-  private buffer = new Uint8Array(0);
+  private buffer: Uint8Array = new Uint8Array(0);
   junk = 0;
   push(chunk: Uint8Array): MspFrame[] {
     let b = this.buffer.length ? concat(this.buffer, chunk) : chunk;
