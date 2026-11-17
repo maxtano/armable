@@ -1,6 +1,6 @@
 /* Lucidity service worker: keeps the app itself available offline. It never caches the API, sign-in or MCP. */
 const CACHE = 'lucidity-shell-v1';
-const SHELL = ['/', '/favicon.svg', '/fonts/fonts.css'];
+const SHELL = ['/', '/theme.js', '/favicon.svg', '/fonts/fonts.css'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });

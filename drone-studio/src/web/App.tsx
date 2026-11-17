@@ -20,8 +20,28 @@ import { set, useStore, type View } from './store';
 import { Timeline } from './Timeline';
 
 const VIEWS: [View, typeof Activity, string][] = [['drone', Navigation, 'Drone'], ['signals', Activity, 'Signals'], ['flights', ChartSpline, 'Flights'], ['show', Sparkles, 'Show'], ['sound', AudioLines, 'Sound'], ['settings', SlidersHorizontal, 'Settings'], ['history', HistoryIcon, 'History']];
+const APPEARANCE = 'lucidity.appearance.v1';
+const systemTheme = () => (window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true) ? 'dark' : 'light';
+const chosenTheme = () => { try { const v = localStorage.getItem(APPEARANCE); return v === 'light' || v === 'dark' ? v : undefined; } catch { return undefined; } };
+/** What the bench should open in: the person's own choice, or the system's. */
+export const preferredTheme = () => chosenTheme() ?? systemTheme();
 const theme = () => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
-function toggleTheme() { const next = theme() === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = next; try { localStorage.setItem('lucidity.appearance.v1', next); } catch { /* private mode */ } }
+function applyTheme(next: 'light' | 'dark') {
+  document.documentElement.dataset.theme = next;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', next === 'light' ? '#f6f3ec' : '#161819');
+}
+function toggleTheme() { const next = theme() === 'light' ? 'dark' : 'light'; applyTheme(next); try { localStorage.setItem(APPEARANCE, next); } catch { /* private mode */ } }
+/** Follow the system while the person has expressed no preference of their own. */
+function useSystemTheme() {
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!mq) return;
+    const sync = () => { if (!chosenTheme()) applyTheme(systemTheme()); };
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+}
 
 function AssistantChip() {
   const me = useStore(s => s.me), activity = useStore(s => s.activity), open = useStore(s => s.view === 'connect');
@@ -115,6 +135,7 @@ export function App() {
   const me = useStore(s => s.me), view = useStore(s => s.view), live = useStore(s => s.live);
   const consent = new URLSearchParams(location.search).get('consent');
   useEffect(() => { void start(); }, []);
+  useSystemTheme();
   if (!me) return <div className="lu-boot" />;
   if (!me.signedIn) return <Landing onSignedIn={() => void start()} />;
   if (consent) return <><Consent id={consent} /><Overlays /></>;
