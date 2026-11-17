@@ -9,6 +9,9 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
+    "serve": "node --import tsx server/main.ts",
+    "start": "NODE_ENV=production node --import tsx server/main.ts",
+    "e2e": "playwright test --config e2e/playwright.config.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",

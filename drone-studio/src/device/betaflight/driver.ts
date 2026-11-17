@@ -281,6 +281,9 @@ export class BetaflightDriver extends DriverBase implements Driver {
         await this.withCli(async () => {
           progress?.('Reading settings');
           this.absorbDump(await this.cli('dump', 30000));
+          // `get` with no name lists every setting with its allowed values and range.
+          progress?.('Reading allowed values');
+          for (const info of parseGet(await this.cli('get', 30000))) this.info.set(info.name, info);
           await this.readFeatures();
           this.backup = await this.cli('diff all', 30000);
         });
