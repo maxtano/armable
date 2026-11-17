@@ -19,8 +19,24 @@ export function escImage(firmware: 'BLHeli_S' | 'Bluejay', direction = 1): Uint8
   return image;
 }
 
+/** An AM32 ESC on an STM32F051: bootloader below 0x1000, firmware above, settings at 0x7C00. */
+export function am32Image(direction = 0): Uint8Array {
+  const image = new Uint8Array(0x10000).fill(0xff);
+  image.fill(0xb1, 0, 0x1000);
+  image.set([0x00, 0x20, 0x00, 0x20, 0xc1, 0x10, 0x00, 0x08], 0x1000);
+  for (let i = 0x1008; i < 0x6000; i++) image[i] = (i * 13) & 0xff;
+  const s = new Uint8Array(0xb0);
+  s.set([0x01, 0x02, 0x0c, 2, 13], 0);
+  s.set(new TextEncoder().encode('T-MOTOR 55A '), 0x05);
+  s.set([direction, 0, 1, 1, 0, 1, 2, 24, 100, 55, 14, 0, 0, 5, 1, 0x12, 0xdc, 0x64], 0x11);
+  s[0x24] = 1; s[0x25] = 80; s[0x2b] = 141; s[0x2c] = 102;
+  image.set(s, 0x7c00);
+  return image;
+}
+
 export class EscBank {
   images: Uint8Array[];
+  kinds: ('BLHeli_S' | 'Bluejay' | 'AM32')[];
   selected = -1;
   active = false;
   /** Count of four-way commands seen, by command byte. */
@@ -29,9 +45,11 @@ export class EscBank {
   nackNext = 0;
   private msp = new MspParser();
   private buffer: Uint8Array = new Uint8Array(0);
-  constructor(readonly variant: string, firmwares: ('BLHeli_S' | 'Bluejay')[] = ['Bluejay', 'Bluejay', 'Bluejay', 'Bluejay'], directions: number[] = [1, 1, 2, 1]) {
-    this.images = firmwares.map((f, i) => escImage(f, directions[i] ?? 1));
+  constructor(readonly variant: string, firmwares: ('BLHeli_S' | 'Bluejay' | 'AM32')[] = ['Bluejay', 'Bluejay', 'Bluejay', 'Bluejay'], directions: number[] = [1, 1, 2, 1]) {
+    this.kinds = firmwares;
+    this.images = firmwares.map((f, i) => f === 'AM32' ? am32Image(directions[i] === 2 ? 1 : 0) : escImage(f, directions[i] ?? 1));
   }
+  private arm() { return this.kinds[this.selected] === 'AM32'; }
   /** Feed host bytes. Returns the bytes to send back, or null if they were not for the ESC interface. */
   handle(chunk: Uint8Array): Uint8Array | null {
     const replies: Uint8Array[] = [];
@@ -73,7 +91,7 @@ export class EscBank {
       case 0x37: {
         if (params[0] >= this.images.length) return this.reply(command, address, Uint8Array.of(0, 0, 0, 0), 0x0f);
         this.selected = params[0];
-        return this.reply(command, address, Uint8Array.of(0xb2, 0xe8, 0x64, 1));
+        return this.reply(command, address, this.arm() ? Uint8Array.of(0x06, 0x1f, 0x00, 4) : Uint8Array.of(0xb2, 0xe8, 0x64, 1));
       }
       case 0x3a: {
         const length = params[0] || 256;
@@ -86,6 +104,13 @@ export class EscBank {
         return this.reply(command, address, Uint8Array.of(0));
       }
       case 0x3b: {
+        if (image && this.arm()) {
+          // ARM bootloaders erase a page when a write starts it, and never write below 0x1000.
+          if (address < 0x1000 || address + params.length > image.length) return this.reply(command, address, Uint8Array.of(0), 0x0f);
+          if (address % 1024 === 0) image.fill(0xff, address, address + 1024);
+          image.set(params, address);
+          return this.reply(command, address, Uint8Array.of(0));
+        }
         if (!image || address + params.length > BB2.bootloader) return this.reply(command, address, Uint8Array.of(0), 0x0f);
         params.forEach((byte, i) => { image[address + i] &= byte; });
         return this.reply(command, address, Uint8Array.of(0));

@@ -81,7 +81,7 @@ const UNAVAILABLE: { words: string[]; stacks: Stack[] | 'all'; title: string; re
   { words: ['sd', 'card', 'sdcard'], stacks: ['betaflight', 'inav'], title: 'Logs on an SD card', reason: 'Logs on an SD card cannot be read over USB. Copy the .bbl file off the card and open it in Flights.' },
   { words: ['esc', 'escs', 'passthrough', 'direction'], stacks: ['px4'], title: 'ESC settings', reason: 'ESC passthrough is not available on PX4.' },
   { words: ['arm', 'takeoff', 'launch', 'fly', 'mission', 'land'], stacks: 'all', title: 'Arming and flight', reason: 'Lucidity never arms, launches or flies an aircraft for an assistant. The pilot does that.' },
-  { words: ['am32'], stacks: 'all', title: 'AM32 ESC settings', reason: 'AM32 ESCs are not supported yet. BLHeli_S and Bluejay are.' },
+  { words: ['blheli32', 'blheli_32'], stacks: 'all', title: 'BLHeli_32 ESCs', reason: 'BLHeli_32 is closed firmware and is not supported. BLHeli_S, Bluejay and AM32 are.' },
   { words: ['elrs', 'expresslrs', 'esp', 'esp32', 'receiver', 'flash'], stacks: 'all', title: 'Receiver and radio firmware', reason: 'Flashing receiver or radio firmware is not built yet in the hosted app.' },
 ];
 

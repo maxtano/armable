@@ -42,7 +42,7 @@ export const BETAFLIGHT_SETTINGS: Record<string, Def> = {
 const FEATURES = ['RX_PPM', 'INFLIGHT_ACC_CAL', 'RX_SERIAL', 'MOTOR_STOP', 'SERVO_TILT', 'SOFTSERIAL', 'GPS', 'RANGEFINDER', 'TELEMETRY', '3D', 'RX_PARALLEL_PWM', 'RX_MSP', 'RSSI_ADC', 'LED_STRIP', 'DISPLAY', 'OSD', 'CHANNEL_FORWARDING', 'TRANSPONDER', 'AIRMODE', 'RX_SPI', 'ESC_SENSOR', 'ANTI_GRAVITY'];
 
 export interface BetaflightSimOptions {
-  battery?: number; rxLoss?: boolean; escDirections?: number[];
+  battery?: number; rxLoss?: boolean; escDirections?: number[]; escKinds?: ('BLHeli_S' | 'Bluejay' | 'AM32')[];
   /** Firmware older than 4.5 restarts when the console is left, even without saving. */
   rebootOnExit?: boolean;
   version?: [number, number, number];
@@ -82,7 +82,7 @@ export class BetaflightSim {
   constructor(private options: BetaflightSimOptions = {}) {
     this.battery = options.battery ?? 16.1;
     this.rxLoss = options.rxLoss ?? false;
-    this.escBank = new EscBank('BTFL', ['BLHeli_S', 'BLHeli_S', 'BLHeli_S', 'BLHeli_S'], options.escDirections ?? [1, 2, 1, 1]);
+    this.escBank = new EscBank('BTFL', options.escKinds ?? ['BLHeli_S', 'BLHeli_S', 'BLHeli_S', 'BLHeli_S'], options.escDirections ?? [1, 2, 1, 1]);
     this.saved = this.snapshot();
     const a = syntheticBlackbox(4, 1), b = syntheticBlackbox(3, 0.2);
     this.flash = options.emptyFlash ? new Uint8Array(0) : Uint8Array.from([...a, ...b]);
