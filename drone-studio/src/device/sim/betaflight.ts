@@ -2,6 +2,7 @@ import { fromAscii, latin1, Reader, Writer } from '../bytes';
 import { encodeMsp, encodeMspV2, MSP, MspParser } from '../msp/codec';
 import type { LoopbackEnd } from '../transport';
 import { EscBank } from './esc';
+import { ElrsReceiverSim } from './esp';
 import { syntheticBlackbox } from '../blackbox/encode';
 
 /**
@@ -73,6 +74,9 @@ export class BetaflightSim {
   flash: Uint8Array;
   flashTotal = 16 * 1024 * 1024;
   erasing = 0;
+  receiver = new ElrsReceiverSim();
+  /** Set by `serialpassthrough`: every byte now goes to the receiver until the board is power-cycled. */
+  passthrough?: { port: string; baud: number };
   private port?: LoopbackEnd;
   private msp = new MspParser();
   private cli = false;
@@ -90,6 +94,7 @@ export class BetaflightSim {
   private snapshot() { return { settings: structuredClone(this.settings), features: [...this.features], serial: { ...this.serial }, aux: { ...this.aux }, map: this.map, vtx: [...this.vtxTable] }; }
   /** Plug the (re)started flight controller into a port. */
   attach(port: LoopbackEnd) {
+    this.passthrough = undefined;
     this.port = port; this.cli = false; this.line = ''; this.msp = new MspParser(); this.escBank.active = false;
     port.onData(chunk => this.receive(chunk));
   }
@@ -105,6 +110,7 @@ export class BetaflightSim {
   }
   private receive(chunk: Uint8Array) {
     if (this.inBootloader) return;
+    if (this.passthrough) { const reply = this.receiver.handle(chunk); if (reply.length) this.write(reply); return; }
     if (this.escBank.active) { const reply = this.escBank.handle(chunk); if (reply?.length) this.write(reply); return; }
     if (this.cli) return this.console(latin1(chunk));
     if (chunk.length === 1 && chunk[0] === 0x23) { this.cli = true; this.print('\nEntering CLI Mode, type \'exit\' to return, or \'help\'\n\n# '); return; }
@@ -227,6 +233,12 @@ export class BetaflightSim {
       return '';
     }
     if ((m = command.match(/^vtxtable (powervalues|powerlabels)((?: \w+)*)$/))) { this.vtxTable = [...this.vtxTable.filter(l => !l.startsWith(`vtxtable ${m![1]}`)), command]; return ''; }
+    if ((m = command.match(/^serialpassthrough (\S+) (\d+)$/))) {
+      if (!(m[1] in this.serial)) return '###ERROR IN serialpassthrough: INVALID PORT###';
+      this.passthrough = { port: m[1], baud: Number(m[2]) };
+      this.print(`Port${m[1]} opened, baud = ${m[2]}.\nForwarding, power cycle to exit.\n`);
+      return null;
+    }
     if (command === 'profile 0' || command === 'rateprofile 0') return command;
     if (command === 'save') { this.saved = this.snapshot(); this.print('save\nSaving\nRebooting'); this.reboot(); return null; }
     if (command === 'exit' || command === 'exit noreboot') {

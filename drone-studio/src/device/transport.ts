@@ -11,6 +11,8 @@ export interface ByteTransport {
   onClose(listener: (reason: string) => void): () => void;
   /** Change line speed where that means something. */
   setBaud?(baud: number): Promise<void>;
+  /** Drive the DTR and RTS lines, which USB serial adapters on ESP boards use for reset and boot mode. */
+  setSignals?(signals: { dtr: boolean; rts: boolean }): Promise<void>;
   close(): Promise<void>;
   readonly open: boolean;
 }
@@ -100,6 +102,7 @@ export class WebSerialTransport extends TransportBase implements ByteTransport {
     if (!this.open || !this.writer) throw new DeviceError('disconnected', 'The connection is closed.');
     await this.writer.write(bytes);
   }
+  async setSignals(signals: { dtr: boolean; rts: boolean }) { await this.port.setSignals({ dataTerminalReady: signals.dtr, requestToSend: signals.rts }); }
   async setBaud(baud: number) {
     if (baud === this.baud) return;
     await this.stop();
