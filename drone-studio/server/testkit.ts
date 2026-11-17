@@ -90,7 +90,7 @@ export class Browser {
   async signUp(email = `pilot${Math.random().toString(36).slice(2, 8)}@example.test`, password = 'correct horse') { const r = await this.post('/api/signup', { email, password }); if (r.status !== 200) throw new Error(`signup failed: ${JSON.stringify(r.json)}`); return email; }
 
   /** Connect an assistant the way a real one does: register, send the person to approve, exchange the code. */
-  async connectAssistant(name = 'Claude', scope = 'observe design propose', allow = true) {
+  async connectAssistant(name = 'Claude', scope = 'observe design propose', allow = true): Promise<ConnectResult> {
     const redirect = 'http://localhost:9/callback';
     const registered = await (await fetch(`${this.base}/register`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_name: name, redirect_uris: [redirect], token_endpoint_auth_method: 'none', grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] }) })).json() as { client_id: string };
     const verifier = randomBytes(32).toString('base64url');
@@ -107,6 +107,7 @@ export class Browser {
     return { clientId: registered.client_id, details, code, verifier, redirect, ...tokens };
   }
 }
+export interface ConnectResult { clientId: string; started?: { status: number; json: any; location: string | null }; details?: any; denied?: string | null; code?: string; verifier?: string; redirect?: string; access_token?: string; refresh_token?: string }
 /** An assistant: an MCP client holding a bearer token. */
 export async function assistant(base: string, token: string, name = 'Claude') {
   const client = new Client({ name, version: '1.0.0' });

@@ -1,0 +1,122 @@
+import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { assistant, Browser, startApp } from '../server/testkit';
+
+/**
+ * End to end: the built interface in a real browser, a real MCP assistant over HTTP, and a demo drone in the tab.
+ * Needs `npm run build` first and Playwright with Chromium installed. Skipped otherwise, unless E2E=1 demands it.
+ */
+vi.setConfig({ testTimeout: 90_000, hookTimeout: 30_000 });
+// Playwright is resolved at run time so the suite works where it is installed globally.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PW = any;
+let pw: PW | undefined;
+try { pw = createRequire(import.meta.url)('playwright') as PW; } catch { pw = undefined; }
+const ready = !!pw && existsSync('dist/index.html');
+if (!ready && process.env.E2E) throw new Error('E2E=1 but Playwright or the build (dist/) is missing.');
+
+describe.skipIf(!ready)('Lucidity in a browser', () => {
+  let app: Awaited<ReturnType<typeof startApp>>;
+  let browser: any;
+  beforeAll(async () => { app = await startApp(undefined, 'dist'); browser = await pw!.chromium.launch(); });
+  afterAll(async () => { await browser?.close(); await app?.close(); });
+
+  async function signedInPage(width = 1440, height = 900) {
+    const context = await browser.newContext({ viewport: { width, height } });
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (e: Error) => errors.push(e.message));
+    await page.goto(app.base);
+    await expect(page.getByRole('heading', { name: /Your drone/ })).toBeTruthy();
+    await page.fill('input[type=email]', `e2e${Date.now()}${Math.random().toString(36).slice(2, 6)}@example.test`);
+    await page.fill('input[type=password]', 'correct horse');
+    await page.click('button:has-text("Create account")');
+    await page.waitForSelector('[data-demo=ardupilot]');
+    return { page, context, errors };
+  }
+
+  it('explains itself before sign-in, in few words', async () => {
+    const page = await browser.newPage();
+    await page.goto(app.base);
+    const text = await page.locator('.in-hero').innerText();
+    expect(text).toContain('One bench.');
+    expect(text.split(/\s+/).length).toBeLessThan(70);
+    expect(await page.locator('.in-drone').count()).toBe(1);
+    await page.close();
+  });
+
+  it('connects a demo drone, draws it from its configuration, and changes a setting by hand with readback', async () => {
+    const { page, errors } = await signedInPage();
+    await page.click('[data-demo=ardupilot]');
+    await page.waitForSelector('.lu-status.is-connected');
+    await page.waitForFunction(() => document.querySelectorAll('[data-motor]').length === 4 && !document.querySelector('.dg-unknown'));
+    expect(await page.locator('.dg-caption').textContent()).toContain('Quad X');
+    await page.click('[aria-label^="Battery"]');
+    const capacity = page.locator('[data-setting="param.BATT_CAPACITY"]');
+    await capacity.waitFor();
+    await capacity.getByRole('button', { name: /Raise/ }).click();
+    await capacity.getByRole('button', { name: /Apply/ }).click();
+    await page.waitForSelector('.lu-toast.is-ok');
+    expect(await page.locator('.lu-toast').innerText()).toMatch(/confirmed by reading back/);
+    await page.waitForFunction(() => (document.querySelector('[data-setting="param.BATT_CAPACITY"] input') as HTMLInputElement | null)?.value === '1350');
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+
+  it('lets an assistant find, propose and wait, while the person approves on the motor itself', async () => {
+    const { page, context, errors } = await signedInPage();
+    await page.click('[data-demo=ardupilot]');
+    await page.waitForSelector('.lu-status.is-connected');
+    // Connect an assistant with this person's session, the way an assistant app would.
+    const person = new Browser(app.base);
+    person.cookie = (await context.cookies()).map((c: { name: string; value: string }) => `${c.name}=${c.value}`).join('; ');
+    const grant = await person.connectAssistant('Claude');
+    const claude = await assistant(app.base, grant.access_token!);
+    try {
+      expect((await claude.call('get_workspace')).aircraft).toMatchObject({ connected: true, stack: 'ardupilot' });
+      expect((await claude.call('find', { query: 'motor spins the wrong way' })).hits[0].id).toBe('play.motor-wrong-way');
+      await claude.call('read', { ids: ['settings.load'] });
+
+      // Reading the ESCs is itself a hardware action: the person confirms it on screen.
+      const read = await claude.call('run_test', { id: 'esc.read', reason: 'To see each motor direction.' });
+      await page.waitForSelector(`[data-proposal="${read.proposal}"]`);
+      for (const label of ['Props removed', 'Direct USB', 'Battery connected']) await page.locator(`[data-proposal="${read.proposal}"] label:has-text("${label}")`).click();
+      await page.locator(`[data-proposal="${read.proposal}"] button:has-text("Approve")`).click();
+      expect((await claude.call('wait', { proposal: read.proposal })).status).toBe('done');
+
+      const proposal = await claude.call('propose_change', { changes: [{ id: 'esc.3.direction', value: 'normal' }], reason: 'Motor 3 turns the wrong way.' });
+      // Follow mode takes the person to motor 3, where the ghost arrow and the Approve button appear.
+      await page.waitForSelector('[data-motor="3"].needs-you .dg-ghost');
+      const card = page.locator(`[data-proposal="${proposal.proposal}"]`);
+      await card.waitFor();
+      expect(await card.innerText()).toMatch(/Claude[\s\S]*reversed[\s\S]*normal[\s\S]*Motor 3 turns the wrong way/i);
+      const approveButton = card.getByRole('button', { name: 'Approve' });
+      expect(await approveButton.isDisabled()).toBe(true);
+      await card.locator('label:has-text("Props removed")').click();
+      await card.locator('label:has-text("Direct USB")').click();
+      const waiting = claude.call('wait', { proposal: proposal.proposal, seconds: 30 });
+      await approveButton.click();
+      expect(await waiting).toMatchObject({ status: 'done', result: { ok: true, changes: [{ before: 'reversed', after: 'normal', ok: true }] } });
+      await page.waitForSelector('[data-motor="3"]:not(.needs-you)');
+      expect((await claude.call('read', { ids: ['esc.3.direction'] })).values[0].value).toBe('normal');
+      // The timeline shows both sides.
+      expect(await page.locator('.lu-dot.is-assistant').count()).toBeGreaterThan(0);
+      expect(await page.locator('.lu-dot.kind-change').count()).toBeGreaterThan(0);
+      expect(errors).toEqual([]);
+    } finally { await claude.close(); await page.close(); }
+  });
+
+  it('works at phone width', async () => {
+    const { page, errors } = await signedInPage(390, 844);
+    await page.click('[data-demo=betaflight]');
+    await page.waitForSelector('.lu-status.is-connected');
+    await page.click('[data-motor="1"]');
+    await page.waitForSelector('.lu-panel');
+    const box = await page.locator('.lu-panel').boundingBox();
+    expect(box!.width).toBeLessThanOrEqual(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    expect(errors).toEqual([]);
+    await page.close();
+  });
+});
