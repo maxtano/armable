@@ -42,7 +42,7 @@ flowchart LR
 | Backups | Snapshot, compare, restore | Snapshot and compare |
 | Flight logs | Blackbox download, decode and analyse | Download and analyse |
 
-**No drone yet? Build one.** In the Build view your assistant asks what you want to fly, picks parts that work together from a catalog, and checks today’s prices online. Each part has store links and a price, and every edit shows compatibility checks, cost, weight, thrust-to-weight and flight time. Swap any part, add parts you found, start from one of six proven builds, and compare builds side by side.
+**No drone yet? Build one.** The Build view is a parts sheet: choose what you want to fly, pick parts from a catalog or add your own, and see store links and prices for each. Every change shows compatibility checks, cost against budget, weight, thrust-to-weight and flight time. Swap any part for a ranked alternative, start from one of six proven builds, and compare builds side by side. An assistant open next to Lucidity can work on the same build through its tools.
 
 Plus history of every change and test, standing permissions for small changes, offline use, shows (3D storyboards), startup sounds, and a demo drone for each stack. Everything an assistant does is recorded in Postgres tables you can query.
 

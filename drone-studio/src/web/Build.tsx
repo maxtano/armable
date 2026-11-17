@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeftRight, Bot, Check, ChevronDown, Copy, ExternalLink, PackageCheck, Plus, Search, Sparkles, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeftRight, Bot, Check, ChevronDown, ExternalLink, PackageCheck, Plus, Search, Sparkles, Trash2, X } from 'lucide-react';
 import { alternatives, analyse, cellRange, compareBuilds, emptyBuild, provenBuild, resolve, SLOT_LABEL, SLOTS, STYLES, type Build as BuildDoc, type BuildOp, type Check as BuildCheck, type Fit, type Goal, type Item } from '../build/build';
 import { PROVEN, type Category, type Video } from '../build/catalog';
 import { api, ApiError } from './cloud';
-import { go, publishFocus, refreshDocs } from './controller';
+import { publishFocus, refreshDocs } from './controller';
 import { set, toast, useStore } from './store';
 import './build.css';
 
 /**
- * Build a drone. The person and their assistant edit the same build document: the assistant through its tools,
- * the person with the controls here. Both go through the same operations, so the checks, cost and weight agree.
+ * Build a drone. The controls here and an assistant's tools edit the same build through the same operations,
+ * so the checks, cost and weight agree.
  */
 
 type Loaded = { id: string; revision: number; name: string; content: BuildDoc };
@@ -17,12 +17,6 @@ const money = (n: number) => `$${n.toLocaleString('en-US', { maximumFractionDigi
 const VIDEOS: [Video, string][] = [['analog', 'Analog'], ['dji', 'DJI'], ['walksnail', 'Walksnail'], ['hdzero', 'HDZero']];
 const STYLE_LABEL: Record<string, string> = { freestyle: 'Freestyle', cinematic: 'Cinematic', 'long-range': 'Long range', racing: 'Racing', whoop: 'Tiny whoop', other: 'Other' };
 const SIZES = [1.6, 2.5, 3, 3.5, 5, 7];
-const STARTERS = [
-  'My first 5" freestyle quad, about $400. I have nothing yet.',
-  'A 7" long-range quad with GPS and DJI video.',
-  'A tiny whoop to learn on indoors.',
-  'Something under 250 g that films in 4K.',
-];
 const ago = (at: number) => { const s = Math.round((Date.now() - at) / 1000); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : new Date(at).toLocaleDateString(); };
 
 async function createBuild(name: string, operations: BuildOp[]): Promise<string> {
@@ -54,7 +48,7 @@ export function Build() {
       setLoaded({ ...loaded, revision: saved.revision, content: saved.content, name: name ?? loaded.name });
       void refreshDocs();
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'stale') { toast('Your assistant changed this build at the same moment. Showing its version; try again.', 'info'); set(s => ({ docRevision: s.docRevision + 1 })); }
+      if (error instanceof ApiError && error.code === 'stale') { toast('This build changed at the same moment. Showing the latest version; try again.', 'info'); set(s => ({ docRevision: s.docRevision + 1 })); }
       else toast(error instanceof Error ? error.message : 'That did not work.', 'bad');
     }
   };
@@ -70,10 +64,7 @@ export function Build() {
         </div>
       </header>
       {tab === 'proven' ? <ProvenList /> : tab === 'compare' ? <Compare current={loaded} /> : !docs.length ? <Start /> : (
-        <div className="bd-work">
-          {loaded ? <Sheet build={loaded} apply={apply} docs={docs} /> : <div className="lu-empty"><h2>Loading the build</h2></div>}
-          <Assistant build={loaded} />
-        </div>
+        loaded ? <Sheet build={loaded} apply={apply} docs={docs} /> : <div className="lu-empty"><h2>Loading the build</h2></div>
       )}
     </section>
   );
@@ -95,7 +86,7 @@ function Start() {
     <div className="bd-start">
       <div className="bd-start-copy">
         <h2>Don’t have a drone? <em>Build one.</em></h2>
-        <p>Say what you want to fly. Your assistant picks parts that work together, checks today’s prices, and fills in the build here while you watch. You can swap anything.</p>
+        <p>Say what you want to fly. Pick parts that work together, see what they cost and where to buy them, and swap anything.</p>
       </div>
       <div className="lu-card bd-goal-card">
         <h3>What do you want to fly?</h3>
@@ -175,7 +166,7 @@ function Sheet({ build, apply, docs }: { build: Loaded; apply: (ops: BuildOp[], 
           return <EmptyRow key={slot.id} label={slot.label} optional onPick={() => setPicking(slot.id)} lit={focus.includes(slot.id)} />;
         })}
       </div>
-      <p className="lu-hint">Prices marked “typical” are a guide, not live. Prices your assistant looked up show where and when it saw them. Store links search each shop for the part.</p>
+      <p className="lu-hint">Prices marked “typical” are a guide, not live. Prices someone looked up show where and when they were seen. Store links search each shop for the part.</p>
       {picking && <Picker build={b} category={picking} onClose={() => setPicking(undefined)} apply={async ops => { await apply(ops); setPicking(undefined); }} />}
     </div>
   );
@@ -259,7 +250,7 @@ function Picker({ build, category, onClose, apply }: { build: BuildDoc; category
             {current && <p className="lu-hint">Now: <b>{resolve(current).brand} {resolve(current).name}</b>. Best fit first, then cheapest; differences are for this build.</p>}
             <label className="lu-search"><Search size={15} /><input autoFocus placeholder="Search" value={query} onChange={e => setQuery(e.target.value)} /></label>
             <ul className="bd-options">{shown.map(f => <Option key={f.part.id} fit={f} swap={!!current} onAdd={() => apply([{ op: 'add', part: f.part.id }])} />)}</ul>
-            {!shown.length && <p className="lu-hint">Nothing in the catalog matches. Add a part you found instead, or ask your assistant to research one.</p>}
+            {!shown.length && <p className="lu-hint">Nothing in the catalog matches. Add a part you found instead.</p>}
           </>
         ) : <CustomForm category={category} onAdd={op => apply([op])} />}
       </div>
@@ -294,7 +285,6 @@ function CustomForm({ category, onAdd }: { category: Category; onAdd: (op: Build
       <div className="lu-row"><label>Price (USD)<input inputMode="decimal" {...field('price')} /></label><label>Weight (g)<input inputMode="decimal" {...field('weight')} /></label></div>
       <label>Link<input type="url" placeholder="https://" {...field('url')} /></label>
       <button className="lu-btn is-primary" disabled={!valid}><Plus size={14} /> Add to the build</button>
-      <p className="lu-hint">Checks use what Lucidity knows about a part; for parts not in the catalog, ask your assistant to fill in the specs.</p>
     </form>
   );
 }
@@ -303,7 +293,7 @@ function CustomForm({ category, onAdd }: { category: Category; onAdd: (op: Build
 
 function ProvenList({ compact }: { compact?: boolean }) {
   const [open, setOpen] = useState<string>();
-  const start = async (id: string, name: string) => { await createBuild(name, [{ op: 'from', build: id }]); set({ buildTab: 'mine' }); toast(`Started from “${name}”. Change anything, or ask your assistant to tailor it.`, 'ok'); };
+  const start = async (id: string, name: string) => { await createBuild(name, [{ op: 'from', build: id }]); set({ buildTab: 'mine' }); toast(`Started from “${name}”. Change anything you like.`, 'ok'); };
   return (
     <div className={`bd-proven${compact ? ' is-compact' : ''}`}>
       {PROVEN.map(p => {
@@ -351,44 +341,6 @@ function Compare({ current }: { current?: Loaded }) {
           {table.rows.map(row => [<span key={row.label} role="rowheader">{row.label}</span>, ...row.values.map((v, i) => <span key={`${row.label}${i}`} role="cell" className={row.best === i ? 'is-best' : ''}>{v ?? '—'}</span>)])}
         </div>
       )}
-      <p className="lu-hint">Or ask your assistant: “Compare my build with the {PROVEN[1].name}, and tell me where the money goes.”</p>
     </div>
   );
 }
-
-// ---- The assistant -----------------------------------------------------------------------------------------------
-
-function Assistant({ build }: { build?: Loaded }) {
-  const me = useStore(s => s.me), [text, setText] = useState(''), [copied, setCopied] = useState(false);
-  const names = me?.assistants?.map(a => a.name) ?? [];
-  const log = build?.content.log ?? [], thread = useRef<HTMLOListElement>(null);
-  useEffect(() => { thread.current?.scrollTo({ top: thread.current.scrollHeight }); }, [log.length]);
-  const prompt = (t: string) => `Using Lucidity, help me build a drone. Work on my build "${build?.name ?? ''}"${build ? ` (${build.id})` : ''}: ask me anything you need, search parts, check today’s prices online, and add parts to the build with your Lucidity tools. ${t}`.trim();
-  const open = (where: 'claude' | 'chatgpt') => { const q = encodeURIComponent(prompt(text)); window.open(where === 'claude' ? `https://claude.ai/new?q=${q}` : `https://chatgpt.com/?q=${q}`, '_blank', 'noopener'); };
-  const copy = async () => { await navigator.clipboard.writeText(prompt(text)).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); };
-  return (
-    <aside className="bd-ai" aria-label="Build with your assistant">
-      <header><span className="lu-assistant-ring"><Bot size={16} /></span><div><b>Build with your assistant</b><small>{names.length ? `${names.join(', ')} connected` : 'No assistant connected'}</small></div></header>
-      {!names.length && <div className="bd-ai-connect"><p>Connect Claude or ChatGPT once. Then just talk: it picks parts, checks prices and fills this build in.</p><button className="lu-btn is-primary" onClick={() => go('connect')}>Connect an assistant</button></div>}
-      <ol className="bd-thread" aria-live="polite" ref={thread}>
-        {!log.length && <li className="is-empty">What you and your assistant change shows up here.</li>}
-        {log.slice(-60).map((l, i) => (
-          <li key={`${l.at}${i}`} className={`is-${l.kind}${l.by === 'you' ? ' is-you' : ''}`}>
-            {l.kind === 'note' ? <><small>{l.by === 'you' ? 'You' : l.by}</small><p>{l.text}</p></> : <><span>{l.text}</span><small>{l.by === 'you' ? 'You' : l.by} · {ago(l.at)}</small></>}
-          </li>
-        ))}
-      </ol>
-      <div className="bd-compose">
-        <nav className="bd-starters">{STARTERS.map(s => <button key={s} onClick={() => setText(s)}>{s}</button>)}</nav>
-        <textarea rows={3} value={text} onChange={e => setText(e.target.value)} placeholder="Tell it what you want to fly, your budget, what you already own…" aria-label="Message for your assistant" />
-        <div className="lu-row">
-          <button className="lu-btn is-primary" onClick={() => open('claude')}>Ask Claude</button>
-          <button className="lu-btn" onClick={() => open('chatgpt')}>Ask ChatGPT</button>
-          <button className="lu-icon" onClick={copy} aria-label="Copy the message" title="Copy, for any other assistant">{copied ? <Check size={15} /> : <Copy size={15} />}</button>
-        </div>
-        <p className="lu-hint">Your assistant runs on your own subscription. Lucidity never sees your chat, only the changes it makes to this build.</p>
-      </div>
-    </aside>
-  );
-}
-

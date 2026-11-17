@@ -107,7 +107,7 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     } finally { await claude.close(); await page.close(); }
   });
 
-  it('helps someone with no drone build one: the assistant fills the build in while the person watches and swaps parts', async () => {
+  it('lets someone with no drone build one: parts appear live, and the person swaps and compares them', async () => {
     const { page, context, errors } = await signedInPage();
     await page.click('.lu-build-cta');
     await page.click('button:has-text("Start my build")');
@@ -120,7 +120,7 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
       const build = (await claude.call('get_workspace')).documents.find((d: { kind: string }) => d.kind === 'build');
       const edited = await claude.call('edit', { document: build.id, baseRevision: build.revision, operations: [{ op: 'from', build: 'proven.5in-analog-starter' }, { op: 'note', text: 'Starting from the analog starter: cheap spares while you learn.' }] });
       expect(edited.checks.complete).toBe(true);
-      await page.waitForSelector('.bd-thread li.is-note:has-text("cheap spares")');
+      await page.waitForSelector('.bd-row:has-text("Source One")');
       expect(await page.locator('.bd-row:not(.is-empty)').count()).toBe(9);
       await page.click('[aria-label="Swap the Motors"]');
       await page.click('.bd-option:has-text("Velox") button:has-text("Swap in")');
