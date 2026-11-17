@@ -232,7 +232,7 @@ describe('an assistant working with a connected Betaflight aircraft', () => {
     expect(outcome.changes!.map(c => c.note)).toEqual(['Saved and confirmed after the restart.', 'Saved and confirmed after the restart.']);
     expect(bench.sim.reboots).toBe(1);
     expect((await call('wait', { proposal: p.proposal })).status).toBe('done');
-    expect((await call('find', { query: 'download flight log blackbox' })).hits.some((h: any) => h.kind === 'unavailable')).toBe(true);
+    expect((await call('find', { query: 'analyse flight log blackbox' })).hits.some((h: any) => h.id === 'logs.analyze')).toBe(true);
   });
 });
 

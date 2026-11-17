@@ -3,7 +3,10 @@ import { ascii, deferred, DeviceError, latin1, Reader, round, sleep, Writer } fr
 import { escSettings, ESC_TIMING, FourWay, type EscRead, type EscTiming } from '../esc/fourway';
 import { flashEscs, readAllEscs, writeEscChanges, type EscSession } from '../esc/session';
 import { requireGrant } from '../mavlink/driver';
-import { encodeMsp, MSP, MspParser, type MspFrame } from '../msp/codec';
+import { encodeMsp, encodeMspV2, MSP, MspParser, type MspFrame } from '../msp/codec';
+import { analyzeBlackbox } from '../blackbox/analyze';
+import { decodeAll, type BlackboxLog } from '../blackbox/decode';
+import type { FlightLogAnalysis } from '../../aircraft/dataflash-analysis';
 import type { ByteTransport } from '../transport';
 import {
   DriverBase, type Airframe, type Change, type ChangeResult, type Driver, type EscInfo, type Health, type Identity, type LiveState,
@@ -43,6 +46,8 @@ export class BetaflightDriver extends DriverBase implements Driver {
   private loaded: 'none' | 'loading' | 'partial' | 'complete' = 'none';
   private backup = '';
   private escReads: EscRead[] = [];
+  private flash?: { bytes: Uint8Array; logs: BlackboxLog[] };
+  private analysed?: { id: number; analysis: FlightLogAnalysis };
   private offs: (() => void)[] = [];
   private poll?: ReturnType<typeof setInterval>;
   private pollBusy = false;
@@ -80,14 +85,14 @@ export class BetaflightDriver extends DriverBase implements Driver {
     if (frame.direction === '!') next.reject(new DeviceError('unsupported', `The flight controller does not support request ${frame.command}.`));
     else next.resolve(frame.payload);
   }
-  private request(command: number, payload?: Uint8Array, timeoutMs = this.timing.mspMs): Promise<Uint8Array> {
+  private request(command: number, payload?: Uint8Array, timeoutMs = this.timing.mspMs, v2 = false): Promise<Uint8Array> {
     if (this.closedReason) return Promise.reject(new DeviceError('disconnected', 'The aircraft is not connected.'));
     if (this.mode !== 'msp') return Promise.reject(new DeviceError('busy', 'The link is busy with another task.'));
     const d = deferred<Uint8Array>(timeoutMs, 'The flight controller did not answer.');
     const entry = { command, resolve: d.resolve, reject: d.reject };
     this.mspQueue.push(entry);
     d.promise.catch(() => { const at = this.mspQueue.indexOf(entry); if (at >= 0) this.mspQueue.splice(at, 1); });
-    this.transport.write(encodeMsp(command, payload)).catch(error => d.reject(error instanceof Error ? error : new DeviceError('disconnected', 'Write failed.')));
+    this.transport.write(v2 ? encodeMspV2(command, payload) : encodeMsp(command, payload)).catch(error => d.reject(error instanceof Error ? error : new DeviceError('disconnected', 'Write failed.')));
     return d.promise;
   }
   private onClosed(reason: string) {
@@ -419,6 +424,9 @@ export class BetaflightDriver extends DriverBase implements Driver {
       { id: 'diagnostics.full', name: 'Full check', part: 'fc', level: 0, seconds: 3, needs: [], proves: 'Link, sensors, arming checks, radio and battery, in one pass.' },
       { id: 'settings.snapshot', name: 'Settings snapshot', part: 'fc', level: 0, seconds: 10, needs: [], proves: 'A complete copy of every setting, for backup or comparison.' },
       { id: 'settings.restore', name: 'Restore a backup', part: 'fc', level: 2, seconds: 30, needs: [], interactive: true, proves: 'Settings match a saved backup file.', args: [{ name: 'file', type: 'file', required: true }] },
+      { id: 'logs.list', name: 'Check log storage', part: 'logging', level: 0, seconds: 1, needs: [], proves: 'How much of the onboard blackbox flash is used.' },
+      { id: 'logs.analyze', name: 'Analyse a flight log', part: 'logging', level: 0, seconds: 60, needs: [], proves: 'Vibration, stick tracking, throttle and battery behaviour during a recorded flight.', args: [{ name: 'log', type: 'number', min: 1 }] },
+      { id: 'logs.erase', name: 'Erase blackbox flash', part: 'logging', level: 2, seconds: 30, needs: [], proves: 'The onboard log storage is empty and ready to record.' },
       { id: 'esc.read', name: 'Read ESCs', part: 'motors', level: 2, seconds: 8, needs: ['propsRemoved', 'directUsb', 'batteryConnected'], proves: 'Firmware and settings of each ESC, including spin direction.' },
       { id: 'cal.accel', name: 'Accelerometer calibration', part: 'fc', level: 2, seconds: 4, needs: ['level', 'still'], proves: 'The flight controller knows which way is level.' },
       { id: 'cal.compass', name: 'Compass calibration', part: 'compass', level: 2, seconds: 30, needs: [], interactive: true, proves: 'Compass offsets are measured while you turn the aircraft through every direction.' },
@@ -502,6 +510,35 @@ export class BetaflightDriver extends DriverBase implements Driver {
         if (!this.closedReason) { this.mode = 'msp'; this.msp.reset(); this.expectingReboot = false; this.emit({ type: 'reconnect-needed', reason: 'The flight controller saved and restarted.' }); }
         return this.result(id, errors.length === 0, errors.length ? `${lines.length - errors.length} of ${lines.length} lines applied. ${errors.length} were refused.` : `${lines.length} lines applied and saved.`, { applied: lines.length - errors.length, refused: errors.slice(0, 20) });
       });
+      case 'logs.list': return this.exclusive('checking logs', async () => {
+        const f = await this.flashSummary();
+        return this.result(id, true, f.used ? `${Math.round(f.used / 1024)} KB of ${Math.round(f.total / 1024)} KB used${this.flash ? `, ${this.flash.logs.length} flight${this.flash.logs.length === 1 ? '' : 's'} downloaded` : ''}.` : 'The log storage is empty.', { ...f, logs: this.logs() });
+      });
+      case 'logs.analyze': return this.exclusive('downloading logs', async () => {
+        if (!this.flash) await this.downloadFlash(ctx);
+        const logs = this.flash!.logs;
+        if (!logs.length) throw new DeviceError('invalid', 'No flights were found in the log storage.');
+        const wanted = args.log === undefined ? logs.length : Number(args.log);
+        const log = logs[wanted - 1];
+        if (!log) throw new DeviceError('invalid', `There is no flight ${wanted}.`, `Available: 1 to ${logs.length}.`);
+        this.analysed = { id: wanted, analysis: analyzeBlackbox(log) };
+        this.emit({ type: 'settings' });
+        return this.result(id, true, `Flight ${wanted} of ${logs.length} analysed (${Math.round(log.stats.bytes / 1024)} KB, ${log.frames.length} samples).`, { log: wanted, analysis: this.analysed.analysis });
+      });
+      case 'logs.erase': return this.exclusive('erasing logs', async () => {
+        this.ready();
+        await this.request(MSP.DATAFLASH_ERASE, undefined, 4000);
+        const end = this.now() + 120_000;
+        for (;;) {
+          await sleep(Math.min(500, this.timing.pollMs * 5));
+          const f = await this.flashSummary().catch(() => undefined);
+          if (f?.ready && f.used === 0) break;
+          if (this.now() > end) throw new DeviceError('timeout', 'Erasing did not finish in two minutes.');
+        }
+        this.flash = undefined; this.analysed = undefined;
+        this.emit({ type: 'settings' });
+        return this.result(id, true, 'Log storage erased.');
+      });
       case 'esc.read': return this.exclusive('reading ESCs', async () => { const { reads, result } = await readAllEscs(this.session, ctx, this.now); this.escReads = reads; this.emit({ type: 'settings' }); return result; });
       case 'esc.flash': return this.exclusive('flashing ESCs', async () => { const { reads, result } = await flashEscs(this.session, ctx, this.now, args.esc === undefined ? undefined : Number(args.esc), this.escReads); this.escReads = reads; this.emit({ type: 'settings' }); return result; });
       case 'cal.accel': return this.exclusive('calibrating', async () => { this.ready(); await this.request(MSP.ACC_CALIBRATION, undefined, 4000); await sleep(Math.min(2500, this.timing.rebootMs)); return this.result(id, true, 'Accelerometer calibration finished.'); });
@@ -534,6 +571,31 @@ export class BetaflightDriver extends DriverBase implements Driver {
       default: throw new DeviceError('unsupported', `"${id}" is not implemented.`);
     }
   }
-  logs(): LogEntry[] { return []; }
-  lastLogAnalysis() { return undefined; }
+  logs(): LogEntry[] { return this.flash?.logs.map(l => ({ id: l.index, size: l.stats.bytes })) ?? []; }
+  lastLogAnalysis() { return this.analysed; }
+  private async flashSummary() {
+    const r = new Reader(await this.request(MSP.DATAFLASH_SUMMARY));
+    const flags = r.u8(), sectors = r.u32(), total = r.u32(), used = r.u32();
+    if (!(flags & 2)) throw new DeviceError('unsupported', 'This flight controller has no onboard log flash.', 'If it logs to an SD card, copy the .bbl file off the card and open it in Flights.');
+    return { ready: (flags & 1) === 1, sectors, total, used };
+  }
+  /** Read the used part of the log flash in 4 KB pieces over MSP v2, then split it into flights. */
+  private async downloadFlash(ctx: RunContext) {
+    this.ready(false);
+    const f = await this.flashSummary();
+    if (!f.used) throw new DeviceError('invalid', 'The log storage is empty.', 'Fly with blackbox logging on, then try again.');
+    const bytes = new Uint8Array(f.used);
+    for (let at = 0; at < f.used;) {
+      if (ctx.signal?.aborted) throw new DeviceError('rejected', 'Download cancelled.');
+      const size = Math.min(4096, f.used - at);
+      const w = new Writer().u32(at).u16(size).u8(0).done();
+      const r = new Reader(await this.request(MSP.DATAFLASH_READ, w, 3000, true));
+      const address = r.u32(), length = r.u16(), compression = r.u8();
+      if (address !== at || compression !== 0 || length === 0) throw new DeviceError('mismatch', 'The flight controller sent an unexpected piece of the log.');
+      bytes.set(r.bytesOf(Math.min(length, f.used - at)), at);
+      at += length;
+      ctx.progress?.('Downloading logs', at, f.used);
+    }
+    this.flash = { bytes, logs: decodeAll(bytes) };
+  }
 }

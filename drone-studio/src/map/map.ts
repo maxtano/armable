@@ -76,7 +76,7 @@ export const READINGS: ReadingDef[] = [
 
 /** Things people ask for that this aircraft cannot do yet, with the reason. Shown instead of silence. */
 const UNAVAILABLE: { words: string[]; stacks: Stack[] | 'all'; title: string; reason: string }[] = [
-  { words: ['log', 'logs', 'blackbox', 'flight'], stacks: ['betaflight', 'inav'], title: 'Flight log download', reason: 'Blackbox download is not built yet for Betaflight. Logs can be read on ArduPilot.' },
+  { words: ['sd', 'card', 'sdcard'], stacks: ['betaflight', 'inav'], title: 'Logs on an SD card', reason: 'Logs on an SD card cannot be read over USB. Copy the .bbl file off the card and open it in Flights.' },
   { words: ['esc', 'escs', 'passthrough', 'direction'], stacks: ['px4'], title: 'ESC settings', reason: 'ESC passthrough is not available on PX4.' },
   { words: ['arm', 'takeoff', 'launch', 'fly', 'mission', 'land'], stacks: 'all', title: 'Arming and flight', reason: 'Lucidity never arms, launches or flies an aircraft for an assistant. The pilot does that.' },
   { words: ['am32'], stacks: 'all', title: 'AM32 ESC settings', reason: 'AM32 ESCs are not supported yet. BLHeli_S and Bluejay are.' },
