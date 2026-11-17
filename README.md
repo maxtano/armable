@@ -62,6 +62,8 @@ npm test                         # unit and integration tests
 
 Assistants connect to `<your address>/mcp`. Set `PUBLIC_URL` to the address people use.
 
+**On AWS:** Terraform in [`infra/aws`](infra/aws/README.md) sets up CloudFront, a load balancer, ECS Fargate and RDS Postgres, plus keyless deploys from GitHub. About $45 a month.
+
 <details>
 <summary>Status and limits</summary>
 

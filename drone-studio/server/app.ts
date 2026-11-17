@@ -19,7 +19,7 @@ import type { Store } from './store';
  * Two kinds of caller reach it. A person's browser carries a session cookie and can approve. An assistant
  * carries a bearer token and can only use the tools. The approve route accepts the cookie and nothing else.
  */
-export interface AppOptions { store: Store; publicUrl: string; staticDir?: string; quiet?: boolean; limits?: boolean }
+export interface AppOptions { store: Store; publicUrl: string; staticDir?: string; quiet?: boolean; limits?: boolean; trustProxy?: number }
 const COOKIE = 'lucidity_session';
 const cookie = {
   parse(header: string): Record<string, string> {
@@ -41,7 +41,7 @@ export function createApp(options: AppOptions) {
   const auth = new Auth(store);
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
+  app.set('trust proxy', options.trustProxy ?? 1);
 
   const sessionToken = (req: IncomingMessage) => cookie.parse(req.headers.cookie ?? '')[COOKIE];
   const provider = new OAuthProvider(auth, store, res => auth.session(sessionToken(res.req)), publicUrl.href);

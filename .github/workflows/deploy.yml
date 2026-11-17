@@ -1,0 +1,43 @@
+name: Deploy to AWS
+# Builds the image, pushes it to ECR and rolls the ECS service. Runs only once the repository variables
+# from `terraform output` are set (see infra/aws/README.md). Signs in with GitHub OIDC; no AWS keys are stored.
+on:
+  push:
+    branches: [main]
+    paths: ['drone-studio/**', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: deploy-aws
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: vars.AWS_DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: drone-studio
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: |
+            ${{ vars.ECR_REPOSITORY_URL }}:${{ github.sha }}
+            ${{ vars.ECR_REPOSITORY_URL }}:latest
+      - name: Roll the service onto the new image
+        run: |
+          aws ecs update-service --cluster "${{ vars.ECS_CLUSTER }}" --service "${{ vars.ECS_SERVICE }}" --force-new-deployment > /dev/null
+          aws ecs wait services-stable --cluster "${{ vars.ECS_CLUSTER }}" --services "${{ vars.ECS_SERVICE }}"
+      - name: Check it answers
+        run: curl -fsS "${{ vars.LUCIDITY_URL }}/api/me"
