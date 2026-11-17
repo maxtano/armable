@@ -8,14 +8,17 @@ Decisions taken: design edits apply at once with undo; Postgres for storage; sim
 
 | Area | Built | Proven against |
 | --- | --- | --- |
-| Device layer (`src/device`) | MAVLink codec (51 messages, cross-checked against `node-mavlink`), MSP v1/v2, ArduPilot/PX4 driver, Betaflight/INAV driver (MSP plus console), BLHeli four-way ESC read, settings write and flash, STM32 DFU and PX4 bootloader flashing, Web Serial and WebUSB adapters, runtime with detection, reconnection and single-use approvals | Simulated flight controllers, ESC bank and bootloaders that speak the real bytes |
-| Map and tools (`src/map`, `server/tools.ts`) | Readings, tests, settings, 12 playbooks, 23 references; the eleven tools | Tool tests against simulated aircraft on both stacks |
-| Cloud (`server`) | Postgres and memory stores, sign-in, OAuth with PKCE for assistants, stateless MCP endpoint, live WebSocket, documents, proposals, activity | Integration tests over real HTTP, MCP and WebSocket, on Postgres 16 |
-| Interface (`src/web`) | Intro page, living diagram, part panels, on-the-part approval, timeline, Signals, Flights, all settings with backups, Sound, Show (existing editor, account-backed), assistant connection and consent | Playwright end-to-end tests in Chromium, desktop and phone width |
+| Device layer (`src/device`) | MAVLink codec (51 messages, cross-checked against `node-mavlink`), MSP v1/v2, ArduPilot/PX4 driver, Betaflight/INAV driver (MSP plus console), BLHeli_S, Bluejay and AM32 ESCs over the four-way interface (read, write, flash), STM32 DFU, PX4 bootloader and ESP (ExpressLRS receiver) flashing, ELRS bootloader and bind through Betaflight passthrough, Betaflight blackbox download and full decoder, VTX tables with presets, OSD element positions, Web Serial and WebUSB adapters, runtime with detection, reconnection, queued operations, readback after reboots and single-use approvals | Simulated flight controllers, ESC banks, dataflash and bootloaders that speak the real bytes; blackbox decoder cross-checked against logs encoded by an independent encoder |
+| Map and tools (`src/map`, `server/tools.ts`) | Readings, tests, settings, 13 playbooks, 29 references; the eleven tools, including `read` of past changes, tests and connections | Tool tests against simulated aircraft on both stacks |
+| Cloud (`server`) | Postgres and memory stores with numbered migrations, sign-in, OAuth with PKCE for assistants, stateless MCP endpoint, live WebSocket, documents, proposals, scoped grants (standing permissions), activity | Integration tests over real HTTP, MCP and WebSocket, on Postgres 16 |
+| Tracking (`server/tracker.ts`) | Postgres tables `aircraft`, `aircraft_connections`, `tool_calls`, `proposal_events`, `setting_changes`, `test_runs`, `telemetry_samples`; views `tool_usage_daily`, `proposal_outcomes`; read back at `/api/data` | Tracker tests on Postgres and in memory |
+| Interface (`src/web`) | Intro page, living diagram, part panels, on-the-part approval, timeline, Signals, Flights (ArduPilot and Betaflight logs), OSD editor, VTX presets, radio firmware, History, Permissions, all settings with backups, Sound, Show, offline use with sync, assistant connection and consent | Playwright end-to-end tests in Chromium (9), desktop and phone width |
 
 Hosting: Terraform for AWS in `infra/aws` (CloudFront, load balancer, one ECS Fargate task, RDS Postgres 16, GitHub OIDC deploys). Validated with Terraform 1.16.7 and the AWS provider 6.70; the container image was built and run against Postgres. Not yet applied to an AWS account.
 
-Not yet built: Betaflight blackbox download, OSD layout editor, VTX tables, receiver and radio firmware, AM32 ESCs, scoped grants, offline use, connector-directory listings. **No new driver has run on real hardware yet.** Phase 0's hardware spike is still the first thing to do with a real aircraft.
+Tests: 1,674 unit and integration tests and 9 browser end-to-end tests pass.
+
+Deliberately not built yet: mission upload and flight, and drone-show flying. **No new driver has run on real hardware yet.** Phase 0's hardware spike is still the first thing to do with a real aircraft.
 
 ## Approach
 

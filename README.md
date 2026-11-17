@@ -36,12 +36,13 @@ flowchart LR
 | Live readings | Attitude, battery, radio, motors, GPS, sensors, arming blocks | Same, plus vibration, EKF, status messages |
 | Every setting | Console `dump`, ranges and allowed values; features, ports, modes | Full parameter list with readback |
 | Tests | Health checks, motor spin, accelerometer and compass calibration | Same, plus level, gyro, barometer and arming checks |
-| ESCs (BLHeli_S, Bluejay) | Read, change direction and settings, flash | Same, through ArduPilot passthrough |
-| Firmware | Flight controller over DFU | Flight controller over the bootloader (`.apj`) |
+| ESCs (BLHeli_S, Bluejay, AM32) | Read, change direction and settings, flash | Same, through ArduPilot passthrough |
+| Firmware | Flight controller over DFU; ExpressLRS receivers | Flight controller over the bootloader (`.apj`) |
+| Video and screen | VTX bands, channels and power presets; OSD layout editor | — |
 | Backups | Snapshot, compare, restore | Snapshot and compare |
-| Flight logs | Not yet | Download and analyse |
+| Flight logs | Blackbox download, decode and analyse | Download and analyse |
 
-Plus shows (3D storyboards), startup sounds, and a demo drone for each stack.
+Plus history of every change and test, standing permissions for small changes, offline use, shows (3D storyboards), startup sounds, and a demo drone for each stack. Everything an assistant does is recorded in Postgres tables you can query.
 
 **The assistant gets eleven tools and one searchable map** of everything the connected aircraft offers: readings, tests, settings, guides and playbooks for common problems. It can read, test and propose. It cannot approve, confirm “props removed”, or arm.
 
@@ -67,7 +68,7 @@ Assistants connect to `<your address>/mcp`. Set `PUBLIC_URL` to the address peop
 <details>
 <summary>Status and limits</summary>
 
-Every hardware path is tested against simulated flight controllers, ESCs and bootloaders that speak the real protocols. **Only the ArduPilot reads and ESC passthrough were first proven on a real aircraft; the new browser drivers, Betaflight, PX4, ESC writes and firmware flashing have not yet run on hardware.** Bench-test with props off before trusting a change. Mission upload and flight are not in the hosted app. See the [plan](drone-studio/docs/TOOL_APP_VISION.md), [design](drone-studio/docs/TOOL_APP_DESIGN.md), [architecture](drone-studio/docs/TOOL_APP_ARCHITECTURE.md) and [execution](drone-studio/docs/TOOL_APP_EXECUTION.md).
+Every hardware path is tested against simulated flight controllers, ESCs and bootloaders that speak the real protocols. **Only the ArduPilot reads and ESC passthrough were first proven on a real aircraft; the new browser drivers, Betaflight, PX4, ESC writes, firmware and receiver flashing have not yet run on hardware.** Bench-test with props off before trusting a change. Mission upload and flight are not in the hosted app. See the [plan](drone-studio/docs/TOOL_APP_VISION.md), [design](drone-studio/docs/TOOL_APP_DESIGN.md), [architecture](drone-studio/docs/TOOL_APP_ARCHITECTURE.md) and [execution](drone-studio/docs/TOOL_APP_EXECUTION.md).
 
 </details>
 
