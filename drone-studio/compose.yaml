@@ -1,0 +1,17 @@
+# Run Lucidity locally with Postgres:  docker compose up --build   then open http://localhost:8787
+services:
+  db:
+    image: postgres:16
+    environment: { POSTGRES_USER: lucidity, POSTGRES_PASSWORD: lucidity, POSTGRES_DB: lucidity }
+    volumes: [lucidity-db:/var/lib/postgresql/data]
+    healthcheck: { test: ['CMD', 'pg_isready', '-U', 'lucidity'], interval: 5s, retries: 10 }
+  app:
+    build: .
+    ports: ['8787:8787']
+    environment:
+      DATABASE_URL: postgres://lucidity:lucidity@db:5432/lucidity
+      # The address people and assistants use. Behind a domain, set it to https://your-domain.
+      PUBLIC_URL: http://localhost:8787
+    depends_on: { db: { condition: service_healthy } }
+volumes:
+  lucidity-db:
