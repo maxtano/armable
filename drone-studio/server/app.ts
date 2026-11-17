@@ -13,13 +13,14 @@ import { Auth, OAuthProvider, SCOPES } from './auth';
 import { buildMcp } from './mcp';
 import { Services, ToolError, type AssistantMode, type DocKind, type Focus } from './services';
 import type { Store } from './store';
+import { MemoryTracker, TRACK_TABLES, type Tracker, type TrackTable } from './tracker';
 
 /**
  * The cloud service: sign-in, documents, proposals, the live channel to browser tabs, and the MCP endpoint.
  * Two kinds of caller reach it. A person's browser carries a session cookie and can approve. An assistant
  * carries a bearer token and can only use the tools. The approve route accepts the cookie and nothing else.
  */
-export interface AppOptions { store: Store; publicUrl: string; staticDir?: string; quiet?: boolean; limits?: boolean; trustProxy?: number }
+export interface AppOptions { store: Store; publicUrl: string; staticDir?: string; quiet?: boolean; limits?: boolean; trustProxy?: number; tracker?: Tracker }
 const COOKIE = 'lucidity_session';
 const cookie = {
   parse(header: string): Record<string, string> {
@@ -37,7 +38,8 @@ export function createApp(options: AppOptions) {
   const { store } = options;
   const publicUrl = new URL(options.publicUrl);
   const secure = publicUrl.protocol === 'https:';
-  const services = new Services(store);
+  const tracker = options.tracker ?? new MemoryTracker();
+  const services = new Services(store, Date.now, tracker);
   const auth = new Auth(store);
   const app = express();
   app.disable('x-powered-by');
@@ -61,10 +63,10 @@ export function createApp(options: AppOptions) {
     ...(options.limits === false ? { authorizationOptions: { rateLimit: false }, tokenOptions: { rateLimit: false }, clientRegistrationOptions: { rateLimit: false }, revocationOptions: { rateLimit: false } } : {}) }));
   const bearer = requireBearerAuth({ verifier: provider, resourceMetadataUrl: new URL('/.well-known/oauth-protected-resource/mcp', publicUrl).href });
   app.post('/mcp', bearer, express.json({ limit: '1mb' }), async (req, res) => {
-    const info = (req as Request & { auth?: { scopes: string[]; extra?: { account?: string; clientName?: string } } }).auth;
+    const info = (req as Request & { auth?: { scopes: string[]; clientId?: string; extra?: { account?: string; clientName?: string } } }).auth;
     const account = info?.extra?.account;
     if (!account) { res.status(401).json({ error: 'invalid_token' }); return; }
-    const server = buildMcp(services, { account, who: info!.extra!.clientName ?? 'Assistant', scopes: info!.scopes });
+    const server = buildMcp(services, { account, who: info!.extra!.clientName ?? 'Assistant', scopes: info!.scopes, clientId: info!.clientId });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', () => { void transport.close(); void server.close(); });
     try { await server.connect(transport); await transport.handleRequest(req, res, req.body); }
@@ -110,7 +112,7 @@ export function createApp(options: AppOptions) {
   api.use(person);
   api.put('/mode', wrap(async req => { const mode = req.body.mode as AssistantMode; if (!['off', 'observe', 'propose'].includes(mode)) throw new ToolError('invalid', 'Unknown mode.'); await services.setMode(req.account, mode); }));
   api.delete('/assistants/:client', wrap(async req => { await auth.disconnect(req.account, String(req.params.client)); services.hub(req.account).notify('assistants'); }));
-  api.delete('/account', wrap(async (req, res) => { await auth.deleteAccount(req.account); res.setHeader('Set-Cookie', cookie.serialize(COOKIE, '', { path: '/', maxAge: 0 })); }));
+  api.delete('/account', wrap(async (req, res) => { await tracker.deleteAccount(req.account); await auth.deleteAccount(req.account); res.setHeader('Set-Cookie', cookie.serialize(COOKIE, '', { path: '/', maxAge: 0 })); }));
   api.get('/export', wrap(async req => ({ exportedAt: new Date().toISOString(), documents: (await services.docs(req.account)).map(r => ({ id: r.id, revision: r.rev, kind: r.data.kind, name: r.data.name, content: r.data.content })), activity: await services.activity(req.account, 1000) })));
 
   api.get('/oauth/:id', wrap(async req => { const p = await auth.pending(String(req.params.id), req.account); return { client: p.client.name, scopes: p.params.scopes, redirectHost: new URL(p.params.redirectUri).host }; }));
@@ -130,8 +132,22 @@ export function createApp(options: AppOptions) {
   api.delete('/docs/:id', wrap(async req => { await services.deleteDoc(req.account, String(req.params.id)); }));
 
   api.get('/activity', wrap(async req => services.activity(req.account, 200)));
-  api.post('/activity', wrap(async req => { const b = req.body; await services.log(req.account, { who: 'you', kind: ['read', 'test', 'change', 'edit', 'connect', 'show'].includes(b.kind) ? b.kind : 'change', title: text(b.title, 160), part: typeof b.part === 'string' ? b.part.slice(0, 20) : undefined, ok: typeof b.ok === 'boolean' ? b.ok : b.ok === null ? null : undefined, ids: Array.isArray(b.ids) ? b.ids.slice(0, 24).map(String) : undefined, detail: b.detail }); }));
+  api.post('/activity', wrap(async req => {
+    const b = req.body;
+    // A person's own change or test, made with a control in the interface, is tracked like an assistant's.
+    const aircraft = services.currentAircraft(req.account);
+    if (b.kind === 'change' && Array.isArray(b.detail?.changes))
+      for (const c of b.detail.changes.slice(0, 24)) await tracker.settingChange({ account: req.account, aircraftId: aircraft, settingId: String(c.id).slice(0, 80), before: c.before, requested: c.requested, after: c.after, ok: c.ok === true, note: typeof c.note === 'string' ? c.note.slice(0, 300) : undefined, by: 'you' });
+    if (b.kind === 'test' && typeof b.testId === 'string') await tracker.testRun({ account: req.account, aircraftId: aircraft, testId: b.testId.slice(0, 60), args: b.args, ok: typeof b.ok === 'boolean' ? b.ok : null, summary: typeof b.detail?.summary === 'string' ? b.detail.summary.slice(0, 600) : undefined, by: 'you' });
+    await services.log(req.account, { who: 'you', kind: ['read', 'test', 'change', 'edit', 'connect', 'show'].includes(b.kind) ? b.kind : 'change', title: text(b.title, 160), part: typeof b.part === 'string' ? b.part.slice(0, 20) : undefined, ok: typeof b.ok === 'boolean' ? b.ok : b.ok === null ? null : undefined, ids: Array.isArray(b.ids) ? b.ids.slice(0, 24).map(String) : undefined, detail: b.detail });
+  }));
 
+  api.get('/data', wrap(async req => tracker.summary(req.account)));
+  api.get('/data/:table', wrap(async req => {
+    const table = String(req.params.table) as TrackTable;
+    if (!TRACK_TABLES.includes(table)) throw new ToolError('not_found', 'No such table.');
+    return tracker.list(table, req.account, Math.min(Number(req.query.limit ?? 200) || 200, 5000));
+  }));
   api.get('/proposals', wrap(async req => (await services.proposals(req.account)).slice(0, 30)));
   // The decision route. It is reachable only with a person's session cookie; an assistant's token is never accepted here.
   api.post('/proposals/:id/decision', wrap(async req => services.decide(req.account, String(req.params.id), req.body.approve === true)));
@@ -196,6 +212,7 @@ export function createApp(options: AppOptions) {
         tab.bench = mirror.snapshot?.status !== 'idle';
         if (tab.bench) hub.mirror = { ...mirror, at: Date.now() };
         else if (!hub.benchTab()) hub.mirror = undefined;
+        void services.observe(account, mirror).catch(error => { if (!options.quiet) console.error('[track]', error); });
       } else if (m.type === 'focus' && m.focus && typeof m.focus === 'object') hub.focus = { ...(m.focus as Focus), tab: tab.id, at: Date.now() };
       else if (m.type === 'reply' && typeof m.id === 'string') hub.settle(m.id, m.ok === true, m.payload);
     });

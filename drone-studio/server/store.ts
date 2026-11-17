@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { Pool } from 'pg';
+import { migrate } from './migrate';
 
 /**
  * Storage. Every row belongs to one account and carries a revision. A write can name the revision it was
@@ -46,22 +47,14 @@ export class MemoryStore implements Store {
   async close() {}
 }
 
-export const SCHEMA = `
-create table if not exists lucidity_rows (
-  collection text not null, account text not null, id text not null,
-  rev integer not null, data jsonb not null, lookup text, updated_at bigint not null,
-  primary key (collection, account, id)
-);
-create index if not exists lucidity_rows_recent on lucidity_rows (collection, account, updated_at desc);
-create unique index if not exists lucidity_rows_lookup on lucidity_rows (collection, lookup) where lookup is not null;
-create index if not exists lucidity_rows_owner on lucidity_rows ((data->>'account')) where data ? 'account';
-`;
+
 type Db = { collection: string; account: string; id: string; rev: number; data: unknown; lookup: string | null; updated_at: string };
 const toRow = <T>(r: Db): Row<T> => ({ collection: r.collection, account: r.account, id: r.id, rev: r.rev, data: r.data as T, lookup: r.lookup ?? undefined, updatedAt: Number(r.updated_at) });
 
 export class PgStore implements Store {
   private constructor(private pool: Pool) {}
-  static async open(pool: Pool) { await pool.query(SCHEMA); return new PgStore(pool); }
+  static async open(pool: Pool) { await migrate(pool); return new PgStore(pool); }
+  get db() { return this.pool; }
   async get<T>(c: string, a: string, i: string) {
     const { rows } = await this.pool.query<Db>('select * from lucidity_rows where collection=$1 and account=$2 and id=$3', [c, a, i]);
     return rows[0] ? toRow<T>(rows[0]) : undefined;

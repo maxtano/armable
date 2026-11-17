@@ -2,6 +2,7 @@ import type { RemoteRequest } from '../src/device/runtime';
 import type { Change, ChangeResult, Condition, TestResult } from '../src/device/types';
 import type { Mirror } from '../src/map/map';
 import { ConflictError, newId, type Row, type Store } from './store';
+import { aircraftId, MemoryTracker, type Tracker } from './tracker';
 
 /** An error a tool can hand straight to an assistant: a code to branch on, words to relay, and what to do next. */
 export class ToolError extends Error {
@@ -20,6 +21,8 @@ export interface Proposal {
   test?: { id: string; name: string; args?: Record<string, unknown> };
   needs: Condition[]; part?: string;
   status: ProposalStatus; createdAt: number; expiresAt: number; decidedAt?: number;
+  /** Set when a person's standing permission approved this without a click. */
+  grant?: string;
   result?: { ok: boolean | null; summary: string; changes?: ChangeResult[]; test?: TestResult };
 }
 export interface Focus { tab: string; at: number; route?: string; part?: string; setting?: string; document?: string; selection?: unknown; playhead?: number }
@@ -81,9 +84,27 @@ export class Hub {
   }
 }
 
+const TELEMETRY_EVERY_MS = 10_000;
 export class Services {
   private hubs = new Map<string, Hub>();
-  constructor(readonly store: Store, readonly now: () => number = Date.now) {}
+  private seen = new Map<string, { status: string; aircraft?: string; telemetryAt: number }>();
+  constructor(readonly store: Store, readonly now: () => number = Date.now, readonly tracker: Tracker = new MemoryTracker()) {}
+  /** The tracked id of the aircraft this account has connected right now, if any. */
+  currentAircraft(account: string): string | undefined {
+    const identity = this.hub(account).mirror?.snapshot.identity;
+    return identity && this.hub(account).mirror?.snapshot.status === 'connected' ? aircraftId(account, identity) : undefined;
+  }
+  /** Called with each mirror from a bench tab: records aircraft, connections and a telemetry sample every few seconds. */
+  async observe(account: string, mirror: { snapshot: { status: string; identity?: import('../src/device/types').Identity; label?: string; demo?: boolean; state?: import('../src/device/types').LiveState } }) {
+    const s = mirror.snapshot, last = this.seen.get(account) ?? { status: 'idle', telemetryAt: 0 };
+    let aircraft = last.aircraft;
+    if (s.status === 'connected' && s.identity) aircraft = s.identity.version === 'unknown' && last.aircraft ? last.aircraft : await this.tracker.aircraft(account, s.identity, !!s.demo);
+    if (s.status !== last.status && (s.status === 'connected' || s.status === 'reconnecting' || (s.status === 'idle' && last.status !== 'idle')))
+      await this.tracker.connection(account, s.status === 'idle' ? last.aircraft : aircraft, s.status === 'idle' ? 'disconnected' : s.status as 'connected' | 'reconnecting', s.label);
+    let telemetryAt = last.telemetryAt;
+    if (s.status === 'connected' && aircraft && s.state && this.now() - telemetryAt >= TELEMETRY_EVERY_MS) { telemetryAt = this.now(); await this.tracker.telemetry(account, aircraft, s.state); }
+    this.seen.set(account, { status: s.status, aircraft: s.status === 'idle' ? undefined : aircraft, telemetryAt });
+  }
   hub(account: string): Hub { let hub = this.hubs.get(account); if (!hub) this.hubs.set(account, hub = new Hub()); return hub; }
 
   // ---- Accounts -------------------------------------------------------------------------------------------------
@@ -162,6 +183,7 @@ export class Services {
     const id = `prop_${newId(6)}`;
     const proposal: Proposal = { ...input, id, status: 'awaiting_approval', createdAt: this.now(), expiresAt: this.now() + PROPOSAL_TTL };
     await this.store.put('proposals', account, id, proposal, { expectedRev: 0 });
+    void this.trackProposal(account, proposal);
     this.hub(account).notify('proposal', proposal);
     await this.log(account, { who: input.by, kind: 'proposal', part: input.part, ids: input.changes?.map(c => c.id), title: input.kind === 'change' ? `Proposed ${input.changes!.length === 1 ? input.changes![0].title ?? input.changes![0].id : `${input.changes!.length} changes`}` : `Asked to run ${input.test!.name}`, detail: { proposal: id } });
     return proposal;
@@ -172,6 +194,7 @@ export class Services {
     if (TERMINAL.includes(row.data.status)) return row.data;
     const next: Proposal = { ...row.data, status, result: result ?? row.data.result, decidedAt: row.data.decidedAt ?? this.now() };
     await this.store.put('proposals', account, id, next);
+    void this.trackProposal(account, next);
     const hub = this.hub(account);
     hub.notify('proposal', next);
     hub.wake(id);
@@ -187,6 +210,7 @@ export class Services {
     if (!approve) return this.finish(account, id, 'rejected', { ok: false, summary: 'The person declined.' });
     const next: Proposal = { ...current, status: 'approved', decidedAt: this.now() };
     await this.store.put('proposals', account, id, next);
+    void this.trackProposal(account, next);
     this.hub(account).notify('proposal', next);
     return next;
   }
@@ -195,11 +219,18 @@ export class Services {
     const current = await this.proposal(account, id);
     if (current.status !== 'approved') throw new ToolError('not_approved', 'A result can only be recorded for a proposal the person approved.');
     const done = await this.finish(account, id, result.ok === false ? 'failed' : 'done', result);
+    const aircraft = this.currentAircraft(account);
+    for (const c of result.changes ?? []) await this.tracker.settingChange({ account, aircraftId: aircraft, settingId: c.id, before: c.before, requested: c.requested, after: c.after, ok: c.ok, note: c.note, by: current.by, proposalId: id });
+    if (current.kind === 'test') await this.tracker.testRun({ account, aircraftId: aircraft, testId: current.test!.id, args: current.test!.args, ok: result.ok, summary: result.summary, by: current.by, proposalId: id });
     await this.log(account, {
       who: 'you', kind: current.kind === 'change' ? 'change' : 'test', part: current.part, ok: result.ok, ids: current.changes?.map(c => c.id),
       title: current.kind === 'change' ? `Approved ${current.by}'s change` : `Ran ${current.test!.name} for ${current.by}`, detail: { proposal: id, summary: result.summary, changes: result.changes },
     });
     return done;
+  }
+  private trackProposal(account: string, p: Proposal) {
+    return this.tracker.proposal({ proposalId: p.id, account, assistant: p.by, kind: p.kind, status: p.status, level: p.level, needs: p.needs, reason: p.reason,
+      changes: p.changes, test: p.test, result: p.result, grantId: p.grant, aircraftId: this.currentAircraft(account) });
   }
   async cancel(account: string, id: string, by: string): Promise<Proposal> {
     const current = await this.proposal(account, id);

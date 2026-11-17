@@ -183,7 +183,7 @@ export async function runTest(spec: TestSpec, args: Record<string, unknown> = {}
       await api('POST', '/docs', { kind: 'snapshot', name: `${id?.craftName ?? id?.firmware ?? 'Aircraft'} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, content: outcome.test!.data });
       void refreshDocs();
     }
-    void log('test', spec.name, spec.part, outcome.ok, { detail: { summary: outcome.summary } });
+    void log('test', spec.name, spec.part, outcome.ok, { testId: spec.id, args, detail: { summary: outcome.summary } });
     return outcome;
   } catch (error) { toast(words(error), 'bad'); return { ok: false, summary: words(error) }; }
   finally { set({ busy: undefined, progress: undefined, settings: runtime.settings(), snap: runtime.snapshot(), log: runtime.lastLogAnalysis() }); bench?.flush(); }

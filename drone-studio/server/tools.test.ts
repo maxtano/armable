@@ -104,6 +104,11 @@ describe('an assistant working with a connected ArduPilot aircraft', () => {
     expect(done).toMatchObject({ status: 'done', result: { ok: true, changes: [{ id: 'esc.3.direction', before: 'reversed', after: 'normal', ok: true }] } });
     expect(bench.sim.escBank.images[2][0x1a0b]).toBe(1);
     expect((await call('read', { ids: ['esc.3.direction'] })).values[0].value).toBe('normal');
+    const history = await call('read', { ids: ['history.changes', 'history.tests', 'history.proposals'] });
+    expect(history.values[0].value[0]).toMatchObject({ setting_id: 'esc.3.direction', before: 'reversed', after: 'normal', ok: true, by_who: 'Claude' });
+    expect(history.values[1].value.map((r: any) => r.test_id)).toContain('esc.read');
+    expect(history.values[2].value.some((r: any) => r.status === 'done')).toBe(true);
+    expect(JSON.stringify(history)).not.toContain(account.id);
     const activity = await services.activity(account.id);
     expect(activity.map(a => a.kind)).toEqual(expect.arrayContaining(['proposal', 'change', 'read']));
   });
