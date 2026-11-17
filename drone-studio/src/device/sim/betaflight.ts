@@ -1,7 +1,8 @@
 import { fromAscii, latin1, Reader, Writer } from '../bytes';
-import { encodeMsp, MSP, MspParser } from '../msp/codec';
+import { encodeMsp, encodeMspV2, MSP, MspParser } from '../msp/codec';
 import type { LoopbackEnd } from '../transport';
 import { EscBank } from './esc';
+import { syntheticBlackbox } from '../blackbox/encode';
 
 /**
  * A simulated Betaflight flight controller: MSP for live data, a text console for settings, ESC passthrough,
@@ -41,6 +42,7 @@ export interface BetaflightSimOptions {
   /** Firmware older than 4.5 restarts when the console is left, even without saving. */
   rebootOnExit?: boolean;
   version?: [number, number, number];
+  emptyFlash?: boolean;
 }
 
 export class BetaflightSim {
@@ -62,6 +64,10 @@ export class BetaflightSim {
   reboots = 0;
   inBootloader = false;
   calibrations: string[] = [];
+  /** Onboard log flash. Two flights by default: a rough one, then a smooth one. */
+  flash: Uint8Array;
+  flashTotal = 16 * 1024 * 1024;
+  erasing = 0;
   private port?: LoopbackEnd;
   private msp = new MspParser();
   private cli = false;
@@ -73,6 +79,8 @@ export class BetaflightSim {
     this.rxLoss = options.rxLoss ?? false;
     this.escBank = new EscBank('BTFL', ['BLHeli_S', 'BLHeli_S', 'BLHeli_S', 'BLHeli_S'], options.escDirections ?? [1, 2, 1, 1]);
     this.saved = this.snapshot();
+    const a = syntheticBlackbox(4, 1), b = syntheticBlackbox(3, 0.2);
+    this.flash = options.emptyFlash ? new Uint8Array(0) : Uint8Array.from([...a, ...b]);
   }
   private snapshot() { return { settings: structuredClone(this.settings), features: [...this.features], serial: { ...this.serial }, aux: { ...this.aux }, map: this.map }; }
   /** Plug the (re)started flight controller into a port. */
@@ -126,6 +134,14 @@ export class BetaflightSim {
         const r = new Reader(payload); this.motors = Array.from({ length: 8 }, () => r.left >= 2 ? r.u16() : 1000); this.motorLog.push([...this.motors]);
         return this.reply(command);
       }
+      case MSP.DATAFLASH_SUMMARY: return this.reply(command, w.u8(this.erasing > 0 ? 2 : 3).u32(4096).u32(this.flashTotal).u32(this.erasing > 0 ? 0 : this.flash.length).done());
+      case MSP.DATAFLASH_READ: {
+        const r = new Reader(payload), address = r.u32(), size = r.left >= 2 ? r.u16() : 128;
+        const data = this.flash.subarray(address, Math.min(this.flash.length, address + size));
+        const body = w.u32(address).u16(data.length).u8(0).bytes(data).done();
+        return this.write(body.length > 254 ? encodeMspV2(command, body, '>') : encodeMsp(command, body, '>'));
+      }
+      case MSP.DATAFLASH_ERASE: this.erasing = 3; this.flash = new Uint8Array(0); setTimeout(() => { this.erasing = 0; }, 30); return this.reply(command);
       case MSP.ACC_CALIBRATION: this.calibrations.push('accel'); return this.reply(command);
       case MSP.MAG_CALIBRATION: this.calibrations.push('compass'); return this.reply(command);
       case MSP.SET_PASSTHROUGH: { const reply = this.escBank.handle(encodeMsp(245)); if (reply) this.write(reply); return; }
