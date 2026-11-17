@@ -61,7 +61,7 @@ describe('Betaflight driver against a simulated flight controller', () => {
     await driver.loadSettings();
     expect(driver.settingsLoaded()).toBe('complete');
     const all = driver.settings();
-    expect(all.filter(s => !s.id.includes('.feature.') && !s.id.includes('.serial.') && !s.id.includes('.aux.') && s.id !== 'bf.map')).toHaveLength(Object.keys(sim.settings).length);
+    expect(all.filter(s => !s.id.includes('.feature.') && !s.id.includes('.serial.') && !s.id.includes('.aux.') && s.id !== 'bf.map' && s.id !== 'bf.vtxtable')).toHaveLength(Object.keys(sim.settings).length);
     expect(all.find(s => s.id === 'bf.p_roll')).toMatchObject({ value: 45, type: 'number', part: 'tuning', scope: 'profile 0', title: 'Roll P' });
     expect(all.find(s => s.id === 'bf.dshot_bidir')).toMatchObject({ value: 'ON', type: 'bool', part: 'motors' });
     expect(all.find(s => s.id === 'bf.motor_pwm_protocol')).toMatchObject({ type: 'enum', options: expect.arrayContaining([{ value: 'DSHOT300', label: 'DSHOT300' }]) });

@@ -12,6 +12,7 @@ import {
   DriverBase, type Airframe, type Change, type ChangeResult, type Driver, type EscInfo, type Health, type Identity, type LiveState,
   type LogEntry, type RunContext, type Setting, type TestResult, type TestSpec,
 } from '../types';
+import { frequency, parseVtxTable, presetName, validateVtxTable, vtxTableCommands, VTX_PRESETS, type VtxTable } from './vtx';
 import { ARMING_EXPECTED, ARMING_FLAGS, ARMING_WORDS, parseDump, parseGet, restoreLines, safeName, safeValue, toSetting, type GetInfo } from './cli';
 
 /**
@@ -47,6 +48,7 @@ export class BetaflightDriver extends DriverBase implements Driver {
   private backup = '';
   private escReads: EscRead[] = [];
   private flash?: { bytes: Uint8Array; logs: BlackboxLog[] };
+  private vtx?: { table?: VtxTable; at: number };
   private analysed?: { id: number; analysis: FlightLogAnalysis };
   private offs: (() => void)[] = [];
   private poll?: ReturnType<typeof setInterval>;
@@ -263,7 +265,31 @@ export class BetaflightDriver extends DriverBase implements Driver {
       else if (kind === 'map') out.push({ id, name: 'map', part: 'receiver', group: 'Receiver', value: line.value, type: 'text', title: 'Channel map', at: line.at });
     }
     for (const read of this.escReads) if (read.block) out.push(...escSettings(read.info, read.block));
+    if (this.vtx) this.decorateVtx(out);
     return out.sort((a, b) => a.id.localeCompare(b.id));
+  }
+  private async readVtx() {
+    const text = await this.cli('vtxtable');
+    this.vtx = /unknown|invalid|error/i.test(text) && !text.includes('vtxtable ') ? undefined : { table: parseVtxTable(text), at: this.now() };
+  }
+  /** Give band, channel and power their names and frequencies from the table, and add the table itself as a setting. */
+  private decorateVtx(out: Setting[]) {
+    const t = this.vtx!.table;
+    const band = Number(out.find(s => s.id === 'bf.vtx_band')?.value ?? 0);
+    out.push({ id: 'bf.vtxtable', name: 'vtxtable', part: 'vtx', group: 'Video', title: 'Video table', at: this.vtx!.at, type: 'enum', value: presetName(t),
+      options: [...Object.keys(VTX_PRESETS), ...(presetName(t) === 'custom' ? ['custom'] : []), ...(t ? [] : ['none'])].map(v => ({ value: v, label: v })),
+      description: 'Which frequencies and power levels the video transmitter offers. Choose the one matching your transmitter, or give a full table as JSON.' });
+    if (!t) return;
+    for (const s of out) {
+      if (s.id === 'bf.vtx_band') { s.type = 'enum'; s.options = [{ value: 0, label: 'Set by frequency' }, ...t.bands.map(b => ({ value: b.number, label: `${b.letter} · ${b.name.replace('_', ' ').toLowerCase()}` }))]; }
+      if (s.id === 'bf.vtx_channel') { s.type = 'enum'; s.options = Array.from({ length: t.channels }, (_, i) => ({ value: i + 1, label: `${i + 1}${frequency(t, band, i + 1) ? ` · ${frequency(t, band, i + 1)} MHz` : ''}` })); }
+      if (s.id === 'bf.vtx_power') { s.type = 'enum'; s.options = t.powers.map((p, i) => ({ value: i + 1, label: `${p.label} mW` })); }
+    }
+  }
+  /** The current video frequency, from the table, or the direct frequency setting. */
+  videoFrequency(): number | undefined {
+    const v = (n: string) => Number(this.values.get(n)?.value ?? 0);
+    return v('vtx_band') ? frequency(this.vtx?.table, v('vtx_band'), v('vtx_channel')) : v('vtx_freq') || undefined;
   }
   private absorbDump(text: string) {
     const dump = parseDump(text), at = this.now();
@@ -290,6 +316,7 @@ export class BetaflightDriver extends DriverBase implements Driver {
           progress?.('Reading allowed values');
           for (const info of parseGet(await this.cli('get', 30000))) this.info.set(info.name, info);
           await this.readFeatures();
+          await this.readVtx();
           this.backup = await this.cli('diff all', 30000);
         });
         this.loaded = 'complete';
@@ -340,6 +367,20 @@ export class BetaflightDriver extends DriverBase implements Driver {
         try {
           for (const change of cliChanges) {
             try {
+              if (change.id === 'bf.vtxtable') {
+                const before = presetName(this.vtx?.table);
+                if (change.expected !== undefined && String(change.expected) !== before) throw new DeviceError('stale', `The video table is now ${before}, not ${change.expected}. Nothing was written.`);
+                let table: VtxTable;
+                if (typeof change.value === 'string' && VTX_PRESETS[change.value]) table = VTX_PRESETS[change.value];
+                else { try { table = validateVtxTable(JSON.parse(String(change.value))); } catch (error) { throw error instanceof DeviceError ? error : new DeviceError('invalid', 'Choose a preset or give a table as JSON.', `Presets: ${Object.keys(VTX_PRESETS).join(', ')}.`); } }
+                ctx.progress?.('Writing video table');
+                for (const command of vtxTableCommands(table)) { const answer = await this.cli(command); if (/error|invalid/i.test(answer)) throw new DeviceError('rejected', `The flight controller refused: ${command}`); }
+                await this.readVtx();
+                const after = presetName(this.vtx?.table), ok = JSON.stringify(this.vtx?.table) === JSON.stringify(table);
+                if (ok) wrote++;
+                results.push({ id: change.id, before, requested: change.value, after, ok, note: ok ? 'Saved. The flight controller restarts to apply it.' : 'The flight controller kept a different table.' });
+                continue;
+              }
               const value = safeValue(change.value);
               let before: string | undefined, after: string | undefined, command: string;
               if (this.isLine(change.id)) {

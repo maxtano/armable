@@ -48,11 +48,12 @@ export interface BetaflightSimOptions {
 export class BetaflightSim {
   settings: Record<string, Def> = structuredClone(BETAFLIGHT_SETTINGS);
   /** What is stored in flash. `save` copies the live settings here; a restart copies them back. */
-  private saved: { settings: Record<string, Def>; features: string[]; serial: Record<string, string>; aux: Record<string, string>; map: string };
+  private saved: { settings: Record<string, Def>; features: string[]; serial: Record<string, string>; aux: Record<string, string>; map: string; vtx: string[] };
   features = new Set(['RX_SERIAL', 'TELEMETRY', 'OSD', 'AIRMODE', 'ANTI_GRAVITY', 'GPS']);
   serial: Record<string, string> = { '0': '1 115200 57600 0 115200', '1': '64 115200 57600 0 115200', '2': '2 115200 57600 0 115200', '5': '1024 115200 57600 0 115200' };
   aux: Record<string, string> = { '0': '0 0 1700 2100 0 0', '1': '1 1 1300 1700 0 0', '2': '13 2 1700 2100 0 0', '3': '35 3 1700 2100 0 0' };
   map = 'AETR1234';
+  vtxTable: string[] = ['vtxtable bands 0', 'vtxtable channels 0', 'vtxtable powerlevels 0', 'vtxtable powervalues', 'vtxtable powerlabels'];
   escBank: EscBank;
   armed = false;
   battery: number;
@@ -82,7 +83,7 @@ export class BetaflightSim {
     const a = syntheticBlackbox(4, 1), b = syntheticBlackbox(3, 0.2);
     this.flash = options.emptyFlash ? new Uint8Array(0) : Uint8Array.from([...a, ...b]);
   }
-  private snapshot() { return { settings: structuredClone(this.settings), features: [...this.features], serial: { ...this.serial }, aux: { ...this.aux }, map: this.map }; }
+  private snapshot() { return { settings: structuredClone(this.settings), features: [...this.features], serial: { ...this.serial }, aux: { ...this.aux }, map: this.map, vtx: [...this.vtxTable] }; }
   /** Plug the (re)started flight controller into a port. */
   attach(port: LoopbackEnd) {
     this.port = port; this.cli = false; this.line = ''; this.msp = new MspParser(); this.escBank.active = false;
@@ -93,7 +94,7 @@ export class BetaflightSim {
   private reboot() {
     this.reboots++;
     this.settings = structuredClone(this.saved.settings); this.features = new Set(this.saved.features);
-    this.serial = { ...this.saved.serial }; this.aux = { ...this.saved.aux }; this.map = this.saved.map;
+    this.serial = { ...this.saved.serial }; this.aux = { ...this.saved.aux }; this.map = this.saved.map; this.vtxTable = [...this.saved.vtx];
     this.motors.fill(1000);
     const port = this.port; this.port = undefined;
     setTimeout(() => port?.drop('device restarted'), 5);
@@ -205,11 +206,28 @@ export class BetaflightSim {
       else d.value = value;
       return `${m[1]} set to ${d.value}`;
     }
+    if (command === 'vtxtable') {
+      const rank = (l: string) => ['vtxtable bands', 'vtxtable channels', 'vtxtable band ', 'vtxtable powerlevels', 'vtxtable powervalues', 'vtxtable powerlabels'].findIndex(p => l.startsWith(p));
+      return [...this.vtxTable].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b)).join('\n');
+    }
+    if ((m = command.match(/^vtxtable (bands|channels|powerlevels) (\d+)$/))) {
+      const n = Number(m[2]);
+      if (n > 8) return '###ERROR IN vtxtable: INVALID VALUE###';
+      const key = `vtxtable ${m[1]} `;
+      this.vtxTable = [...this.vtxTable.filter(l => !l.startsWith(key)), `${key}${n}`];
+      if (m[1] === 'bands') this.vtxTable = this.vtxTable.filter(l => !/^vtxtable band \d+ /.test(l) || Number(l.split(' ')[2]) <= n);
+      return '';
+    }
+    if ((m = command.match(/^vtxtable band (\d) ([A-Z0-9_]+) ([A-Z0-9]) (FACTORY|CUSTOM)((?: \d+)+)$/))) {
+      this.vtxTable = [...this.vtxTable.filter(l => !l.startsWith(`vtxtable band ${m![1]} `)), command];
+      return '';
+    }
+    if ((m = command.match(/^vtxtable (powervalues|powerlabels)((?: \w+)*)$/))) { this.vtxTable = [...this.vtxTable.filter(l => !l.startsWith(`vtxtable ${m![1]}`)), command]; return ''; }
     if (command === 'profile 0' || command === 'rateprofile 0') return command;
     if (command === 'save') { this.saved = this.snapshot(); this.print('save\nSaving\nRebooting'); this.reboot(); return null; }
     if (command === 'exit' || command === 'exit noreboot') {
       this.settings = structuredClone(this.saved.settings); this.features = new Set(this.saved.features);
-      this.serial = { ...this.saved.serial }; this.aux = { ...this.saved.aux }; this.map = this.saved.map;
+      this.serial = { ...this.saved.serial }; this.aux = { ...this.saved.aux }; this.map = this.saved.map; this.vtxTable = [...this.saved.vtx];
       if (command === 'exit' || this.options.rebootOnExit) { this.print('Leaving CLI mode, unsaved changes lost.\nRebooting'); this.reboot(); return null; }
       this.cli = false; this.print('exit noreboot\nLeaving CLI mode, unsaved changes lost.\n'); return null;
     }

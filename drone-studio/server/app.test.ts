@@ -137,7 +137,8 @@ describe('an assistant over MCP, a person in a tab, a simulated drone on the ben
 
     const proposal = await claude.call('propose_change', { changes: [{ id: 'esc.3.direction', value: 'normal' }], reason: 'Motor 3 turns the wrong way.' });
     expect(proposal.changes).toEqual([{ id: 'esc.3.direction', from: 'reversed', to: 'normal' }]);
-    const card = tab.events.filter(e => e.event === 'proposal').at(-1)!.data;
+    await until(() => tab.events.some(e => e.event === 'proposal' && e.data.id === proposal.proposal));
+    const card = tab.events.find(e => e.event === 'proposal' && e.data.id === proposal.proposal)!.data;
     expect(card).toMatchObject({ by: 'Claude', reason: 'Motor 3 turns the wrong way.', needs: ['propsRemoved', 'directUsb'], status: 'awaiting_approval' });
     const waiting = claude.call('wait', { proposal: proposal.proposal, seconds: 20 });
     await tab.approve(proposal.proposal, ['propsRemoved', 'directUsb']);
