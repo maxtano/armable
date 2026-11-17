@@ -1,6 +1,5 @@
 /* Lucidity hosted app. Colours come from design-system/tokens.css; this file adds layout, the diagram and motion. */
-:root { --lu-ai: var(--ds-mauve); --lu-ai-bg: var(--ds-mauve-bg); --lu-rail: 72px; --lu-panel: 384px; }
-:root[data-theme='light'] { --lu-ai: #7a4f86; --lu-ai-bg: #efe6f1; }
+:root { --lu-rail: 72px; --lu-panel: 384px; --pitch: 0.5; }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body { background: var(--ds-bg); color: var(--ds-text); font: 500 14px/1.45 var(--font-sans); -webkit-font-smoothing: antialiased; }
@@ -133,7 +132,7 @@ select, .lu-text { height: 34px; padding: 0 10px; border: 1px solid var(--ds-bor
 .dg-part.needs-you .dg-ring, .dg-part.needs-you .dg-plate, .dg-part.needs-you .dg-cell, .dg-part.needs-you .dg-track { stroke: var(--ds-warning); stroke-width: 3; }
 .dg-approve { animation: lu-bob 1.6s ease-in-out infinite; }
 .dg-approve rect { fill: var(--ds-warning); }
-.dg-approve text { text-anchor: middle; font: 700 13px var(--font-sans); fill: #2a2114; }
+.dg-approve text { text-anchor: middle; font: 700 13px var(--font-sans); fill: var(--ds-on-warning); }
 .dg-approve.is-pressed rect { fill: var(--ds-success); }
 .dg-plate { fill: var(--ds-surface); stroke: var(--ds-border-strong); stroke-width: 2; transition: stroke var(--motion-normal); }
 .dg-sky { fill: var(--ds-horizon-sky); }
@@ -209,7 +208,7 @@ select, .lu-text { height: 34px; padding: 0 10px; border: 1px solid var(--ds-bor
 .lu-from { color: var(--ds-text-subtle); text-decoration: line-through; text-decoration-color: color-mix(in srgb, currentColor 60%, transparent); font-variant-numeric: tabular-nums; }
 .lu-to { color: var(--ds-warning); font-weight: 700; font-variant-numeric: tabular-nums; }
 .lu-apply, .lu-cancel { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 3px; background: none; }
-.lu-apply { background: var(--ds-warning); color: #2a2114; }
+.lu-apply { background: var(--ds-warning); color: var(--ds-on-warning); }
 .lu-cancel:hover { background: var(--ds-surface-raised); }
 .lu-setting.is-changed { animation: lu-flash 1.2s ease-out 1; }
 @keyframes lu-flash { 0% { background: var(--ds-success-bg); } 100% { background: transparent; } }
