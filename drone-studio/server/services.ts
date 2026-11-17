@@ -10,6 +10,15 @@ export class ToolError extends Error {
 }
 
 export type AssistantMode = 'off' | 'observe' | 'propose';
+const COMMUNITY = '_community';
+interface RatingRow { by: Record<string, { stars: number; review?: string; at: number }> }
+export interface RatingSummary { average: number; count: number; histogram: number[]; mine?: { stars: number; review?: string } }
+function summarise(row: RatingRow, account?: string): RatingSummary {
+  const all = Object.values(row.by), histogram = [0, 0, 0, 0, 0];
+  for (const r of all) histogram[r.stars - 1]++;
+  const mine = account ? row.by[account] : undefined;
+  return { average: all.length ? Math.round(all.reduce((s, r) => s + r.stars, 0) / all.length * 10) / 10 : 0, count: all.length, histogram, ...(mine ? { mine: { stars: mine.stars, review: mine.review } } : {}) };
+}
 export interface Account { id: string; email: string; passwordHash: string; createdAt: number; assistantMode: AssistantMode }
 export type DocKind = 'storyboard' | 'tune' | 'file' | 'snapshot' | 'build';
 export interface Doc { kind: DocKind; name: string; content: unknown; updatedBy: string; history: { content: unknown; by: string; at: number }[] }
@@ -137,6 +146,32 @@ export class Services {
     this.hub(account).notify('activity', { id: row.id, ...row.data });
     return row;
   }
+  // ---- Part ratings ---------------------------------------------------------------------------------------------
+  // One row per catalog part, shared by everyone. Each account has one rating per part; nobody's identity leaves here.
+
+  async ratings(account?: string): Promise<Record<string, RatingSummary>> {
+    const rows = await this.store.list<RatingRow>('ratings', COMMUNITY, 5000);
+    return Object.fromEntries(rows.map(r => [r.id, summarise(r.data, account)]).filter(([, s]) => (s as RatingSummary).count > 0));
+  }
+  async reviews(part: string, account?: string) {
+    const row = await this.store.get<RatingRow>('ratings', COMMUNITY, part);
+    const list = Object.entries(row?.data.by ?? {}).map(([who, r]) => ({ stars: r.stars, review: r.review, at: r.at, mine: who === account }));
+    return { ...summarise(row?.data ?? { by: {} }, account), reviews: list.filter(r => r.review || r.mine).sort((a, b) => Number(b.mine) - Number(a.mine) || b.at - a.at).slice(0, 50) };
+  }
+  /** Rate a part from 1 to 5, with an optional short review; null takes the rating back. */
+  async rate(account: string, part: string, stars: number | null, review?: string) {
+    for (let attempt = 0; ; attempt++) {
+      const row = await this.store.get<RatingRow>('ratings', COMMUNITY, part);
+      const by = { ...(row?.data.by ?? {}) };
+      if (stars === null) delete by[account]; else by[account] = { stars, review: review?.trim() || undefined, at: this.now() };
+      try { await this.store.put<RatingRow>('ratings', COMMUNITY, part, { by }, { expectedRev: row?.rev ?? 0 }); return summarise({ by }, account); }
+      catch (error) { if (!(error instanceof ConflictError) || attempt > 4) throw error; }
+    }
+  }
+  async forgetRatings(account: string) {
+    for (const row of await this.store.list<RatingRow>('ratings', COMMUNITY, 5000)) if (row.data.by[account]) await this.rate(account, row.id, null);
+  }
+
   async activity(account: string, limit = 50) { return (await this.store.list<ActivityEntry>('activity', account, limit)).map(r => ({ id: r.id, ...r.data })); }
 
   // ---- Documents ------------------------------------------------------------------------------------------------

@@ -306,3 +306,24 @@ describe('building a drone', () => {
     expect((await browser.post(`/api/docs/${file.id}/ops`, { baseRevision: 1, operations: [] })).json.error.code).toBe('invalid');
   });
 });
+
+describe('rating parts', () => {
+  it('keeps one rating per person per part, shares the average, and names nobody', async () => {
+    const { app, browser } = await world();
+    const other = new Browser(app.base);
+    await other.signUp();
+    expect((await browser.request('PUT', '/api/ratings/motor.velox-v2207-1950', { stars: 5, review: 'Tough.' })).json).toMatchObject({ average: 5, count: 1, mine: { stars: 5 } });
+    expect((await browser.request('PUT', '/api/ratings/motor.velox-v2207-1950', { stars: 4, review: 'Tough, a bit hot.' })).json).toMatchObject({ average: 4, count: 1 });
+    await other.request('PUT', '/api/ratings/motor.velox-v2207-1950', { stars: 2 });
+    const all = (await other.get('/api/ratings')).json;
+    expect(all['motor.velox-v2207-1950']).toMatchObject({ average: 3, count: 2, histogram: [0, 1, 0, 1, 0], mine: { stars: 2 } });
+    const detail = (await other.get('/api/ratings/motor.velox-v2207-1950')).json;
+    expect(detail.reviews).toEqual([expect.objectContaining({ stars: 2, mine: true }), expect.objectContaining({ stars: 4, review: 'Tough, a bit hot.', mine: false })]);
+    expect(JSON.stringify(detail)).not.toMatch(/@example|acct_|account/);
+    expect((await browser.request('PUT', '/api/ratings/motor.velox-v2207-1950', { stars: 6 })).json.error.code).toBe('invalid');
+    expect((await browser.request('PUT', '/api/ratings/not-a-part', { stars: 3 })).status).toBe(404);
+    await other.request('DELETE', '/api/ratings/motor.velox-v2207-1950');
+    expect((await browser.get('/api/ratings')).json['motor.velox-v2207-1950']).toMatchObject({ average: 4, count: 1 });
+    expect((await new Browser(app.base).get('/api/ratings')).status).toBe(401);
+  });
+});

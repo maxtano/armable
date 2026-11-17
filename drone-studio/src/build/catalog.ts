@@ -26,6 +26,8 @@ export interface Specs {
   link?: Link;
   video?: Video;
   includes?: ('camera' | 'antenna' | 'receiver')[];
+  /** For drawing: prop blades, ducted frames, two-antenna receivers. */
+  blades?: number; ducted?: boolean; diversity?: boolean;
 }
 
 export interface Part {
@@ -60,9 +62,9 @@ export const PARTS: Part[] = [
   P({ id: 'frame.source-one-v5', category: 'frame', brand: 'TBS', name: 'Source One V5 5"', priceUsd: 35, weightG: 115, specs: { propIn: 5.1, mounts: ['30.5', '20'] }, blurb: 'Open-source 5" freestyle frame. Cheap, tough, spare arms everywhere.', maker: 'https://www.team-blacksheep.com' }),
   P({ id: 'frame.apex-5', category: 'frame', brand: 'ImpulseRC', name: 'Apex 5"', priceUsd: 100, weightG: 125, specs: { propIn: 5.1, mounts: ['30.5', '20'] }, blurb: 'Premium 5" freestyle frame with room for a digital air unit.', maker: 'https://impulserc.com' }),
   P({ id: 'frame.chimera7-pro', category: 'frame', brand: 'iFlight', name: 'Chimera7 Pro V2 7"', priceUsd: 95, weightG: 190, specs: { propIn: 7.5, mounts: ['30.5', '20'] }, blurb: '7" long-range frame with a GPS mount and room for a big Li-ion pack.', maker: 'https://shop.iflight.com' }),
-  P({ id: 'frame.cinelog35-v2', category: 'frame', brand: 'GEPRC', name: 'CineLog35 V2 frame', priceUsd: 55, weightG: 85, specs: { propIn: 3.5, mounts: ['20', '25.5'] }, blurb: '3.5" ducted cinewhoop frame. Safe around people, carries an action camera.', maker: 'https://geprc.com' }),
-  P({ id: 'frame.meteor75-pro', category: 'frame', brand: 'BetaFPV', name: 'Meteor75 Pro frame', priceUsd: 10, weightG: 7, specs: { propIn: 1.6, mounts: ['whoop'] }, blurb: '75 mm tiny whoop frame for flying indoors.', maker: 'https://betafpv.com' }),
-  P({ id: 'frame.pavo25-v2', category: 'frame', brand: 'BetaFPV', name: 'Pavo25 V2 frame', priceUsd: 25, weightG: 35, specs: { propIn: 2.5, mounts: ['25.5', '20'] }, blurb: '2.5" ducted frame for a sub-250 g digital cinewhoop.', maker: 'https://betafpv.com' }),
+  P({ id: 'frame.cinelog35-v2', category: 'frame', brand: 'GEPRC', name: 'CineLog35 V2 frame', priceUsd: 55, weightG: 85, specs: { propIn: 3.5, mounts: ['20', '25.5'], ducted: true }, blurb: '3.5" ducted cinewhoop frame. Safe around people, carries an action camera.', maker: 'https://geprc.com' }),
+  P({ id: 'frame.meteor75-pro', category: 'frame', brand: 'BetaFPV', name: 'Meteor75 Pro frame', priceUsd: 10, weightG: 7, specs: { propIn: 1.6, mounts: ['whoop'], ducted: true }, blurb: '75 mm tiny whoop frame for flying indoors.', maker: 'https://betafpv.com' }),
+  P({ id: 'frame.pavo25-v2', category: 'frame', brand: 'BetaFPV', name: 'Pavo25 V2 frame', priceUsd: 25, weightG: 35, specs: { propIn: 2.5, mounts: ['25.5', '20'], ducted: true }, blurb: '2.5" ducted frame for a sub-250 g digital cinewhoop.', maker: 'https://betafpv.com' }),
   // Motors (price and weight per motor)
   P({ id: 'motor.velox-v2207-1950', category: 'motors', brand: 'T-Motor', name: 'Velox V2207.5 V2 1950KV', priceUsd: 20, weightG: 33, qty: 4, specs: { propIn: 5, stator: '2207', kv: 1950, cells: [4, 6], thrustG: 1600, amps: 45 }, blurb: 'Smooth, durable 6S 5" freestyle motor.', maker: 'https://store.tmotor.com' }),
   P({ id: 'motor.xing2-2207-1855', category: 'motors', brand: 'iFlight', name: 'XING2 2207 1855KV', priceUsd: 18, weightG: 32, qty: 4, specs: { propIn: 5, stator: '2207', kv: 1855, cells: [4, 6], thrustG: 1550, amps: 44 }, blurb: 'Popular 6S 5" motor with a unibell.', maker: 'https://shop.iflight.com' }),
@@ -78,12 +80,12 @@ export const PARTS: Part[] = [
   P({ id: 'stack.tmotor-f7-pacer-55', category: 'stack', brand: 'T-Motor', name: 'Pacer F7 + 55A stack', priceUsd: 110, weightG: 26, specs: { mounts: ['30.5'], cells: [3, 6], amps: 55 }, blurb: 'F7 30×30 stack with headroom for hard freestyle.', maker: 'https://store.tmotor.com' }),
   P({ id: 'stack.betafpv-f4-1s-aio', category: 'stack', brand: 'BetaFPV', name: 'F4 1S 5A AIO (ELRS)', priceUsd: 40, weightG: 3.5, specs: { mounts: ['whoop'], cells: [1, 1], amps: 5, includes: ['receiver'], link: 'ELRS 2.4' }, blurb: 'Whoop flight controller with the ESC and an ExpressLRS receiver on one board.', maker: 'https://betafpv.com' }),
   // Props (one pack = one set of four)
-  P({ id: 'props.ethix-s5', category: 'props', brand: 'HQProp', name: 'Ethix S5 5x4x3', priceUsd: 4, weightG: 17, qty: 3, specs: { propIn: 5 }, blurb: 'Smooth freestyle prop.', maker: 'https://www.hqprop.com' }),
-  P({ id: 'props.hurricane-51466', category: 'props', brand: 'Gemfan', name: 'Hurricane 51466', priceUsd: 4, weightG: 17, qty: 3, specs: { propIn: 5.1 }, blurb: 'Grippy, durable 5.1" prop.', maker: 'https://www.gemfanhobby.com' }),
-  P({ id: 'props.hq-7x4x3', category: 'props', brand: 'HQProp', name: '7x4x3 Durable', priceUsd: 6, weightG: 32, qty: 2, specs: { propIn: 7 }, blurb: 'Efficient 7" long-range prop.', maker: 'https://www.hqprop.com' }),
-  P({ id: 'props.d90-5', category: 'props', brand: 'Gemfan', name: 'D90-5 3.5" ducted', priceUsd: 5, weightG: 10, qty: 3, specs: { propIn: 3.5 }, blurb: 'Five-blade prop for 3.5" ducts.', maker: 'https://www.gemfanhobby.com' }),
-  P({ id: 'props.d63-5', category: 'props', brand: 'Gemfan', name: 'D63-5 2.5" ducted', priceUsd: 4, weightG: 5, qty: 3, specs: { propIn: 2.5 }, blurb: 'Five-blade prop for 2.5" ducts.', maker: 'https://www.gemfanhobby.com' }),
-  P({ id: 'props.1610-3', category: 'props', brand: 'Gemfan', name: '1610 40 mm 3-blade', priceUsd: 3, weightG: 1, qty: 4, specs: { propIn: 1.6 }, blurb: 'Whoop prop for 0802 motors.', maker: 'https://www.gemfanhobby.com' }),
+  P({ id: 'props.ethix-s5', category: 'props', brand: 'HQProp', name: 'Ethix S5 5x4x3', priceUsd: 4, weightG: 17, qty: 3, specs: { propIn: 5, blades: 3 }, blurb: 'Smooth freestyle prop.', maker: 'https://www.hqprop.com' }),
+  P({ id: 'props.hurricane-51466', category: 'props', brand: 'Gemfan', name: 'Hurricane 51466', priceUsd: 4, weightG: 17, qty: 3, specs: { propIn: 5.1, blades: 3 }, blurb: 'Grippy, durable 5.1" prop.', maker: 'https://www.gemfanhobby.com' }),
+  P({ id: 'props.hq-7x4x3', category: 'props', brand: 'HQProp', name: '7x4x3 Durable', priceUsd: 6, weightG: 32, qty: 2, specs: { propIn: 7, blades: 3 }, blurb: 'Efficient 7" long-range prop.', maker: 'https://www.hqprop.com' }),
+  P({ id: 'props.d90-5', category: 'props', brand: 'Gemfan', name: 'D90-5 3.5" ducted', priceUsd: 5, weightG: 10, qty: 3, specs: { propIn: 3.5, blades: 5 }, blurb: 'Five-blade prop for 3.5" ducts.', maker: 'https://www.gemfanhobby.com' }),
+  P({ id: 'props.d63-5', category: 'props', brand: 'Gemfan', name: 'D63-5 2.5" ducted', priceUsd: 4, weightG: 5, qty: 3, specs: { propIn: 2.5, blades: 5 }, blurb: 'Five-blade prop for 2.5" ducts.', maker: 'https://www.gemfanhobby.com' }),
+  P({ id: 'props.1610-3', category: 'props', brand: 'Gemfan', name: '1610 40 mm 3-blade', priceUsd: 3, weightG: 1, qty: 4, specs: { propIn: 1.6, blades: 3 }, blurb: 'Whoop prop for 0802 motors.', maker: 'https://www.gemfanhobby.com' }),
   // Batteries
   P({ id: 'battery.rline-6s-1300', category: 'battery', brand: 'Tattu', name: 'R-Line 6S 1300mAh', priceUsd: 40, weightG: 210, qty: 4, specs: { series: 6, mah: 1300, chem: 'LiPo' }, blurb: 'Hard-hitting 6S pack for 5" freestyle.', maker: 'https://genstattu.com' }),
   P({ id: 'battery.cnhl-6s-1100', category: 'battery', brand: 'CNHL', name: 'Black Series 6S 1100mAh', priceUsd: 28, weightG: 185, qty: 4, specs: { series: 6, mah: 1100, chem: 'LiPo' }, blurb: 'Budget 6S freestyle pack.', maker: 'https://chinahobbyline.com' }),
@@ -93,7 +95,7 @@ export const PARTS: Part[] = [
   P({ id: 'battery.bt2-1s-300', category: 'battery', brand: 'BetaFPV', name: 'BT2.0 1S 300mAh', priceUsd: 4, weightG: 8, qty: 6, specs: { series: 1, mah: 300, chem: 'LiHV' }, blurb: 'Whoop pack. Buy a handful.', maker: 'https://betafpv.com' }),
   // Receivers
   P({ id: 'rx.rp1-v2', category: 'receiver', brand: 'RadioMaster', name: 'RP1 V2 ExpressLRS 2.4GHz', priceUsd: 16, weightG: 1, specs: { link: 'ELRS 2.4' }, blurb: 'Tiny ExpressLRS receiver for any freestyle build.', maker: 'https://radiomasterrc.com' }),
-  P({ id: 'rx.rp4td', category: 'receiver', brand: 'RadioMaster', name: 'RP4TD ExpressLRS 2.4GHz true diversity', priceUsd: 25, weightG: 3, specs: { link: 'ELRS 2.4' }, blurb: 'Two radios, two antennas: the most robust 2.4 GHz link for long range.', maker: 'https://radiomasterrc.com' }),
+  P({ id: 'rx.rp4td', category: 'receiver', brand: 'RadioMaster', name: 'RP4TD ExpressLRS 2.4GHz true diversity', priceUsd: 25, weightG: 3, specs: { link: 'ELRS 2.4', diversity: true }, blurb: 'Two radios, two antennas: the most robust 2.4 GHz link for long range.', maker: 'https://radiomasterrc.com' }),
   P({ id: 'rx.betafpv-elrs-900', category: 'receiver', brand: 'BetaFPV', name: 'ELRS Nano 900MHz', priceUsd: 17, weightG: 1.5, specs: { link: 'ELRS 900' }, blurb: '900 MHz ExpressLRS for penetration and range.', maker: 'https://betafpv.com' }),
   P({ id: 'rx.crossfire-nano', category: 'receiver', brand: 'TBS', name: 'Crossfire Nano RX', priceUsd: 30, weightG: 1, specs: { link: 'Crossfire' }, blurb: 'Crossfire 868/915 MHz receiver.', maker: 'https://www.team-blacksheep.com' }),
   // Video
@@ -122,6 +124,14 @@ export const PARTS: Part[] = [
   P({ id: 'goggles.cobra-x', category: 'goggles', brand: 'Skyzone', name: 'Cobra X V4 analog', priceUsd: 219, specs: { video: 'analog' }, blurb: 'Analog box goggles with a receiver module built in.', maker: 'https://www.skyzonefpv.com' }),
   P({ id: 'goggles.ev800d', category: 'goggles', brand: 'Eachine', name: 'EV800D analog', priceUsd: 100, specs: { video: 'analog' }, blurb: 'Cheap analog box goggles to start on.' }),
   P({ id: 'charger.m7ac', category: 'charger', brand: 'ToolkitRC', name: 'M7AC', priceUsd: 79, specs: {}, blurb: 'AC/DC charger for 1S–6S packs.', maker: 'https://www.toolkitrc.com' }),
+  // Extras: nice to have, on the aircraft or on the bench. Weight counts only for parts that fly.
+  P({ id: 'extra.vifly-finder-mini', category: 'other', brand: 'ViFly', name: 'Finder Mini lost-model buzzer', priceUsd: 15, weightG: 4, specs: {}, blurb: 'Beeps for hours after a crash, even with the battery thrown, so you find it in long grass.' }),
+  P({ id: 'extra.straps', category: 'other', brand: 'Generic', name: 'Kevlar battery straps, 5 pack', priceUsd: 8, weightG: 6, specs: {}, blurb: 'Straps wear out. Keep spares.' }),
+  P({ id: 'extra.gopro-13', category: 'other', brand: 'GoPro', name: 'HERO13 Black', priceUsd: 399, weightG: 154, specs: {}, blurb: 'Stabilised action camera for clean footage from an analog quad.', maker: 'https://gopro.com' }),
+  P({ id: 'extra.shortsaver', category: 'other', brand: 'ViFly', name: 'ShortSaver 2 smoke stopper', priceUsd: 20, specs: {}, blurb: 'Plug in before the first battery: it cuts power on a short instead of letting the magic smoke out.' }),
+  P({ id: 'extra.pinecil', category: 'other', brand: 'Pine64', name: 'Pinecil V2 soldering iron', priceUsd: 26, specs: {}, blurb: 'Small, hot and cheap. Enough for every joint on a quad.', maker: 'https://pine64.com' }),
+  P({ id: 'extra.lipo-bag', category: 'other', brand: 'Generic', name: 'LiPo safe charging bag', priceUsd: 12, specs: {}, blurb: 'Charge and store packs in it.' }),
+  P({ id: 'extra.xt60-pigtails', category: 'other', brand: 'Generic', name: 'XT60 pigtails, 5 pack', priceUsd: 7, specs: {}, blurb: 'Spare battery leads for when one gets ripped off.' }),
   P({ id: 'charger.bt2-6port', category: 'charger', brand: 'BetaFPV', name: 'BT2.0 1S six-port charger', priceUsd: 20, specs: {}, blurb: 'Charges six whoop packs at once.', maker: 'https://betafpv.com' }),
 ];
 export const PART_BY_ID = new Map(PARTS.map(p => [p.id, p]));

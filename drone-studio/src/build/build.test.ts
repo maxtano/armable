@@ -112,3 +112,15 @@ describe('finding and comparing', () => {
     expect(c.rows.find(r => r.label === 'Video transmitter')!.values[1]).toMatch(/O4 Air Unit Pro/);
   });
 });
+
+describe('extras', () => {
+  it('groups parts into essentials, extras and gear, and only weighs extras that fly', async () => {
+    const { groupOf } = await import('./build');
+    expect(['frame', 'antenna', 'gps', 'other', 'radio'].map(groupOf)).toEqual(['essential', 'essential', 'extra', 'extra', 'gear']);
+    const base = provenBuild('proven.5in-analog-starter'), before = analyse(base).weightG!;
+    const b = applyBuildOps(base, [{ op: 'add', part: 'extra.pinecil' }, { op: 'add', part: 'extra.vifly-finder-mini' }], 'you');
+    expect(b.items.filter(i => i.category === 'other').map(i => i.slot)).toEqual(['other.1', 'other.2']);
+    expect(analyse(b).weightG).toBe(before + 4);
+    expect(analyse(b).costUsd).toBe(analyse(base).costUsd + 41);
+  });
+});

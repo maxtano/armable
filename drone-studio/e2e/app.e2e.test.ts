@@ -123,10 +123,21 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
       await page.waitForSelector('.bd-row:has-text("Source One")');
       expect(await page.locator('.bd-row:not(.is-empty)').count()).toBe(9);
       await page.click('[aria-label="Swap the Motors"]');
-      await page.click('.bd-option:has-text("Velox") button:has-text("Swap in")');
+      await page.click('.bd-product:has-text("Velox") button:has-text("Swap in")');
       await page.waitForSelector('.bd-row:has-text("Velox")');
       const doc = (await claude.call('read', { ids: [build.id] })).values[0].value;
       expect(doc.parts.find((p: { slot: string }) => p.slot === 'motors')).toMatchObject({ part: 'motor.velox-v2207-1950', qty: 4 });
+      // Rate a part from its page, and see the stars on the sheet.
+      await page.click('.bd-row:has-text("Velox") .bd-name-link');
+      await page.click('.bd-rate-stars button[aria-label="4 stars"]');
+      await page.fill('.bd-rate textarea', 'Smooth and tough.');
+      await page.click('button:has-text("Post rating")');
+      await page.waitForSelector('.bd-review:has-text("Smooth and tough.")');
+      await page.keyboard.press('Escape');
+      await page.waitForSelector('.bd-row:has-text("Velox") .bd-rating:has-text("4.0 (1)")');
+      await page.click('[role=radio]:has-text("Browse parts")');
+      await page.click('.bd-cats button:has-text("Battery")');
+      expect(await page.locator('.bd-product').count()).toBe(6);
       await page.click('[role=radio]:has-text("Compare")');
       await page.waitForSelector('.bd-table');
       expect(errors).toEqual([]);

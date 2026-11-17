@@ -6,13 +6,17 @@ import { PART_BY_ID, PARTS, PROVEN, PROVEN_BY_ID, storeLinks, type Category, typ
  * the assistant's tools, so a part added by either shows the same checks, cost and weight.
  */
 
-export const SLOTS: { id: Category; label: string; gear?: boolean; needed?: boolean }[] = [
+/** Essentials make it fly, extras make it better, and gear is what you need to fly it. */
+export type Group = 'essential' | 'extra' | 'gear';
+export const SLOTS: { id: Category; label: string; gear?: boolean; needed?: boolean; extra?: boolean }[] = [
   { id: 'frame', label: 'Frame', needed: true }, { id: 'motors', label: 'Motors', needed: true }, { id: 'stack', label: 'Flight controller + ESC', needed: true },
   { id: 'props', label: 'Props', needed: true }, { id: 'battery', label: 'Battery', needed: true }, { id: 'receiver', label: 'Receiver', needed: true },
-  { id: 'vtx', label: 'Video transmitter', needed: true }, { id: 'camera', label: 'Camera', needed: true }, { id: 'antenna', label: 'Video antenna' }, { id: 'gps', label: 'GPS' },
+  { id: 'vtx', label: 'Video transmitter', needed: true }, { id: 'camera', label: 'Camera', needed: true }, { id: 'antenna', label: 'Video antenna' }, { id: 'gps', label: 'GPS', extra: true },
   { id: 'radio', label: 'Radio', gear: true }, { id: 'goggles', label: 'Goggles', gear: true }, { id: 'charger', label: 'Charger', gear: true },
 ];
-export const SLOT_LABEL: Record<string, string> = Object.fromEntries([...SLOTS.map(s => [s.id, s.label]), ['other', 'Other']]);
+export const SLOT_LABEL: Record<string, string> = Object.fromEntries([...SLOTS.map(s => [s.id, s.label]), ['other', 'Extra']]);
+export const groupOf = (category: string): Group => category === 'other' || category === 'gps' ? 'extra' : GEAR_IDS.has(category) ? 'gear' : 'essential';
+const GEAR_IDS = new Set(['radio', 'goggles', 'charger']);
 const CATEGORIES = [...SLOTS.map(s => s.id), 'other'] as unknown as [Category, ...Category[]];
 const GEAR = new Set(['radio', 'goggles', 'charger']);
 export const STYLES = ['freestyle', 'cinematic', 'long-range', 'racing', 'whoop', 'other'] as const;
@@ -252,7 +256,7 @@ export function analyse(build: Build): Analysis {
   let dry = 0, known = true;
   for (const r of flying) {
     if (r.item.category === 'battery') continue;
-    if (r.weightG === undefined) { known = false; continue; }
+    if (r.weightG === undefined) { if (r.item.category !== 'other') known = false; continue; }
     dry += r.weightG * (r.item.category === 'motors' ? Math.min(r.item.qty, 4) : r.item.category === 'props' ? 1 : r.item.qty);
   }
   const needsForWeight = ['frame', 'motors', 'stack', 'props'].every(s => at(s));

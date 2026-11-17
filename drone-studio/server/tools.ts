@@ -430,10 +430,12 @@ async function shopHits(ctx: ToolContext, args: { query: string; kinds?: string[
   const found = searchParts(args.query, { category, limit: 40 });
   const fits = build && category ? alternatives(build, category, 40).filter(f => found.includes(f.part)) : undefined;
   const parts: Part[] = fits ? fits.map(f => f.part) : found;
+  const ratings = await ctx.services.ratings();
   for (const part of parts.slice(0, limit)) {
     const s = part.specs, fit = build ? (fits?.find(f => f.part === part) ?? fitOf(build, part)) : undefined;
     out.push({ kind: 'part', id: part.id, title: `${part.brand} ${part.name}`, part: part.category,
       summary: [part.blurb, `$${part.priceUsd} typical`, s.kv && `${s.kv} KV`, s.cells && cellRange(s.cells), s.series && `${s.series}S ${s.mah} mAh`, s.propIn && `${s.propIn}"`, s.mounts && `${s.mounts.join('/')} mount`, s.video, s.link, part.weightG && `${part.weightG} g`].filter(Boolean).join(' · '),
+      ...(ratings[part.id] ? { rating: `${ratings[part.id].average}/5 from ${ratings[part.id].count}` } : {}),
       ...(fit ? { fit: fit.fit, problems: fit.problems.length ? fit.problems : undefined, costChangeUsd: fit.costDeltaUsd } : {}),
       use: { tool: 'edit', arguments: { document: row?.id ?? '<build id>', baseRevision: row?.rev ?? 1, operations: [{ op: 'add', part: part.id }] } } });
   }

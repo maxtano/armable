@@ -43,7 +43,7 @@ export interface State {
   grants: GrantInfo[];
   /** The build open in the Build view, its tab, and the builds picked for comparison. */
   build?: string;
-  buildTab?: 'mine' | 'proven' | 'compare';
+  buildTab?: 'mine' | 'parts' | 'proven' | 'compare';
   compare?: string[];
 }
 export const EMPTY_SNAP: AircraftSnapshot = { status: 'idle', settingsLoaded: 'none', settingsCount: 0, tests: [], escs: [], logs: [] };

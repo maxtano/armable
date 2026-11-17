@@ -10,6 +10,7 @@ import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middlew
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { projectSchema } from '../src/core/model';
 import { applyBuildOps, BUILD_OPS_HINT, BuildError, buildSchema, type Build } from '../src/build/build';
+import { PART_BY_ID } from '../src/build/catalog';
 import type { Mirror } from '../src/map/map';
 import type { Condition } from '../src/device/types';
 import { Auth, OAuthProvider, SCOPES } from './auth';
@@ -117,7 +118,7 @@ export function createApp(options: AppOptions) {
   api.use(person);
   api.put('/mode', wrap(async req => { const mode = req.body.mode as AssistantMode; if (!['off', 'observe', 'propose'].includes(mode)) throw new ToolError('invalid', 'Unknown mode.'); await services.setMode(req.account, mode); }));
   api.delete('/assistants/:client', wrap(async req => { await auth.disconnect(req.account, String(req.params.client)); services.hub(req.account).notify('assistants'); }));
-  api.delete('/account', wrap(async (req, res) => { await tracker.deleteAccount(req.account); await auth.deleteAccount(req.account); res.setHeader('Set-Cookie', cookie.serialize(COOKIE, '', { path: '/', maxAge: 0 })); }));
+  api.delete('/account', wrap(async (req, res) => { await services.forgetRatings(req.account); await tracker.deleteAccount(req.account); await auth.deleteAccount(req.account); res.setHeader('Set-Cookie', cookie.serialize(COOKIE, '', { path: '/', maxAge: 0 })); }));
   api.get('/export', wrap(async req => ({ exportedAt: new Date().toISOString(), documents: (await services.docs(req.account)).map(r => ({ id: r.id, revision: r.rev, kind: r.data.kind, name: r.data.name, content: r.data.content })), activity: await services.activity(req.account, 1000) })));
 
   api.get('/oauth/:id', wrap(async req => { const p = await auth.pending(String(req.params.id), req.account); return { client: p.client.name, scopes: p.params.scopes, redirectHost: new URL(p.params.redirectUri).host }; }));
@@ -145,6 +146,18 @@ export function createApp(options: AppOptions) {
   }));
   api.post('/docs/:id/undo', wrap(async req => { const row = await services.undoDoc(req.account, String(req.params.id), 'you'); return { id: row.id, revision: row.rev }; }));
   api.delete('/docs/:id', wrap(async req => { await services.deleteDoc(req.account, String(req.params.id)); }));
+
+  // Ratings of catalog parts, shared by everyone who uses Lucidity. One per person per part.
+  const ratedPart = (id: string) => { if (!PART_BY_ID.has(id)) throw new ToolError('not_found', 'Only parts in the catalog can be rated.'); return id; };
+  api.get('/ratings', wrap(async req => services.ratings(req.account)));
+  api.get('/ratings/:part', wrap(async req => services.reviews(ratedPart(String(req.params.part)), req.account)));
+  api.put('/ratings/:part', wrap(async req => {
+    const stars = Number(req.body.stars);
+    if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new ToolError('invalid', 'Give 1 to 5 stars.');
+    const review = req.body.review === undefined || req.body.review === null ? undefined : text(req.body.review, 600);
+    return services.rate(req.account, ratedPart(String(req.params.part)), stars, review);
+  }));
+  api.delete('/ratings/:part', wrap(async req => services.rate(req.account, ratedPart(String(req.params.part)), null)));
 
   api.get('/activity', wrap(async req => services.activity(req.account, 200)));
   api.post('/activity', wrap(async req => {
