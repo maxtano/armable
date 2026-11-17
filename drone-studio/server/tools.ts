@@ -13,7 +13,7 @@ import type { Row } from './store';
  * Nothing here can approve a proposal, confirm a physical condition, or arm an aircraft: those abilities do not exist
  * in this file.
  */
-export interface ToolContext { account: string; who: string; services: Services; now(): number }
+export interface ToolContext { account: string; who: string; services: Services; now(): number; /** What this assistant's sign-in allows. Absent in tests means everything. */ scopes?: string[] }
 export interface ToolDef {
   name: string; title: string; description: string;
   /** 0 observe, 1 design, 2 propose. */
@@ -46,6 +46,8 @@ async function gate(ctx: ToolContext, level: 0 | 1 | 2) {
   const mode = (await ctx.services.account(ctx.account))?.assistantMode ?? 'propose';
   if (mode === 'off') fail('assistants_off', 'Assistants are switched off in Lucidity.', 'The person can switch them on from the assistant chip in Lucidity.');
   if (mode === 'observe' && level > 0) fail('observe_only', 'Assistants are set to observe only in Lucidity.', 'The person can allow changes from the assistant chip in Lucidity.');
+  const need = level === 2 ? 'propose' : level === 1 ? 'design' : 'observe';
+  if (ctx.scopes && !ctx.scopes.includes(need)) fail('not_allowed', `This assistant was not given permission to ${need === 'propose' ? 'propose changes to the aircraft' : need === 'design' ? 'edit documents' : 'read'}.`, 'The person can reconnect the assistant and allow it.');
   ctx.services.hub(ctx.account).assistants.set(ctx.who, ctx.now());
 }
 
