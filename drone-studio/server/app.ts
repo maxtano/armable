@@ -1,3 +1,4 @@
+import { agentSkill, onboardingUrls } from './onboarding';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -102,6 +103,8 @@ export function createApp(options: AppOptions) {
   api.post('/signup', limiter, wrap(async (req, res) => { const account = await auth.signUp(text(req.body.email), text(req.body.password)); setSession(res, await auth.startSession(account.id)); return { email: account.email }; }));
   api.post('/login', limiter, wrap(async (req, res) => { const account = await auth.signIn(text(req.body.email), text(req.body.password)); setSession(res, await auth.startSession(account.id)); return { email: account.email }; }));
   api.post('/logout', wrap(async (req, res) => { await auth.endSession(sessionToken(req)); res.setHeader('Set-Cookie', cookie.serialize(COOKIE, '', { httpOnly: true, secure, sameSite: 'lax', path: '/', maxAge: 0 })); }));
+  // Public: where assistants connect, for the “Connect your AI” menu on the intro page.
+  api.get('/connect', wrap(async () => { const { mcpUrl, skillUrl } = onboardingUrls(publicUrl); return { mcpUrl, skillUrl }; }));
   api.get('/me', wrap(async req => {
     const id = await auth.session(sessionToken(req));
     const account = id ? await services.account(id) : undefined;
@@ -181,6 +184,9 @@ export function createApp(options: AppOptions) {
   app.use('/api', api);
 
   // ---- The built interface -----------------------------------------------------------------------------------------
+
+  // Setup instructions an agent can read and follow on its own (“Setup for agents”).
+  app.get('/agent-onboarding/SKILL.md', (_req, res) => { res.type('text/markdown; charset=utf-8').set('Cache-Control', 'public, max-age=300').send(agentSkill(publicUrl)); });
 
   const dir = options.staticDir && existsSync(options.staticDir) ? resolve(options.staticDir) : undefined;
   if (dir) {

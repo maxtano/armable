@@ -107,6 +107,29 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     } finally { await claude.close(); await page.close(); }
   });
 
+  it('offers one-click setup for assistants, and a prompt that lets any agent set itself up', async () => {
+    const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (e: Error) => errors.push(e.message));
+    await page.goto(app.base);
+    await page.getByRole('button', { name: /Connect your AI/ }).click();
+    const items = page.locator('.lu-connect-menu [role=menuitem]');
+    expect(await items.allInnerTexts()).toEqual(['Claude', 'ChatGPT', 'Claude Code', 'Cursor', 'VS Code', 'Setup for agents']);
+    await page.click('[data-connect=agents]');
+    await page.waitForSelector('.lu-connect-next:has-text("Paste it into any agent")');
+    const prompt = await page.evaluate(() => navigator.clipboard.readText());
+    expect(prompt).toBe(`Read and follow ${app.base}/agent-onboarding/SKILL.md`);
+    const skill = await (await fetch(prompt.replace('Read and follow ', ''))).text();
+    expect(skill).toContain(`${app.base}/mcp`);
+    await page.click('[data-connect=claude-code]');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`claude mcp add --transport http lucidity ${app.base}/mcp`);
+    await page.keyboard.press('Escape');
+    expect(await page.locator('.lu-connect-menu').count()).toBe(0);
+    expect(errors).toEqual([]);
+    await context.close();
+  });
+
   it('works at phone width', async () => {
     const { page, errors } = await signedInPage(390, 844);
     await page.click('[data-demo=betaflight]');
