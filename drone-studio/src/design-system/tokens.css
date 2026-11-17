@@ -107,6 +107,10 @@
   --ds-selection: #536b72;
   --ds-selection-text: #ffffff;
   --ds-grid: #b1c9c70a;
+  /* Anything an assistant does is marked in this colour. */
+  --lu-ai: var(--ds-mauve);
+  --lu-ai-bg: var(--ds-mauve-bg);
+  --ds-on-warning: #2a2114;
   --texture-grain: url('/textures/grain.svg');
 }
 
@@ -156,6 +160,10 @@
   --ds-selection: #e1d2e4;
   --ds-selection-text: #46304b;
   --ds-grid: #775d430a;
+  /* Anything an assistant does is marked in this colour. */
+  --lu-ai: #7a4f86;
+  --lu-ai-bg: #efe6f1;
+  --ds-on-warning: #2a2114;
   --texture-grain: none;
 }
 

@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars and adjust.
+region      = "us-east-1"
+environment = "prod"
+
+# Optional: serve on your own domain. Needs a Route 53 hosted zone for it.
+# domain_name     = "app.example.com"
+# route53_zone_id = "Z0123456789ABCDEFGHIJ"
+
+# Set false if this AWS account already has the GitHub OIDC provider.
+# create_github_oidc_provider = false

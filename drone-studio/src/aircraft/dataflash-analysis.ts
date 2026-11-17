@@ -16,7 +16,7 @@ const MAX_METRIC_SAMPLES = 50_000;
 const MAX_TRACE_SAMPLES = 600;
 const MAX_MODE_CHANGES = 128;
 
-type GroupName = 'ATT' | 'RATE' | 'VIBE' | 'CTUN' | 'BAT' | 'MODE';
+export type GroupName = 'ATT' | 'RATE' | 'VIBE' | 'CTUN' | 'BAT' | 'MODE';
 type Value = number | string | null;
 type Row = Record<string, Value>;
 type Definition = { length: number; name: string; format: string; labels: string[]; supported: boolean };
@@ -30,7 +30,7 @@ export type NumericSummary = {
 };
 
 export type FlightLogAnalysis = {
-  format: 'ArduPilot DataFlash';
+  format: 'ArduPilot DataFlash' | 'Betaflight Blackbox';
   bytes: number;
   parsedRecords: number;
   skippedBytes: number;
