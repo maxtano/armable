@@ -1,5 +1,7 @@
 # ChatGPT as the Lucidity interface
 
+> **Superseded November 17, 2026** by the tool-app plan: [vision](TOOL_APP_VISION.md), [architecture](TOOL_APP_ARCHITECTURE.md), [execution](TOOL_APP_EXECUTION.md). Kept for its measurements plan and hardware-boundary reasoning.
+
 **Status: plan, October 22, 2026.** Lucidity's built-in chat assistant is being removed. This document describes a faster way for ChatGPT/Codex to operate Lucidity's existing expert tools. A ChatGPT connection, tunnel, and live-model evaluation are **not implemented or verified** by this plan.
 
 ## Why the current interaction feels slow

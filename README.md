@@ -33,7 +33,7 @@ The goal is a workspace where **people and AI agents use the same precise, inspe
 | **Agent tooling** | Shared atomic show-editing commands, a JSON CLI, and a synthetic evaluation harness. |
 | **Drone Show** | 3D choreography, individual light and motion keyframes, a timeline, audience previews, and editable design exports. |
 
-**In development:** connected build histories, broader hardware support, and deeper agent workflows across the workspace. The app currently has no integrated AI chat. See the [product brief](drone-studio/docs/PRODUCT_BRIEF.md) for the full direction.
+**In development:** connected build histories, broader hardware support, and deeper agent workflows across the workspace. The app currently has no integrated AI chat. See the [product brief](drone-studio/docs/PRODUCT_BRIEF.md) for the full direction. The planned next step is to make Lucidity a tool app that your own AI assistant operates: [vision](drone-studio/docs/TOOL_APP_VISION.md), [architecture](drone-studio/docs/TOOL_APP_ARCHITECTURE.md), [execution plan](drone-studio/docs/TOOL_APP_EXECUTION.md).
 
 <details>
 <summary>Prototype status and hardware boundaries</summary>
