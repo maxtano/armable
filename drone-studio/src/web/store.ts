@@ -15,6 +15,7 @@ export interface ProposalCard {
   status: string; expiresAt: number; result?: { ok: boolean | null; summary: string };
 }
 export interface ActivityItem { id: string; at: number; who: string; kind: string; title: string; part?: string; ids?: string[]; ok?: boolean | null; detail?: any }
+export interface GrantInfo { id: string; expiresAt: number; aircraftName: string; parts: string[]; tests: string[]; conditions: string[]; maxChanges: number; used: number }
 export interface DocMeta { id: string; revision: number; kind: 'storyboard' | 'tune' | 'file' | 'snapshot'; name: string; updatedBy: string; updatedAt: number; canUndo: boolean }
 /** A visible trace of something that just happened to a part or setting. */
 export interface Mark { kind: 'reading' | 'changed'; by: string; at: number }
@@ -39,9 +40,10 @@ export interface State {
   busy?: string;
   consent?: string;
   docRevision: number;
+  grants: GrantInfo[];
 }
 export const EMPTY_SNAP: AircraftSnapshot = { status: 'idle', settingsLoaded: 'none', settingsCount: 0, tests: [], escs: [], logs: [] };
-let state: State = { view: 'drone', snap: EMPTY_SNAP, settings: [], proposals: [], activity: [], docs: [], marks: {}, live: false, follow: true, docRevision: 0 };
+let state: State = { view: 'drone', snap: EMPTY_SNAP, settings: [], proposals: [], activity: [], docs: [], marks: {}, live: false, follow: true, docRevision: 0, grants: [] };
 const listeners = new Set<() => void>();
 export const get = () => state;
 export function set(patch: Partial<State> | ((s: State) => Partial<State>)) {

@@ -9,6 +9,7 @@ import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middlew
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { projectSchema } from '../src/core/model';
 import type { Mirror } from '../src/map/map';
+import type { Condition } from '../src/device/types';
 import { Auth, OAuthProvider, SCOPES } from './auth';
 import { buildMcp } from './mcp';
 import { Services, ToolError, type AssistantMode, type DocKind, type Focus } from './services';
@@ -142,6 +143,14 @@ export function createApp(options: AppOptions) {
     await services.log(req.account, { who: 'you', kind: ['read', 'test', 'change', 'edit', 'connect', 'show'].includes(b.kind) ? b.kind : 'change', title: text(b.title, 160), part: typeof b.part === 'string' ? b.part.slice(0, 20) : undefined, ok: typeof b.ok === 'boolean' ? b.ok : b.ok === null ? null : undefined, ids: Array.isArray(b.ids) ? b.ids.slice(0, 24).map(String) : undefined, detail: b.detail });
   }));
 
+  api.get('/grants', wrap(async req => services.grants(req.account)));
+  api.post('/grants', wrap(async req => {
+    const b = req.body ?? {};
+    const list = (v: unknown) => Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').slice(0, 20) : [];
+    const conditions = list(b.conditions).filter(c => ['propsRemoved', 'directUsb', 'batteryConnected', 'batteryDisconnected', 'areaClear', 'level', 'still'].includes(c)) as Condition[];
+    return services.createGrant(req.account, { parts: list(b.parts), tests: list(b.tests), minutes: Number(b.minutes), maxChanges: Number(b.maxChanges), conditions });
+  }));
+  api.delete('/grants/:id', wrap(async req => { await services.revokeGrant(req.account, String(req.params.id)); }));
   api.get('/data', wrap(async req => tracker.summary(req.account)));
   api.get('/data/:table', wrap(async req => {
     const table = String(req.params.table) as TrackTable;
