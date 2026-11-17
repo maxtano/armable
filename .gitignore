@@ -26,9 +26,9 @@ __pycache__/
 # Device data, backups, local experiments and unreviewed captures
 artifacts/
 workbench-files/
-/direction-lab/data/
-/direction-lab/preview.png
-/direction-lab/plugins/lucidity-lab/.mcp.json
+/archive/direction-lab/data/
+/archive/direction-lab/preview.png
+/archive/direction-lab/plugins/lucidity-lab/.mcp.json
 /drone-studio/docs/esc-*.json
 /drone-studio/docs/screenshots/
 /drone-studio/docs/INPUT.md

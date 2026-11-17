@@ -2,6 +2,19 @@
 
 **Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** How to get from the current code to the product in [TOOL_APP_VISION.md](TOOL_APP_VISION.md), with the interface in [TOOL_APP_DESIGN.md](TOOL_APP_DESIGN.md) and the design in [TOOL_APP_ARCHITECTURE.md](TOOL_APP_ARCHITECTURE.md). No phase has started.
 
+## Build status, November 17, 2026
+
+Decisions taken: design edits apply at once with undo; Postgres for storage; simple email and password sign-in; hosted only; `direction-lab` archived.
+
+| Area | Built | Proven against |
+| --- | --- | --- |
+| Device layer (`src/device`) | MAVLink codec (51 messages, cross-checked against `node-mavlink`), MSP v1/v2, ArduPilot/PX4 driver, Betaflight/INAV driver (MSP plus console), BLHeli four-way ESC read, settings write and flash, STM32 DFU and PX4 bootloader flashing, Web Serial and WebUSB adapters, runtime with detection, reconnection and single-use approvals | Simulated flight controllers, ESC bank and bootloaders that speak the real bytes |
+| Map and tools (`src/map`, `server/tools.ts`) | Readings, tests, settings, 12 playbooks, 23 references; the eleven tools | Tool tests against simulated aircraft on both stacks |
+| Cloud (`server`) | Postgres and memory stores, sign-in, OAuth with PKCE for assistants, stateless MCP endpoint, live WebSocket, documents, proposals, activity | Integration tests over real HTTP, MCP and WebSocket, on Postgres 16 |
+| Interface (`src/web`) | Intro page, living diagram, part panels, on-the-part approval, timeline, Signals, Flights, all settings with backups, Sound, Show (existing editor, account-backed), assistant connection and consent | Playwright end-to-end tests in Chromium, desktop and phone width |
+
+Not yet built: Betaflight blackbox download, OSD layout editor, VTX tables, receiver and radio firmware, AM32 ESCs, scoped grants, offline use, connector-directory listings. **No new driver has run on real hardware yet.** Phase 0's hardware spike is still the first thing to do with a real aircraft.
+
 ## Approach
 
 - **Riskiest assumption first.** The hosted design depends on a browser tab talking reliably to a flight controller and its ESCs. That is tested before anything is built on it.

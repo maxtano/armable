@@ -1,78 +1,72 @@
 <div align="center">
 
-<img src="drone-studio/public/favicon.svg" width="48" height="48" alt="Lucidity" />
+<img src="drone-studio/public/favicon.svg" width="44" height="44" alt="" />
 
 # Lucidity
 
-### The agent-first workspace for drone engineering.
+**Your drone. Your AI. One bench.**
 
-Set up, configure, and program your drones—with the tools and evidence in one place.
+Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen.
 
-**[Explore the live workspace →](https://maxtano.github.io/lucidity/)** · [Run locally](#run-locally) · [Product vision](drone-studio/docs/PRODUCT_BRIEF.md)
-
-[![Build and tests](https://github.com/maxtano/lucidity/actions/workflows/pages.yml/badge.svg)](https://github.com/maxtano/lucidity/actions/workflows/pages.yml)
-
-[![Lucidity’s all-in-one workspace preview, with aircraft configuration and an inspectable agent workflow](docs/media/workspace-preview.jpg)](https://maxtano.github.io/lucidity/)
-
-<sub>Configuration and agent workflow preview · Synthetic aircraft · Scripted agent walkthrough<br/>[View full-size image](docs/media/workspace-preview.jpg) · No account or hardware needed</sub>
+<img src="docs/media/intro.png" alt="Lucidity: a drawing of a quad with motor 3 fixed, and a short chat asking to fix it" width="760" />
 
 </div>
 
-## The vision
+## How it works
 
-Drone engineering spans parts, firmware, parameters, code, and flight logs. Lucidity connects that work around the aircraft: what changed, where it changed, and whether it worked.
+```mermaid
+flowchart LR
+  you([You]) -- "Motor 3 spins backwards" --> ai[Claude or ChatGPT<br/>on your subscription]
+  ai -- tools --> cloud[Lucidity]
+  cloud -- live --> tab[Lucidity in your browser]
+  tab -- USB --> drone((Drone))
+  tab -. "you click Approve" .-> drone
+```
 
-The goal is a workspace where **people and AI agents use the same precise, inspectable tools**. Inspect the state, propose a change, review the difference, and verify the result. Drone shows are one application of that broader engineering workflow.
+1. **Plug in.** Open Lucidity in Chrome or Edge and connect over USB. Nothing to install.
+2. **Ask.** Add Lucidity to your assistant with one link. No API key.
+3. **Approve.** The change appears on the part it affects. Nothing touches the drone until you click.
 
-## What works today
+<img src="docs/media/proposal.png" alt="Claude proposes reversing motor 3. A ghost arrow and an Approve button appear on the motor itself." width="760" />
 
-| Workspace | In the prototype |
-| --- | --- |
-| **Tools** | Local ArduPilot telemetry, parameter inspection and verified edits, ESC configuration and firmware workflows, and flight-log analysis. |
-| **Music & Code** | Motor melody composition, supported ESC startup tunes, a local code editor, and reviewed terminal commands. |
-| **Agent tooling** | Shared atomic show-editing commands, a JSON CLI, and a synthetic evaluation harness. |
-| **Drone Show** | 3D choreography, individual light and motion keyframes, a timeline, audience previews, and editable design exports. |
+## What it can do
 
-**In development:** connected build histories, broader hardware support, and deeper agent workflows across the workspace. The app currently has no integrated AI chat. See the [product brief](drone-studio/docs/PRODUCT_BRIEF.md) for the full direction. The planned next step is to make Lucidity a hosted tool app that your own AI assistant operates: [vision](drone-studio/docs/TOOL_APP_VISION.md), [interface design](drone-studio/docs/TOOL_APP_DESIGN.md), [architecture](drone-studio/docs/TOOL_APP_ARCHITECTURE.md), [execution plan](drone-studio/docs/TOOL_APP_EXECUTION.md).
+| | Betaflight · INAV | ArduPilot · PX4 |
+| --- | --- | --- |
+| Live readings | Attitude, battery, radio, motors, GPS, sensors, arming blocks | Same, plus vibration, EKF, status messages |
+| Every setting | Console `dump`, ranges and allowed values; features, ports, modes | Full parameter list with readback |
+| Tests | Health checks, motor spin, accelerometer and compass calibration | Same, plus level, gyro, barometer and arming checks |
+| ESCs (BLHeli_S, Bluejay) | Read, change direction and settings, flash | Same, through ArduPilot passthrough |
+| Firmware | Flight controller over DFU | Flight controller over the bootloader (`.apj`) |
+| Backups | Snapshot, compare, restore | Snapshot and compare |
+| Flight logs | Not yet | Download and analyse |
+
+Plus shows (3D storyboards), startup sounds, and a demo drone for each stack.
+
+**The assistant gets eleven tools and one searchable map** of everything the connected aircraft offers: readings, tests, settings, guides and playbooks for common problems. It can read, test and propose. It cannot approve, confirm “props removed”, or arm.
+
+## Run it
+
+```sh
+cd drone-studio
+docker compose up --build        # Lucidity + Postgres on http://localhost:8787
+```
+
+Or for development:
+
+```sh
+npm ci
+npm run build && npm run serve   # http://localhost:8787 (no DATABASE_URL: data stays in memory)
+npm test                         # unit and integration tests
+```
+
+Assistants connect to `<your address>/mcp`. Set `PUBLIC_URL` to the address people use.
 
 <details>
-<summary>Prototype status and hardware boundaries</summary>
+<summary>Status and limits</summary>
 
-The GitHub Pages preview uses synthetic aircraft data and a scripted agent walkthrough. Hardware workflows run locally. Show exports are design artifacts; guarded mission tooling has simulator evidence, not a completed physical Lucidity flight. Read the [mission gate](drone-studio/docs/MISSION_LAUNCH_GATE.md) before aircraft use.
+Every hardware path is tested against simulated flight controllers, ESCs and bootloaders that speak the real protocols. **Only the ArduPilot reads and ESC passthrough were first proven on a real aircraft; the new browser drivers, Betaflight, PX4, ESC writes and firmware flashing have not yet run on hardware.** Bench-test with props off before trusting a change. Mission upload and flight are not in the hosted app. See the [plan](drone-studio/docs/TOOL_APP_VISION.md), [design](drone-studio/docs/TOOL_APP_DESIGN.md), [architecture](drone-studio/docs/TOOL_APP_ARCHITECTURE.md) and [execution](drone-studio/docs/TOOL_APP_EXECUTION.md).
 
 </details>
 
-## Run locally
-
-Use **Node.js 24 LTS** and npm.
-
-```sh
-git clone https://github.com/maxtano/lucidity.git
-cd lucidity/drone-studio
-npm ci
-npm run dev
-```
-
-Open **http://127.0.0.1:5173**. For just the browser demo, run `npm run dev:demo` and open **http://127.0.0.1:5178/demo.html**.
-
-```sh
-npm test -- --maxWorkers=2
-npm run build
-npm run build:demo   # standalone static demo → dist-demo/
-```
-
-GitHub Pages builds and publishes the static preview from `main` through [this workflow](.github/workflows/pages.yml). No server or API credentials are deployed.
-
-## Explore the code
-
-- **[drone-studio/](drone-studio/)** — the main React, TypeScript, Three.js and MAVLink workspace.
-- **[direction-lab/](direction-lab/)** — a separate simulated-drone experiment with chat, a workbench, and an MCP server.
-- **[cad/](cad/)** — experimental printable parts and generators.
-
-[Studio guide](drone-studio/README.md) · [Architecture](drone-studio/docs/TECHNICAL.md) · [Agent tool contract](drone-studio/docs/agent-tools.json) · [Local execution & security](SECURITY.md)
-
-## License
-
-Original Lucidity code and documentation are licensed under [Apache 2.0](LICENSE). Commercial use, modification, and redistribution are permitted under its terms.
-
-Bundled Bluejay firmware (GPL-3.0-or-later), fonts (SIL OFL 1.1), and external dependencies retain their own licenses. See [NOTICE](NOTICE) and [third-party materials](SECURITY.md#third-party-materials).
+Apache 2.0 · [Security](SECURITY.md)

@@ -1,5 +1,7 @@
 # Studio agent: implementation and operation
 
+> **November 17, 2026:** the OpenAI adapter, its live mode and `.env.example` were removed. Lucidity no longer calls any model; assistants reach it over MCP ([architecture](TOOL_APP_ARCHITECTURE.md)). The scripted harness and fixture evaluations below still run.
+
 **September 27, 2026 · Current local implementation**
 
 The studio now has a bounded, model-backed tool loop over the expert editing engine, plus a scripted rehearsal that exercises the same tools without an API key. It builds an inspectable private draft; the artist can preview, apply, or discard it. The AI runtime does not simplify the editor into a set of formation recipes.

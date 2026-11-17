@@ -45,7 +45,7 @@ function Scene() {
       </svg>
       <div className="in-chat">
         <p className="in-you">Motor 3 spins backwards. Fix it.</p>
-        <p className={`in-ai${phase >= 2 ? ' is-in' : ''}`}>{flipped ? 'Done. The ESC reads back reversed.' : 'I can reverse it. Approve it on the drone.'}</p>
+        <p className={`in-ai${phase >= 2 ? ' is-in' : ''}`}>{flipped ? 'Done. Motor 3 turns the right way now.' : 'I can reverse it. Approve it on the drone.'}</p>
       </div>
     </div>
   );

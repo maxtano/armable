@@ -1,5 +1,7 @@
 # Repeatable agent editing evaluations
 
+> **November 17, 2026:** the OpenAI adapter, its live mode and `.env.example` were removed. Lucidity no longer calls any model; assistants reach it over MCP ([architecture](TOOL_APP_ARCHITECTURE.md)). The scripted harness and fixture evaluations below still run.
+
 The evaluation runner sends ordinary editing prompts through the same agent loop and tools as the studio. Each case owns a small synthetic project. It checks the resulting authored document against an independently constructed expected outcome, including content that must remain unchanged. It never loads or modifies a saved user show.
 
 There are two explicit modes. **Fixture mode** uses scripted tool calls to check the harness and evaluation machinery, with no network requests or API key. **Live mode** asks a configured model to solve the same cases. Fixture success is not evidence that a model can understand or create choreography.
