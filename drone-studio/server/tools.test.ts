@@ -326,3 +326,51 @@ describe('account isolation', () => {
     expect((await services.proposal(a.id, proposal.proposal)).status).toBe('awaiting_approval');
   });
 });
+
+describe('an assistant helping someone build a drone', () => {
+  async function noDrone() {
+    const services = makeServices();
+    const account = await makeAccount(services);
+    return { services, account, call: (name: string, args: Record<string, unknown> = {}) => callTool(services, account.id, name, args) };
+  }
+  it('finds proven builds and parts with no drone connected', async () => {
+    const { call } = await noDrone();
+    const w = await call('get_workspace');
+    expect(w.next).toMatch(/build a drone/);
+    const builds = await call('find', { query: 'long range', kinds: ['build'] });
+    expect(builds.hits[0]).toMatchObject({ kind: 'build', id: 'proven.7in-long-range', use: { tool: 'read', arguments: { ids: ['proven.7in-long-range'] } } });
+    const proven = (await call('read', { ids: ['proven.7in-long-range'] })).values[0].value;
+    expect(proven).toMatchObject({ complete: true, start: { tool: 'edit', arguments: { create: { kind: 'build' }, operations: [{ op: 'from', build: 'proven.7in-long-range' }] } } });
+    const parts = await call('find', { query: '6s battery', kinds: ['part'] });
+    expect(parts.hits.length).toBeGreaterThan(1);
+    expect(parts.hits.every((h: any) => h.kind === 'part' && h.part === 'battery' && /6S/.test(h.summary))).toBe(true);
+  });
+  it('creates a build, adds parts with checks returned every time, and compares it', async () => {
+    const { call, services, account } = await noDrone();
+    const created = await call('edit', { create: { kind: 'build', name: 'First quad' }, operations: [{ op: 'goal', set: { style: 'freestyle', propIn: 5, budgetUsd: 450, video: 'analog', owns: ['radio'] } }] });
+    const id = created.created.id;
+    expect(id).toMatch(/^build_/);
+    expect(created.created.checks.join('\n')).toMatch(/Choose a frame/);
+    const fits = await call('find', { query: 'flight controller', kinds: ['part'], part: 'stack' });
+    expect(fits.hits[0]).toMatchObject({ fit: 'fits', use: { tool: 'edit', arguments: { document: id, baseRevision: 1 } } });
+    const edited = await call('edit', { document: id, baseRevision: 1, operations: [{ op: 'from', build: 'proven.5in-analog-starter' }, { op: 'goal', set: { budgetUsd: 450 } }, { op: 'note', text: 'Starting from the proven analog starter: cheap spares while you learn.' }] });
+    expect(edited.revision).toBe(2);
+    expect(edited.checks).toMatchObject({ complete: true, budgetLeftUsd: 64 });
+    expect(edited.difference.costUsd).toEqual({ from: 0, to: 386 });
+    // Now with a build open, part hits say how they would change it.
+    const motors = await call('find', { query: 'motor', kinds: ['part'], part: 'motors' });
+    expect(motors.hits.find((h: any) => h.id === 'motor.0802se-19500')).toMatchObject({ fit: 'fails' });
+    const priced = await call('edit', { document: id, baseRevision: 2, operations: [{ op: 'price', slot: 'frame', usd: 32.99, store: 'GetFPV', url: 'https://www.getfpv.com/source-one-v5' }] });
+    expect(priced.checks.parts.find((p: any) => p.slot === 'frame')).toMatchObject({ unitUsd: 32.99, price: 'seen', seenAt: 'GetFPV' });
+    const refused = await call('edit', { document: id, baseRevision: 3, operations: [{ op: 'add', part: 'motor.velox' }] });
+    expect(refused.error).toMatchObject({ code: 'invalid', message: expect.stringMatching(/nothing changed.*Did you mean motor\.velox-v2207-1950/) });
+    const compared = (await call('read', { ids: [`compare:${id},proven.5in-dji-freestyle`] })).values[0].value;
+    expect(compared.names).toEqual(['First quad', '5" DJI O4 Pro freestyle']);
+    expect(compared.rows[0]).toMatchObject({ label: 'Cost', best: 0 });
+    const doc = (await call('read', { ids: [id] })).values[0].value;
+    expect(doc).toMatchObject({ kind: 'build', name: 'First quad', revision: 3 });
+    expect(JSON.stringify(doc).length).toBeLessThan(4000);
+    const row = await services.doc(account.id, id);
+    expect((row.data.content as any).log.map((l: any) => l.by)).toEqual(expect.arrayContaining(['Claude']));
+  });
+});

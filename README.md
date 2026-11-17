@@ -42,6 +42,8 @@ flowchart LR
 | Backups | Snapshot, compare, restore | Snapshot and compare |
 | Flight logs | Blackbox download, decode and analyse | Download and analyse |
 
+**No drone yet? Build one.** In the Build view your assistant asks what you want to fly, picks parts that work together from a catalog, and checks today’s prices online. Each part has store links and a price, and every edit shows compatibility checks, cost, weight, thrust-to-weight and flight time. Swap any part, add parts you found, start from one of six proven builds, and compare builds side by side.
+
 Plus history of every change and test, standing permissions for small changes, offline use, shows (3D storyboards), startup sounds, and a demo drone for each stack. Everything an assistant does is recorded in Postgres tables you can query.
 
 **The assistant gets eleven tools and one searchable map** of everything the connected aircraft offers: readings, tests, settings, guides and playbooks for common problems. It can read, test and propose. It cannot approve, confirm “props removed”, or arm.

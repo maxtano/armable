@@ -11,7 +11,7 @@ export class ToolError extends Error {
 
 export type AssistantMode = 'off' | 'observe' | 'propose';
 export interface Account { id: string; email: string; passwordHash: string; createdAt: number; assistantMode: AssistantMode }
-export type DocKind = 'storyboard' | 'tune' | 'file' | 'snapshot';
+export type DocKind = 'storyboard' | 'tune' | 'file' | 'snapshot' | 'build';
 export interface Doc { kind: DocKind; name: string; content: unknown; updatedBy: string; history: { content: unknown; by: string; at: number }[] }
 export interface ActivityEntry { at: number; who: string; kind: 'read' | 'test' | 'change' | 'edit' | 'proposal' | 'connect' | 'show'; title: string; part?: string; ids?: string[]; ok?: boolean | null; detail?: unknown }
 export type ProposalStatus = 'awaiting_approval' | 'approved' | 'done' | 'failed' | 'rejected' | 'expired' | 'cancelled';
@@ -148,7 +148,7 @@ export class Services {
     return row;
   }
   async createDoc(account: string, kind: DocKind, name: string, content: unknown, by: string): Promise<Row<Doc>> {
-    const prefix = { storyboard: 'show', tune: 'tune', file: 'file', snapshot: 'snap' }[kind];
+    const prefix = { storyboard: 'show', tune: 'tune', file: 'file', snapshot: 'snap', build: 'build' }[kind];
     const row = await this.store.put<Doc>('docs', account, `${prefix}_${newId(6)}`, { kind, name: name.slice(0, 80), content, updatedBy: by, history: [] }, { expectedRev: 0 });
     this.hub(account).notify('document', { id: row.id, rev: row.rev, kind, name: row.data.name, by });
     return row;

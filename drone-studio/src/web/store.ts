@@ -5,7 +5,7 @@ import type { PartId, PromptRequest, Setting } from '../device/types';
 import type { Reference } from '../map/library';
 
 /** Everything the interface shows, in one place. Small on purpose: no library, one subscribe function. */
-export type View = 'drone' | 'signals' | 'flights' | 'show' | 'sound' | 'settings' | 'history' | 'connect';
+export type View = 'drone' | 'build' | 'signals' | 'flights' | 'show' | 'sound' | 'settings' | 'history' | 'connect';
 export type AssistantMode = 'off' | 'observe' | 'propose';
 export interface Me { offline?: boolean; signedIn: boolean; email?: string; mode?: AssistantMode; mcpUrl?: string; assistants?: { clientId: string; name: string; scopes: string[]; lastSeen: number | null }[] }
 export interface ProposalCard {
@@ -16,7 +16,7 @@ export interface ProposalCard {
 }
 export interface ActivityItem { id: string; at: number; who: string; kind: string; title: string; part?: string; ids?: string[]; ok?: boolean | null; detail?: any }
 export interface GrantInfo { id: string; expiresAt: number; aircraftName: string; parts: string[]; tests: string[]; conditions: string[]; maxChanges: number; used: number }
-export interface DocMeta { id: string; revision: number; kind: 'storyboard' | 'tune' | 'file' | 'snapshot'; name: string; updatedBy: string; updatedAt: number; canUndo: boolean }
+export interface DocMeta { id: string; revision: number; kind: 'storyboard' | 'tune' | 'file' | 'snapshot' | 'build'; name: string; updatedBy: string; updatedAt: number; canUndo: boolean }
 /** A visible trace of something that just happened to a part or setting. */
 export interface Mark { kind: 'reading' | 'changed'; by: string; at: number }
 export interface State {
@@ -41,6 +41,10 @@ export interface State {
   consent?: string;
   docRevision: number;
   grants: GrantInfo[];
+  /** The build open in the Build view, its tab, and the builds picked for comparison. */
+  build?: string;
+  buildTab?: 'mine' | 'proven' | 'compare';
+  compare?: string[];
 }
 export const EMPTY_SNAP: AircraftSnapshot = { status: 'idle', settingsLoaded: 'none', settingsCount: 0, tests: [], escs: [], logs: [] };
 let state: State = { view: 'drone', snap: EMPTY_SNAP, settings: [], proposals: [], activity: [], docs: [], marks: {}, live: false, follow: true, docRevision: 0, grants: [] };

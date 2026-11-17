@@ -9,8 +9,8 @@ import type { Condition, PartId } from '../device/types';
 import { toast, useStore, type AssistantMode } from './store';
 
 const TOOLS: [string, string][] = [
-  ['get_workspace', 'Where things stand'], ['find', 'Search everything'], ['read', 'Read values'], ['run_test', 'Run a check'], ['propose_change', 'Propose a change'], ['wait', 'Wait for you'],
-  ['edit', 'Edit a document'], ['undo', 'Undo its edit'], ['show', 'Point at something'], ['capture_view', 'See the screen'], ['stop', 'Stop'],
+  ['get_workspace', 'Where things stand'], ['find', 'Search everything, and parts'], ['read', 'Read values'], ['run_test', 'Run a check'], ['propose_change', 'Propose a change'], ['wait', 'Wait for you'],
+  ['edit', 'Edit a document or build'], ['undo', 'Undo its edit'], ['show', 'Point at something'], ['capture_view', 'See the screen'], ['stop', 'Stop'],
 ];
 const SCOPE: Record<string, [typeof Eye, string]> = { observe: [Eye, 'Read your drone'], design: [PencilRuler, 'Edit shows and sounds'], propose: [Wrench, 'Propose changes'] };
 

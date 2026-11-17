@@ -29,7 +29,7 @@ const partOfId = (id: string | undefined): string | undefined => {
   return ({ battery: 'battery', gps: 'gps', rc: 'receiver', motor: 'motors', esc: 'motors', escs: 'motors', airframe: 'motors', attitude: 'fc', fc: 'fc', sensors: 'fc', link: 'link', arming: 'safety', log: 'logging' } as Record<string, string>)[head];
 };
 const PARTS = ['fc', 'motors', 'battery', 'receiver', 'gps', 'link', 'tuning', 'safety', 'osd', 'vtx', 'lights', 'ports', 'compass', 'logging'];
-const VIEWS: View[] = ['drone', 'signals', 'flights', 'show', 'sound', 'settings', 'history', 'connect'];
+const VIEWS: View[] = ['drone', 'build', 'signals', 'flights', 'show', 'sound', 'settings', 'history', 'connect'];
 
 const ME = 'lucidity.me.v1';
 /** Who is signed in. Offline, the last answer is used so the bench still opens. */
@@ -120,7 +120,15 @@ function onServer(message: ServerMessage) {
     const open = data.status === 'awaiting_approval' || data.status === 'approved';
     set(s => ({ proposals: [...s.proposals.filter(p => p.id !== data.id), ...(open ? [data] : [])] }));
     if (data.status === 'awaiting_approval' && get().follow) { go('drone', (data.part ?? partOfId(data.changes?.[0]?.id)) as PartId, motorOf(data)); toast(`${data.by} proposes a change`, 'info'); }
-  } else if (event === 'document') { void refreshDocs(); set(s => ({ docRevision: s.docRevision + 1 })); if (data.by && data.by !== 'you') { mark(data.id, 'changed', data.by); toast(`${data.by} edited ${data.name ?? 'a document'}`, 'info'); } }
+  } else if (event === 'document') {
+    void refreshDocs(); set(s => ({ docRevision: s.docRevision + 1 }));
+    if (data.by && data.by !== 'you') {
+      mark(data.id, 'changed', data.by);
+      // An assistant working on a build brings it on screen, unless the person is busy with a connected drone.
+      if (data.kind === 'build' && !data.deleted && get().follow && (get().view === 'build' || get().snap.status !== 'connected')) { set({ build: data.id, buildTab: 'mine' }); if (get().view !== 'build') go('build'); }
+      else toast(`${data.by} edited ${data.name ?? 'a document'}`, 'info');
+    }
+  }
   else if (event === 'show') showTarget(String(data.target), data.reference);
   else if (event === 'grants') void refreshGrants();
   else if (event === 'execute') void executeUnderGrant(data);
@@ -131,6 +139,8 @@ function showTarget(target: string, reference?: any) {
   if (!get().follow) { toast(`Assistant is pointing at ${target}`, 'info'); return; }
   if ((VIEWS as string[]).includes(target)) return go(target as View);
   if (PARTS.includes(target)) return go('drone', target as PartId);
+  if (target.startsWith('build_')) { set({ build: target, buildTab: 'mine' }); return go('build'); }
+  if (target.startsWith('proven.')) { set({ buildTab: 'proven' }); return go('build'); }
   if (/^(show|tune|file|snap)_/.test(target)) return go(target.startsWith('show') ? 'show' : target.startsWith('tune') ? 'sound' : 'settings');
   const part = partOfId(target);
   const motor = target.match(/^esc\.(\d+)\./)?.[1];

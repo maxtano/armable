@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Activity, AudioLines, Bot, Cable, ChartSpline, Eye, FileUp, History as HistoryIcon, LogOut, Moon, Navigation, Plug, Radio, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
+import { Activity, AudioLines, Bot, Cable, ChartSpline, Eye, FileUp, Hammer, History as HistoryIcon, LogOut, Moon, Navigation, Plug, Radio, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
 import { useState } from 'react';
+import { Build } from './Build';
 import { History } from './History';
 import { OsdEditor } from './OsdEditor';
 import { RadioFlash } from './RadioFlash';
@@ -19,7 +20,7 @@ import { Sound } from './Sound';
 import { set, useStore, type View } from './store';
 import { Timeline } from './Timeline';
 
-const VIEWS: [View, typeof Activity, string][] = [['drone', Navigation, 'Drone'], ['signals', Activity, 'Signals'], ['flights', ChartSpline, 'Flights'], ['show', Sparkles, 'Show'], ['sound', AudioLines, 'Sound'], ['settings', SlidersHorizontal, 'Settings'], ['history', HistoryIcon, 'History']];
+const VIEWS: [View, typeof Activity, string][] = [['drone', Navigation, 'Drone'], ['build', Hammer, 'Build'], ['signals', Activity, 'Signals'], ['flights', ChartSpline, 'Flights'], ['show', Sparkles, 'Show'], ['sound', AudioLines, 'Sound'], ['settings', SlidersHorizontal, 'Settings'], ['history', HistoryIcon, 'History']];
 const theme = () => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
 function toggleTheme() { const next = theme() === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = next; try { localStorage.setItem('lucidity.appearance.v1', next); } catch { /* private mode */ } }
 
@@ -73,6 +74,7 @@ function DroneView() {
             <button className="lu-btn is-primary is-big" disabled={!!busy} onClick={connectUsb}><Cable size={18} /> Connect over USB</button>
             <div className="lu-row"><span>No drone handy?</span><button className="lu-link" data-demo="betaflight" onClick={() => connectDemo('betaflight')}>Try a Betaflight demo</button><button className="lu-link" data-demo="ardupilot" onClick={() => connectDemo('ardupilot')}>ArduPilot demo</button></div>
             <button className="lu-link" onClick={() => setRadio(true)}><Radio size={14} /> Flash a receiver or radio over USB</button>
+            <button className="lu-build-cta" onClick={() => go('build')}><Hammer size={18} /><span><b>Don’t have a drone? Build one.</b><small>Your assistant picks parts that work together, with prices and links.</small></span></button>
           </div>
         )}
         {snap.status !== 'idle' && busy && !part && <div className="lu-progress is-floating" role="status"><span>{progress?.label ?? busy}</span>{progress?.total ? <progress value={progress.done ?? 0} max={progress.total} /> : <i />}</div>}
@@ -134,6 +136,7 @@ export function App() {
           : !live && <div className="lu-offline" role="status">Reconnecting to Lucidity…</div>}
         <div className="lu-view">
           {view === 'drone' && <DroneView />}
+          {view === 'build' && <Build />}
           {view === 'signals' && <Signals />}
           {view === 'flights' && <Flights />}
           {view === 'show' && <Show />}
@@ -142,7 +145,7 @@ export function App() {
           {view === 'history' && <History />}
           {view === 'connect' && <><div className="lu-mode-bar"><ModeSwitch /></div><Connect /></>}
         </div>
-        {view !== 'show' && <Timeline />}
+        {view !== 'show' && view !== 'build' && <Timeline />}
       </main>
       <Overlays />
     </div>

@@ -284,3 +284,25 @@ describe('on Postgres', () => {
     await again.request('DELETE', '/api/account');
   });
 });
+
+describe('building a drone', () => {
+  it('lets the person and the assistant edit the same build through the same operations', async () => {
+    const { browser, claude } = await world();
+    const bad = await browser.post('/api/docs', { kind: 'build', name: 'Broken', content: { goal: {}, items: [{ slot: 'frame' }], log: [] } });
+    expect(bad.json.error.code).toBe('invalid');
+    const made = (await browser.post('/api/docs', { kind: 'build', name: 'Mine', content: { goal: {}, items: [], log: [] } })).json;
+    expect(made.id).toMatch(/^build_/);
+    const mine = await browser.post(`/api/docs/${made.id}/ops`, { baseRevision: 1, operations: [{ op: 'add', part: 'frame.apex-5' }] });
+    expect(mine.json).toMatchObject({ revision: 2, content: { items: [{ slot: 'frame', part: 'frame.apex-5', by: 'you' }] } });
+    const theirs = await claude.call('edit', { document: made.id, baseRevision: 2, operations: [{ op: 'add', part: 'motor.velox-v2207-1950' }] });
+    expect(theirs.revision).toBe(3);
+    const stale = await browser.post(`/api/docs/${made.id}/ops`, { baseRevision: 2, operations: [{ op: 'remove', slot: 'frame' }] });
+    expect(stale.json.error.code).toBe('stale');
+    const refused = await browser.post(`/api/docs/${made.id}/ops`, { baseRevision: 3, operations: [{ op: 'add', part: 'nope' }] });
+    expect(refused.json.error).toMatchObject({ code: 'invalid', message: expect.stringMatching(/no part "nope"/) });
+    const full = (await browser.get(`/api/docs/${made.id}`)).json;
+    expect(full.content.items.map((i: any) => [i.slot, i.by])).toEqual([['frame', 'you'], ['motors', 'Claude']]);
+    const file = (await browser.post('/api/docs', { kind: 'file', name: 'notes', content: 'x' })).json;
+    expect((await browser.post(`/api/docs/${file.id}/ops`, { baseRevision: 1, operations: [] })).json.error.code).toBe('invalid');
+  });
+});

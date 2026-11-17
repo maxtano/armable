@@ -107,6 +107,32 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     } finally { await claude.close(); await page.close(); }
   });
 
+  it('helps someone with no drone build one: the assistant fills the build in while the person watches and swaps parts', async () => {
+    const { page, context, errors } = await signedInPage();
+    await page.click('.lu-build-cta');
+    await page.click('button:has-text("Start my build")');
+    await page.waitForSelector('.bd-sheet');
+    const person = new Browser(app.base);
+    person.cookie = (await context.cookies()).map((c: { name: string; value: string }) => `${c.name}=${c.value}`).join('; ');
+    const grant = await person.connectAssistant('Claude');
+    const claude = await assistant(app.base, grant.access_token!);
+    try {
+      const build = (await claude.call('get_workspace')).documents.find((d: { kind: string }) => d.kind === 'build');
+      const edited = await claude.call('edit', { document: build.id, baseRevision: build.revision, operations: [{ op: 'from', build: 'proven.5in-analog-starter' }, { op: 'note', text: 'Starting from the analog starter: cheap spares while you learn.' }] });
+      expect(edited.checks.complete).toBe(true);
+      await page.waitForSelector('.bd-thread li.is-note:has-text("cheap spares")');
+      expect(await page.locator('.bd-row:not(.is-empty)').count()).toBe(9);
+      await page.click('[aria-label="Swap the Motors"]');
+      await page.click('.bd-option:has-text("Velox") button:has-text("Swap in")');
+      await page.waitForSelector('.bd-row:has-text("Velox")');
+      const doc = (await claude.call('read', { ids: [build.id] })).values[0].value;
+      expect(doc.parts.find((p: { slot: string }) => p.slot === 'motors')).toMatchObject({ part: 'motor.velox-v2207-1950', qty: 4 });
+      await page.click('[role=radio]:has-text("Compare")');
+      await page.waitForSelector('.bd-table');
+      expect(errors).toEqual([]);
+    } finally { await claude.close(); await context.close(); }
+  });
+
   it('offers one-click setup for assistants, and a prompt that lets any agent set itself up', async () => {
     const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
     const page = await context.newPage();

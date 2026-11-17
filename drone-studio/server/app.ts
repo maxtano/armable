@@ -9,6 +9,7 @@ import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { projectSchema } from '../src/core/model';
+import { applyBuildOps, BUILD_OPS_HINT, BuildError, buildSchema, type Build } from '../src/build/build';
 import type { Mirror } from '../src/map/map';
 import type { Condition } from '../src/device/types';
 import { Auth, OAuthProvider, SCOPES } from './auth';
@@ -122,16 +123,26 @@ export function createApp(options: AppOptions) {
   api.get('/oauth/:id', wrap(async req => { const p = await auth.pending(String(req.params.id), req.account); return { client: p.client.name, scopes: p.params.scopes, redirectHost: new URL(p.params.redirectUri).host }; }));
   api.post('/oauth/:id', wrap(async req => { const redirect = await auth.decide(String(req.params.id), req.account, req.body.allow === true); services.hub(req.account).notify('assistants'); return { redirect }; }));
 
-  const KINDS: DocKind[] = ['storyboard', 'tune', 'file', 'snapshot'];
+  const KINDS: DocKind[] = ['storyboard', 'tune', 'file', 'snapshot', 'build'];
   const content = (kind: DocKind, value: unknown) => {
     if (kind === 'storyboard') { const p = projectSchema.safeParse(value); if (!p.success) throw new ToolError('invalid', `That storyboard is not valid: ${p.error.issues[0].message}`); return p.data; }
     if (kind === 'file' && typeof value !== 'string') throw new ToolError('invalid', 'A file is text.');
+    if (kind === 'build') { const b = buildSchema.safeParse(value); if (!b.success) throw new ToolError('invalid', `That build is not valid: ${b.error.issues[0].message}`); return b.data; }
     return value;
   };
   api.get('/docs', wrap(async req => (await services.docs(req.account)).map(r => ({ id: r.id, revision: r.rev, kind: r.data.kind, name: r.data.name, updatedBy: r.data.updatedBy, updatedAt: r.updatedAt, canUndo: r.data.history.length > 0 }))));
   api.post('/docs', wrap(async req => { const kind = req.body.kind as DocKind; if (!KINDS.includes(kind)) throw new ToolError('invalid', 'Unknown document kind.'); const row = await services.createDoc(req.account, kind, text(req.body.name, 80), content(kind, req.body.content), 'you'); return { id: row.id, revision: row.rev }; }));
   api.get('/docs/:id', wrap(async req => { const r = await services.doc(req.account, String(req.params.id)); return { id: r.id, revision: r.rev, kind: r.data.kind, name: r.data.name, content: r.data.content, updatedBy: r.data.updatedBy, updatedAt: r.updatedAt, canUndo: r.data.history.length > 0 }; }));
   api.put('/docs/:id', wrap(async req => { const current = await services.doc(req.account, String(req.params.id)); const row = await services.writeDoc(req.account, current.id, Number(req.body.baseRevision), content(current.data.kind, req.body.content), 'you', req.body.name === undefined ? undefined : text(req.body.name, 80)); return { id: row.id, revision: row.rev }; }));
+  // A person's change to a build goes through the same operations an assistant uses.
+  api.post('/docs/:id/ops', wrap(async req => {
+    const current = await services.doc(req.account, String(req.params.id));
+    if (current.data.kind !== 'build' || !Array.isArray(req.body.operations) || req.body.operations.length > 50) throw new ToolError('invalid', 'Send build operations for a build.');
+    let next: Build;
+    try { next = applyBuildOps(current.data.content as Build, req.body.operations, 'you'); } catch (error) { if (error instanceof BuildError) throw new ToolError('invalid', error.message, BUILD_OPS_HINT); throw error; }
+    const row = await services.writeDoc(req.account, current.id, Number(req.body.baseRevision), next, 'you', req.body.name === undefined ? undefined : text(req.body.name, 80));
+    return { id: row.id, revision: row.rev, content: row.data.content };
+  }));
   api.post('/docs/:id/undo', wrap(async req => { const row = await services.undoDoc(req.account, String(req.params.id), 'you'); return { id: row.id, revision: row.rev }; }));
   api.delete('/docs/:id', wrap(async req => { await services.deleteDoc(req.account, String(req.params.id)); }));
 
