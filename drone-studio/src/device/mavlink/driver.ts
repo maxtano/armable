@@ -423,6 +423,7 @@ export class MavlinkDriver extends DriverBase implements Driver {
     ];
     return this.px4 ? all.filter(t => !t.id.startsWith('esc.') && t.id !== 'cal.accel.simple') : all;
   }
+  async enterBootloader() { this.ready(); await this.command(246, [3], 'Restart into firmware-update mode'); }
   async stop() {
     if (this.closedReason) return;
     for (let motor = 1; motor <= this.airframe().motors.length; motor++) await this.send('COMMAND_LONG', this.cmd(209, [motor, 0, 0, 0, 1]), true).catch(() => {});
@@ -465,8 +466,8 @@ export class MavlinkDriver extends DriverBase implements Driver {
       case 'cal.compass': return this.exclusive('compass calibration', () => this.compassCal(ctx));
       case 'fc.restart': return this.exclusive('restarting', async () => {
         this.ready();
-        await this.command(246, [1], 'Restart');
         this.emit({ type: 'reconnect-needed', reason: 'The flight controller is restarting.' });
+        await this.command(246, [1], 'Restart');
         return this.result(id, true, 'Restart accepted. Reconnect in a few seconds.');
       });
       case 'motor.spin': return this.exclusive('motor test', async () => {

@@ -67,7 +67,10 @@ export class ArdupilotSim {
   private magCal?: ReturnType<typeof setInterval>;
   private streaming = true;
 
-  constructor(private port: LoopbackEnd, private options: ArdupilotSimOptions = {}) {
+  private port!: LoopbackEnd;
+  reboots = 0;
+  inBootloader = false;
+  constructor(port: LoopbackEnd | undefined, private options: ArdupilotSimOptions = {}) {
     for (const [name, value, type] of ARDUPILOT_PARAMS) this.params.set(name, { value: Math.fround(value), type });
     this.battery = options.battery ?? 15.8;
     this.prearm = options.prearm ?? [];
@@ -75,13 +78,18 @@ export class ArdupilotSim {
     this.escBank = new EscBank('ARDU', ['Bluejay', 'Bluejay', 'Bluejay', 'Bluejay'], options.escDirections ?? [1, 1, 2, 1]);
     this.log = syntheticLog(12, options.shake ?? 1);
     for (const i of options.dropParams ?? []) this.dropped.add(i);
-    port.onData(chunk => this.receive(chunk));
     const ms = options.tickMs ?? 100;
     this.timers.push(setInterval(() => this.telemetry(), ms));
+    if (port) this.attach(port);
+  }
+  /** Plug the (re)started flight controller into a port. */
+  attach(port: LoopbackEnd) {
+    this.port = port; this.parser = new MavlinkParser(); this.escBank.active = false;
+    port.onData(chunk => this.receive(chunk));
     this.heartbeat();
   }
   stop() { for (const t of this.timers) clearInterval(t); clearInterval(this.magCal); }
-  private send(name: MessageName, fields: Fields) { if (this.port.open && this.streaming) void this.port.write(encode(name, fields, this.seq++, 1, 1)).catch(() => {}); }
+  private send(name: MessageName, fields: Fields) { if (this.port?.open && this.streaming && !this.inBootloader) void this.port.write(encode(name, fields, this.seq++, 1, 1)).catch(() => {}); }
   private text(text: string, severity = 6) { this.send('STATUSTEXT', { severity, text }); }
   private heartbeat() { this.send('HEARTBEAT', { type: 2, autopilot: 3, base_mode: 81 | (this.armed ? 128 : 0), custom_mode: 0, system_status: this.armed ? 4 : 3, mavlink_version: 3 }); }
   private telemetry() {
@@ -107,6 +115,7 @@ export class ArdupilotSim {
     }
   }
   private receive(chunk: Uint8Array) {
+    if (this.inBootloader) return;
     const esc = this.escBank.handle(chunk);
     if (esc?.length) { void this.port.write(esc); return; }
     for (const p of this.parser.push(chunk)) {
@@ -172,7 +181,14 @@ export class ArdupilotSim {
         if (p[2] > 0) this.motorTests.push({ motor: p[0], throttle: p[2], seconds: p[3] });
         return this.ack(command);
       }
-      case 246: this.ack(command); return;
+      case 246: {
+        this.ack(command);
+        this.reboots++;
+        if (p[0] === 3) this.inBootloader = true;
+        const port = this.port;
+        setTimeout(() => port.drop(p[0] === 3 ? 'device entered bootloader' : 'device restarted'), 5);
+        return;
+      }
       case 42424: {
         this.ack(command);
         let pct = 0;
