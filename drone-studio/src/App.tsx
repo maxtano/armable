@@ -1690,18 +1690,6 @@ export default function App({
                 Save a copy
               </button>
             </div>
-            <div className="documentation-links">
-              <a href="/docs/PRODUCT.md" target="_blank" rel="noreferrer">
-                <BookOpen size={14} />
-                Product document
-                <ArrowUpRight size={12} />
-              </a>
-              <a href="/docs/TECHNICAL.md" target="_blank" rel="noreferrer">
-                <BookOpen size={14} />
-                Technical design
-                <ArrowUpRight size={12} />
-              </a>
-            </div>
           </Modal>
         )}
         {toast && (

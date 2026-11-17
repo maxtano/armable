@@ -14,13 +14,7 @@
     "e2e": "E2E=1 vitest run e2e",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "vitest run",
-    "agent": "node --import tsx scripts/agent.ts",
-    "agent:eval": "node --import tsx scripts/evaluate-agent.ts",
-    "benchmark": "node --import tsx scripts/benchmark.ts",
-    "example": "node --import tsx scripts/expert-example.ts",
-    "dev:demo": "vite --config vite.demo.config.ts --open /demo.html",
-    "build:demo": "tsc -b && node scripts/build-demo.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

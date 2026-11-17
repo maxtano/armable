@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lucidity</title>
+  <meta name="description" content="Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen, and approve every change." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #343137; --muted: #585259; --line: #d4cabd;
+      --primary: #174f63; --on-primary: #f6f3ec; --ai: #59425b; --you: #8e5a17;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #161819; --surface: #202426; --ink: #ecece8; --muted: #b9bfbb; --line: #444c4d;
+        --primary: #d6e0dd; --on-primary: #161819; --ai: #cdb3cf; --you: #e3b36f; }
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body { background: var(--bg); color: var(--ink); font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--ink); text-decoration: none; }
+    .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 48px; align-items: center; padding: 40px 0 56px; }
+    h1 { font: 400 clamp(40px, 6vw, 68px)/1.04 Georgia, "Times New Roman", serif; letter-spacing: -0.02em; }
+    h1 em { color: var(--ai); }
+    .lede { margin-top: 20px; font-size: 19px; color: var(--muted); max-width: 30ch; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .btn { display: inline-flex; align-items: center; height: 46px; padding: 0 22px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+    small { display: block; margin-top: 14px; color: var(--muted); font-size: 13px; }
+    .shot { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 20px 60px #0000001f; animation: rise 700ms ease-out both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 8px 0 56px; }
+    .step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+    .step b { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: var(--on-primary); margin-bottom: 12px; }
+    .step h2 { font-size: 18px; } .step p { color: var(--muted); margin-top: 4px; }
+    .agents { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 56px; }
+    .agents h2 { font-size: 18px; } .agents p { color: var(--muted); margin-top: 4px; }
+    code { display: block; margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: var(--bg); border: 1px dashed var(--line); font: 14px/1.4 ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+    footer { border-top: 1px solid var(--line); padding: 22px 0 40px; color: var(--muted); font-size: 14px; }
+    footer a { color: inherit; }
+    body[data-app=""] .needs-app { display: none; }
+    body:not([data-app=""]) .no-app { display: none; }
+    @media (max-width: 800px) { .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 16px; } .steps { grid-template-columns: 1fr; } }
+    @media (prefers-reduced-motion: reduce) { .shot { animation: none; } }
+  </style>
+</head>
+<!-- The deploy workflow replaces __LUCIDITY_URL__ with the hosted app's address (the LUCIDITY_URL repository variable), or with nothing. -->
+<body data-app="__LUCIDITY_URL__">
+  <div class="wrap">
+    <header>
+      <a class="logo" href="./"><img src="favicon.svg" alt="" width="24" height="24" />Lucidity</a>
+      <a class="btn needs-app" href="__LUCIDITY_URL__">Sign in</a>
+    </header>
+    <section class="hero">
+      <div>
+        <h1>Your drone.<br />Your AI.<br /><em>One bench.</em></h1>
+        <p class="lede">Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen.</p>
+        <div class="actions">
+          <a class="btn primary needs-app" href="__LUCIDITY_URL__">Open Lucidity</a>
+          <a class="btn primary no-app" href="https://github.com/maxtano/lucidity#run-it">Run it yourself</a>
+          <a class="btn" href="https://github.com/maxtano/lucidity">Source on GitHub</a>
+        </div>
+        <small>No install. No API key. Betaflight, INAV, ArduPilot and PX4.</small>
+      </div>
+      <img class="shot" src="media/proposal.png" width="2560" height="1600" alt="Claude proposes reversing motor 3. A ghost arrow and an Approve button appear on the motor itself." />
+    </section>
+    <section class="steps" aria-label="How it works">
+      <article class="step"><b>1</b><h2>Plug in</h2><p>USB, in Chrome or Edge. Or try a demo drone.</p></article>
+      <article class="step"><b>2</b><h2>Ask</h2><p>In the Claude or ChatGPT you already use. Lucidity is one connector.</p></article>
+      <article class="step"><b>3</b><h2>Approve</h2><p>Every change appears on the part it affects. Nothing touches the drone until you click.</p></article>
+    </section>
+    <section class="agents needs-app">
+      <h2>Setup for agents</h2>
+      <p>Paste this into any AI agent and it connects itself.</p>
+      <code>Read and follow __LUCIDITY_URL__/agent-onboarding/SKILL.md</code>
+    </section>
+    <footer>Open source · Apache 2.0 · You approve every change to your aircraft</footer>
+  </div>
+</body>
+</html>
