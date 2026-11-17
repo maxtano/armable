@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Cable, MessageSquare, MousePointerClick } from 'lucide-react';
 import { api, ApiError } from './cloud';
+import { ConnectMenu } from './ConnectMenu';
 
 /**
  * The intro page. One picture explains the product: you say it, the assistant proposes it on the drone,
@@ -69,7 +70,10 @@ export function Landing({ onSignedIn }: { onSignedIn(): void }) {
         <div className="in-copy">
           <h1>Your drone.<br />Your AI.<br /><em>One bench.</em></h1>
           <p>Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen.</p>
-          <a href="#start" className="lu-btn is-primary is-big">{next ? 'Sign in to connect' : 'Get started'}</a>
+          <div className="in-actions">
+            <a href="#start" className="lu-btn is-primary is-big">{next ? 'Sign in to connect' : 'Get started'}</a>
+            {!next && <ConnectMenu big />}
+          </div>
           <small>No install. No API key. Works with Betaflight, ArduPilot and PX4.</small>
         </div>
         <Scene />

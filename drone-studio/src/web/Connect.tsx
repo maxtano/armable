@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, Copy, Eye, PencilRuler, Unplug, Wrench } from 'lucide-react';
 import { api } from './cloud';
+import { ConnectMenu } from './ConnectMenu';
 import { createGrant, refreshMe, revokeGrant, setMode } from './controller';
 import { Conditions } from './controls';
 import { PART_NAME } from './parts';
@@ -27,6 +28,7 @@ export function Connect() {
   return (
     <section className="lu-page is-narrow">
       <header className="lu-page-head"><h1>Your assistant</h1><ModeSwitch /></header>
+      <div className="lu-connect-row"><ConnectMenu /><span className="lu-hint">One click for your assistant, or follow the three steps.</span></div>
       <ol className="lu-steps">
         <li><b>1</b><div><h3>Copy this address</h3><button className="lu-address" onClick={copy} aria-label="Copy the address">{me?.mcpUrl}<span>{copied ? <Check size={15} /> : <Copy size={15} />}</span></button></div></li>
         <li><b>2</b><div><h3>Add it in your assistant</h3><p>Claude: Settings → Connectors → Add custom connector.<br />ChatGPT: Settings → Connectors → Create.</p></div></li>
