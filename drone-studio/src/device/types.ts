@@ -159,10 +159,22 @@ export abstract class DriverBase {
   on(listener: (event: DriverEvent) => void) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
   protected emit(event: DriverEvent) { for (const l of [...this.listeners]) l(event); }
   get busyWith() { return this.operation; }
-  /** Run one device operation at a time; a second caller gets a clear "busy" answer instead of interleaved bytes. */
-  protected async exclusive<T>(label: string, fn: () => Promise<T>): Promise<T> {
-    if (this.operation) throw new (await import('./bytes')).DeviceError('busy', `Busy: ${this.operation}. Wait for it to finish.`);
-    this.operation = label;
-    try { return await fn(); } finally { this.operation = undefined; }
+  private queue: Promise<unknown> = Promise.resolve();
+  private waiting = 0;
+  /**
+   * Run one device operation at a time. A second caller waits its turn instead of interleaving bytes on the wire;
+   * after two minutes of waiting it gets a clear "busy" answer.
+   */
+  protected async exclusive<T>(label: string, fn: () => Promise<T>, waitMs = 120_000): Promise<T> {
+    const previous = this.queue;
+    let release!: () => void;
+    this.queue = new Promise<void>(r => { release = r; });
+    this.waiting++;
+    try {
+      const timedOut = await Promise.race([previous.then(() => false, () => false), new Promise<boolean>(r => setTimeout(() => r(true), waitMs))]);
+      if (timedOut) throw new (await import('./bytes')).DeviceError('busy', `Busy: ${this.operation ?? 'another task'}. Try again when it finishes.`);
+      this.operation = label;
+      try { return await fn(); } finally { this.operation = undefined; }
+    } finally { this.waiting--; release(); }
   }
 }

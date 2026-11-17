@@ -354,7 +354,7 @@ export class BetaflightDriver extends DriverBase implements Driver {
   async refresh(ids: string[]): Promise<Setting[]> {
     return this.exclusive('reading settings', async () => {
       const wanted = ids.filter(id => id.startsWith('bf.'));
-      if (wanted.length) await this.withCli(async () => { for (const id of wanted) { if (this.isLine(id)) await this.readLine(id); else await this.getOne(id.slice(3)).catch(() => {}); } });
+      if (wanted.length) await this.withCli(async () => { for (const id of wanted) { if (id === 'bf.vtxtable') await this.readVtx(); else if (this.isLine(id)) await this.readLine(id); else await this.getOne(id.slice(3)).catch(() => {}); } });
       this.emit({ type: 'settings', ids });
       const all = this.settings();
       return ids.flatMap(id => all.find(s => s.id === id) ?? []);

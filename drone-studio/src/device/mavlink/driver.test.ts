@@ -194,11 +194,14 @@ describe('MAVLink driver against a simulated ArduCopter', () => {
     expect(driver.lastLogAnalysis()?.id).toBe(7);
   });
 
-  it('answers a second operation with "busy" instead of interleaving', async () => {
+  it('queues a second operation behind the first instead of interleaving', async () => {
     const { driver } = await bench();
-    const first = driver.loadSettings();
-    await expect(driver.run('logs.list')).rejects.toMatchObject({ code: 'busy' });
-    await first;
+    const order: string[] = [];
+    const first = driver.loadSettings().then(() => order.push('settings'));
+    const second = driver.run('logs.list').then(() => order.push('logs'));
+    await Promise.all([first, second]);
+    expect(order).toEqual(['settings', 'logs']);
+    expect(driver.settingsLoaded()).toBe('complete');
   });
 
   it('reports a pulled cable', async () => {

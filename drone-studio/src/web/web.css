@@ -415,3 +415,24 @@ select, .lu-text { height: 34px; padding: 0 10px; border: 1px solid var(--ds-bor
   .dg-spin, .dg-wire.flows, .dg-wire.slow { animation: none !important; }
   .dg-part.is-reading .dg-sweep { stroke-dasharray: 100 0; opacity: 1; }
 }
+
+/* ---- OSD editor ---- */
+.lu-osd { width: min(100%, 960px); height: 100%; padding: 22px; display: grid; gap: 14px; align-content: start; overflow: auto; }
+.lu-osd-screen { position: relative; width: min(100%, calc((100vh - 300px) * 1.25)); justify-self: center; border-radius: 6px; border: 1px solid var(--ds-border-strong); background: linear-gradient(160deg, var(--ds-horizon-sky), var(--ds-horizon-ground)); background-image: linear-gradient(var(--ds-grid) 1px, transparent 1px), linear-gradient(90deg, var(--ds-grid) 1px, transparent 1px), linear-gradient(160deg, var(--ds-horizon-sky), var(--ds-horizon-ground)); touch-action: none; user-select: none; overflow: hidden; }
+.lu-osd-el { position: absolute; transform: translate(1px, 1px); padding: 1px 5px; border: 1px solid color-mix(in srgb, var(--ds-horizon-mark) 50%, transparent); border-radius: 3px; background: color-mix(in srgb, black 35%, transparent); color: var(--ds-horizon-mark); font: 600 11px var(--font-mono); white-space: nowrap; cursor: grab; transition: left 80ms, top 80ms; }
+.lu-osd-el.is-moved { border-color: var(--ds-warning); color: var(--ds-warning); }
+.lu-osd-el.is-dragging { cursor: grabbing; z-index: 2; box-shadow: 0 6px 18px var(--ds-shadow-color); }
+.lu-osd-list { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px 12px; }
+.lu-osd-list li { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.lu-row-gap { flex: 1; }
+/* ---- History ---- */
+.lu-history { font-size: 13px; }
+.lu-hrow { display: grid; grid-template-columns: 1.1fr 0.8fr 1fr 2fr 0.9fr 0.6fr; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--ds-border); cursor: pointer; align-items: baseline; }
+.lu-hrow > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-hrow.is-head { border-top: 0; color: var(--ds-text-subtle); font-weight: 700; font-size: 12px; cursor: default; background: var(--ds-surface); }
+.lu-hrow:hover:not(.is-head) { background: var(--ds-surface); }
+.lu-hrow.is-bad > span:nth-child(5) { color: var(--ds-danger); }
+.lu-hdetail { grid-column: 1 / -1; margin: 6px 0 0; padding: 10px; border-radius: 4px; background: var(--ds-surface-inset); font: 500 11.5px/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow: auto; }
+.lu-hempty { padding: 14px; }
+.lu-dialog h2 { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 900px) { .lu-hrow { grid-template-columns: 1fr 1fr 1fr; } .lu-hrow > span:nth-child(n+4) { display: none; } }

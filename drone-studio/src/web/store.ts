@@ -5,7 +5,7 @@ import type { PartId, PromptRequest, Setting } from '../device/types';
 import type { Reference } from '../map/library';
 
 /** Everything the interface shows, in one place. Small on purpose: no library, one subscribe function. */
-export type View = 'drone' | 'signals' | 'flights' | 'show' | 'sound' | 'settings' | 'connect';
+export type View = 'drone' | 'signals' | 'flights' | 'show' | 'sound' | 'settings' | 'history' | 'connect';
 export type AssistantMode = 'off' | 'observe' | 'propose';
 export interface Me { offline?: boolean; signedIn: boolean; email?: string; mode?: AssistantMode; mcpUrl?: string; assistants?: { clientId: string; name: string; scopes: string[]; lastSeen: number | null }[] }
 export interface ProposalCard {
