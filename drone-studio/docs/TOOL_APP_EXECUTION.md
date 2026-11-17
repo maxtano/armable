@@ -13,6 +13,8 @@ Decisions taken: design edits apply at once with undo; Postgres for storage; sim
 | Cloud (`server`) | Postgres and memory stores, sign-in, OAuth with PKCE for assistants, stateless MCP endpoint, live WebSocket, documents, proposals, activity | Integration tests over real HTTP, MCP and WebSocket, on Postgres 16 |
 | Interface (`src/web`) | Intro page, living diagram, part panels, on-the-part approval, timeline, Signals, Flights, all settings with backups, Sound, Show (existing editor, account-backed), assistant connection and consent | Playwright end-to-end tests in Chromium, desktop and phone width |
 
+Hosting: Terraform for AWS in `infra/aws` (CloudFront, load balancer, one ECS Fargate task, RDS Postgres 16, GitHub OIDC deploys). Validated with Terraform 1.16.7 and the AWS provider 6.70; the container image was built and run against Postgres. Not yet applied to an AWS account.
+
 Not yet built: Betaflight blackbox download, OSD layout editor, VTX tables, receiver and radio firmware, AM32 ESCs, scoped grants, offline use, connector-directory listings. **No new driver has run on real hardware yet.** Phase 0's hardware spike is still the first thing to do with a real aircraft.
 
 ## Approach

@@ -277,11 +277,11 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'wait', title: 'Wait for the person', level: 0, readOnly: true,
-    input: { proposal: z.string().min(1).max(40), seconds: z.number().int().min(1).max(50).optional() },
+    input: { proposal: z.string().min(1).max(40), seconds: z.number().int().min(1).max(50).optional().describe('How long to hold, 1 to 50. Default 25.') },
     description: 'Hold until a proposal is approved and finished, declined, or expires. Returns the outcome and readback. If it returns "awaiting_approval", call it again.',
     async run(args: { proposal: string; seconds?: number }, ctx) {
       await gate(ctx, 0);
-      const p = await ctx.services.wait(ctx.account, args.proposal, (args.seconds ?? 45) * 1000);
+      const p = await ctx.services.wait(ctx.account, args.proposal, (args.seconds ?? 25) * 1000);
       return { ...proposalView(p), ...(p.status === 'awaiting_approval' || p.status === 'approved' ? { next: { tool: 'wait', arguments: { proposal: p.id } }, note: p.status === 'approved' ? 'Approved; Lucidity is carrying it out.' : 'Still waiting for the person.' } : {}) };
     },
   },

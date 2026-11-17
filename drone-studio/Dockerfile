@@ -5,6 +5,9 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
+# Amazon's certificate bundle, so the database connection on RDS is verified.
+ADD https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/rds-global-bundle.pem
+RUN chmod 644 /app/rds-global-bundle.pem
 ENV NODE_ENV=production PORT=8787 STATIC_DIR=dist
 EXPOSE 8787
 USER node
