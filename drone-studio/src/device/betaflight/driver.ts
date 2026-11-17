@@ -12,6 +12,7 @@ import {
   DriverBase, type Airframe, type Change, type ChangeResult, type Driver, type EscInfo, type Health, type Identity, type LiveState,
   type LogEntry, type RunContext, type Setting, type TestResult, type TestSpec,
 } from '../types';
+import { decodeOsd, OSD_NAMES, parseOsdValue } from './osd';
 import { frequency, parseVtxTable, presetName, validateVtxTable, vtxTableCommands, VTX_PRESETS, type VtxTable } from './vtx';
 import { ARMING_EXPECTED, ARMING_FLAGS, ARMING_WORDS, parseDump, parseGet, restoreLines, safeName, safeValue, toSetting, type GetInfo } from './cli';
 
@@ -266,6 +267,11 @@ export class BetaflightDriver extends DriverBase implements Driver {
     }
     for (const read of this.escReads) if (read.block) out.push(...escSettings(read.info, read.block));
     if (this.vtx) this.decorateVtx(out);
+    for (const s of out) if (/^bf\.osd_[a-z0-9_]+_pos$/.test(s.id) && typeof s.value === 'number') {
+      const p = decodeOsd(s.value), key = s.id.slice(7, -4);
+      s.part = 'osd'; s.group = 'OSD layout'; s.title = `${OSD_NAMES[key] ?? key.replace(/_/g, ' ')} position`;
+      s.description = `Now at column ${p.x}, row ${p.y}, ${p.profiles & 1 ? 'shown' : 'hidden'}. Set "x,y", "x,y,on" or "x,y,off".`;
+    }
     return out.sort((a, b) => a.id.localeCompare(b.id));
   }
   private async readVtx() {
@@ -381,7 +387,8 @@ export class BetaflightDriver extends DriverBase implements Driver {
                 results.push({ id: change.id, before, requested: change.value, after, ok, note: ok ? 'Saved. The flight controller restarts to apply it.' : 'The flight controller kept a different table.' });
                 continue;
               }
-              const value = safeValue(change.value);
+              const osd = /^bf\.osd_[a-z0-9_]+_pos$/.test(change.id);
+              const value = osd ? String(parseOsdValue(change.value, Number(this.values.get(change.id.slice(3))?.value ?? 0))) : safeValue(change.value);
               let before: string | undefined, after: string | undefined, command: string;
               if (this.isLine(change.id)) {
                 const [, kind, key] = change.id.split('.');
