@@ -45,6 +45,8 @@ gh variable set ECS_SERVICE         --body "$(terraform output -raw ecs_service)
 gh variable set LUCIDITY_URL        --body "$(terraform output -raw url)"
 ```
 
+Commit the `.terraform.lock.hcl` files that `terraform init` creates, so everyone uses the same provider versions.
+
 4. Run **Deploy to AWS** from the Actions tab (or push to `main`). Until the first image is pushed, the service waits.
 5. Open `terraform output url`. Add `terraform output mcp_url` as a connector in Claude or ChatGPT.
 
