@@ -424,8 +424,13 @@ export class BetaflightDriver extends DriverBase implements Driver {
         args: [{ name: 'motor', type: 'number', min: 1, max: motors, required: true }, { name: 'throttle', type: 'number', min: 3, max: 15, default: 5, unit: '%' }, { name: 'seconds', type: 'number', min: 0.5, max: 3, default: 1, unit: 's' }] },
       { id: 'esc.flash', name: 'Flash ESC firmware', part: 'motors', level: 3, seconds: 90, needs: ['propsRemoved', 'directUsb', 'batteryConnected', 'firmwareMatchesBoard'], interactive: true, proves: 'Each ESC runs the chosen firmware, verified by reading it back.',
         args: [{ name: 'esc', type: 'number', min: 1, max: 8 }, { name: 'file', type: 'file', required: true }] },
-      { id: 'fc.bootloader', name: 'Restart into firmware-update mode', part: 'fc', level: 3, seconds: 5, needs: ['propsRemoved', 'firmwareMatchesBoard'], proves: 'The flight controller is waiting for new firmware over USB.' },
     ];
+  }
+  async enterBootloader() {
+    this.ready();
+    while (this.pollBusy) await sleep(10);
+    await this.transport.write(encodeMsp(MSP.REBOOT, Uint8Array.of(1)));
+    await sleep(this.timing.rebootMs);
   }
   async stop() {
     if (this.closedReason || this.mode !== 'msp') return;
@@ -504,14 +509,14 @@ export class BetaflightDriver extends DriverBase implements Driver {
         for (let i = 0; i < 30; i++) { ctx.progress?.('Turn the aircraft through every direction', i, 30); await sleep(Math.min(1000, this.timing.pollMs * 2)); }
         return this.result(id, null, 'Compass calibration window finished. Check the heading against a known direction.');
       });
-      case 'fc.restart': case 'fc.bootloader': return this.exclusive('restarting', async () => {
+      case 'fc.restart': return this.exclusive('restarting', async () => {
         this.ready();
         while (this.pollBusy) await sleep(10);
-        this.expectingReboot = id === 'fc.restart';
-        await this.transport.write(encodeMsp(MSP.REBOOT, Uint8Array.of(id === 'fc.restart' ? 0 : 1)));
+        this.expectingReboot = true;
+        await this.transport.write(encodeMsp(MSP.REBOOT, Uint8Array.of(0)));
         await sleep(this.timing.rebootMs);
-        if (!this.closedReason && id === 'fc.restart') this.emit({ type: 'reconnect-needed', reason: 'The flight controller is restarting.' });
-        return this.result(id, true, id === 'fc.restart' ? 'Restart sent. Reconnecting.' : 'The flight controller is now in firmware-update mode. Choose it in the firmware tool to flash.');
+        if (!this.closedReason) this.emit({ type: 'reconnect-needed', reason: 'The flight controller is restarting.' });
+        return this.result(id, true, 'Restart sent. Reconnecting.');
       });
       case 'motor.spin': return this.exclusive('motor test', async () => {
         this.ready();

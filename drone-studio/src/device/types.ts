@@ -115,12 +115,14 @@ export type DriverEvent =
 /** Proof that a person at the bench approved one specific operation. Only the runtime can mint one. */
 export interface Grant { readonly conditions: readonly Condition[]; readonly operation: string }
 
+/** file resolves to bytes; step to true/false; serial to a ByteTransport; dfu to a DfuPort. Each needs a click, so only the UI can answer. */
+export interface PromptRequest { kind: 'file' | 'step' | 'serial' | 'dfu'; label: string; accept?: string }
 export interface RunContext {
   grant?: Grant;
   args?: Record<string, unknown>;
   progress?: (label: string, done?: number, total?: number) => void;
   /** Ask the person for something mid-procedure (a file, a physical step). Resolves when they respond. */
-  prompt?: (request: { kind: 'file' | 'step'; label: string; accept?: string }) => Promise<Uint8Array | boolean>;
+  prompt?: (request: PromptRequest) => Promise<unknown>;
   signal?: AbortSignal;
 }
 
@@ -139,6 +141,8 @@ export interface Driver {
   write(changes: Change[], ctx: RunContext): Promise<ChangeResult[]>;
   tests(): TestSpec[];
   run(id: string, ctx: RunContext): Promise<TestResult>;
+  /** Restart into the mode that accepts new firmware. The connection drops. */
+  enterBootloader?(): Promise<void>;
   /** Stop anything that is moving. Always allowed. */
   stop(): Promise<void>;
   escs(): EscInfo[];
