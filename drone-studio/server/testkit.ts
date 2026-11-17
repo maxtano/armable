@@ -1,11 +1,17 @@
 import { Bench, type ProposalOutcome } from '../src/bench/bench';
 import { Runtime, type RuntimeOptions } from '../src/device/runtime';
+import type { ArdupilotSim } from '../src/device/sim/ardupilot';
+import type { BetaflightSim } from '../src/device/sim/betaflight';
 import { ardupilotDemo, betaflightDemo } from '../src/device/sim/demo';
 import type { Condition } from '../src/device/types';
 import { Services, ToolError, type Account } from './services';
 import { MemoryStore, type Store } from './store';
 import { TOOLS, type ToolContext } from './tools';
 
+/** Tests reach into whichever simulator is running. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SimHandle = any;
+export type { ArdupilotSim, BetaflightSim };
 /** Fast timings for tests. */
 export const FAST: RuntimeOptions = {
   detectMs: 600, reconnectMs: 3000,
@@ -37,7 +43,7 @@ export async function openBench(services: Services, account: string, stack: 'ard
   await runtime.connect(source);
   bench.flush();
   return {
-    runtime, bench, sim: source.sim, tabId,
+    runtime, bench, sim: source.sim as SimHandle, tabId,
     /** What the person does: approve in the signed-in tab, confirm conditions, and let the tab carry it out. */
     async approve(proposalId: string, conditions: Condition[] = [], prompt?: Parameters<Bench['execute']>[2]): Promise<ProposalOutcome> {
       const proposal = await services.decide(account, proposalId, true);
