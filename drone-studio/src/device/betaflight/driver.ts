@@ -13,6 +13,7 @@ import {
   type LogEntry, type RunContext, type Setting, type TestResult, type TestSpec,
 } from '../types';
 import { decodeOsd, OSD_NAMES, parseOsdValue } from './osd';
+import { checkEspImage, elrsCommand, EspLoader, SYNC_FRAME } from '../flash/esp';
 import { frequency, parseVtxTable, presetName, validateVtxTable, vtxTableCommands, VTX_PRESETS, type VtxTable } from './vtx';
 import { ARMING_EXPECTED, ARMING_FLAGS, ARMING_WORDS, parseDump, parseGet, restoreLines, safeName, safeValue, toSetting, type GetInfo } from './cli';
 
@@ -34,7 +35,7 @@ export class BetaflightDriver extends DriverBase implements Driver {
   private msp = new MspParser();
   private mspQueue: { command: number; resolve: (payload: Uint8Array) => void; reject: (error: Error) => void }[] = [];
   private raw = new Set<(bytes: Uint8Array) => void>();
-  private mode: 'msp' | 'cli' | 'esc' = 'msp';
+  private mode: 'msp' | 'cli' | 'esc' | 'passthrough' = 'msp';
   private cliText = '';
   private cliWaiter?: () => void;
   private live: LiveState = { at: 0, linkOk: false, armed: false, mode: 'Unknown', sensors: {}, armingBlocks: [], messages: [] };
@@ -74,6 +75,7 @@ export class BetaflightDriver extends DriverBase implements Driver {
 
   private receive(chunk: Uint8Array) {
     for (const listener of [...this.raw]) listener(chunk);
+    if (this.mode === 'passthrough') return;
     if (this.mode === 'cli') { this.cliText += latin1(chunk); this.cliWaiter?.(); return; }
     if (this.mode !== 'msp') return;
     for (const frame of this.msp.push(chunk)) this.onFrame(frame);
@@ -475,6 +477,8 @@ export class BetaflightDriver extends DriverBase implements Driver {
       { id: 'logs.list', name: 'Check log storage', part: 'logging', level: 0, seconds: 1, needs: [], proves: 'How much of the onboard blackbox flash is used.' },
       { id: 'logs.analyze', name: 'Analyse a flight log', part: 'logging', level: 0, seconds: 60, needs: [], proves: 'Vibration, stick tracking, throttle and battery behaviour during a recorded flight.', args: [{ name: 'log', type: 'number', min: 1 }] },
       { id: 'logs.erase', name: 'Erase blackbox flash', part: 'logging', level: 2, seconds: 30, needs: [], proves: 'The onboard log storage is empty and ready to record.' },
+      { id: 'receiver.bind', name: 'Put receiver in bind mode', part: 'receiver', level: 2, seconds: 5, needs: [], proves: 'An ExpressLRS receiver is waiting to bind. Afterwards, unplug and replug the flight controller.' },
+      { id: 'receiver.flash', name: 'Flash receiver firmware', part: 'receiver', level: 3, seconds: 60, interactive: true, needs: ['firmwareMatchesBoard'], proves: 'An ExpressLRS receiver runs the chosen firmware, written through the flight controller.', args: [{ name: 'file', type: 'file', required: true }] },
       { id: 'esc.read', name: 'Read ESCs', part: 'motors', level: 2, seconds: 8, needs: ['propsRemoved', 'directUsb', 'batteryConnected'], proves: 'Firmware and settings of each ESC, including spin direction.' },
       { id: 'cal.accel', name: 'Accelerometer calibration', part: 'fc', level: 2, seconds: 4, needs: ['level', 'still'], proves: 'The flight controller knows which way is level.' },
       { id: 'cal.compass', name: 'Compass calibration', part: 'compass', level: 2, seconds: 30, needs: [], interactive: true, proves: 'Compass offsets are measured while you turn the aircraft through every direction.' },
@@ -587,6 +591,34 @@ export class BetaflightDriver extends DriverBase implements Driver {
         this.emit({ type: 'settings' });
         return this.result(id, true, 'Log storage erased.');
       });
+      case 'receiver.bind': return this.exclusive('binding', async () => {
+        await this.openReceiverPassthrough();
+        await this.transport.write(elrsCommand('bind'));
+        await sleep(this.timing.cliIdleMs * 4);
+        await this.endPassthrough('Receiver is in bind mode. Bind from your transmitter, then unplug and replug the flight controller.');
+        return this.result(id, null, 'The receiver was told to enter bind mode. Bind it from your transmitter, then unplug and replug the flight controller.');
+      });
+      case 'receiver.flash': return this.exclusive('flashing the receiver', async () => {
+        const file = await ctx.prompt?.({ kind: 'file', label: 'Choose the receiver firmware (.bin)', accept: '.bin' });
+        if (!(file instanceof Uint8Array)) throw new DeviceError('invalid', 'No firmware file was chosen.');
+        checkEspImage(file, 0, 'ESP8266');
+        await this.openReceiverPassthrough();
+        const loader = new EspLoader({ ...this.transport, write: b => this.transport.write(b), onData: l => { this.raw.add(l); return () => this.raw.delete(l); }, onClose: l => this.transport.onClose(l), close: () => this.transport.close(), label: this.transport.label, open: true });
+        try {
+          // ExpressLRS's own sequence: a ROM training frame, then its "reboot to bootloader" command, then the ROM loader.
+          await this.transport.write(SYNC_FRAME);
+          await sleep(200);
+          await this.transport.write(elrsCommand('bootloader', 'ESP82'));
+          await sleep(300);
+          await loader.sync();
+          const chip = await loader.detect();
+          checkEspImage(file, 0, chip);
+          const written = await loader.flash(file, 0, ctx.progress);
+          await loader.finish();
+          await this.endPassthrough('Receiver flashed. Unplug the flight controller and plug it back in.');
+          return this.result(id, written.verified ? true : null, written.verified ? `${chip} receiver flashed and verified.` : `${chip} receiver flashed. This chip's loader cannot read back, so check the receiver's light and bind it to confirm.`, { chip, bytes: written.bytes, verified: written.verified });
+        } finally { loader.dispose(); }
+      });
       case 'esc.read': return this.exclusive('reading ESCs', async () => { const { reads, result } = await readAllEscs(this.session, ctx, this.now); this.escReads = reads; this.emit({ type: 'settings' }); return result; });
       case 'esc.flash': return this.exclusive('flashing ESCs', async () => { const { reads, result } = await flashEscs(this.session, ctx, this.now, args.esc === undefined ? undefined : Number(args.esc), this.escReads); this.escReads = reads; this.emit({ type: 'settings' }); return result; });
       case 'cal.accel': return this.exclusive('calibrating', async () => { this.ready(); await this.request(MSP.ACC_CALIBRATION, undefined, 4000); await sleep(Math.min(2500, this.timing.rebootMs)); return this.result(id, true, 'Accelerometer calibration finished.'); });
@@ -618,6 +650,25 @@ export class BetaflightDriver extends DriverBase implements Driver {
       });
       default: throw new DeviceError('unsupported', `"${id}" is not implemented.`);
     }
+  }
+  /** Find the receiver's UART and bridge USB straight to it. The flight controller stays like this until it is power-cycled. */
+  private async openReceiverPassthrough() {
+    this.ready();
+    await this.enterCli();
+    const provider = parseGet(await this.cli('get serialrx_provider')).find(g => g.name === 'serialrx_provider')?.value;
+    if (provider !== 'CRSF' && provider !== 'ELRS') { await this.exitCli(); throw new DeviceError('unsupported', 'The receiver is not set up as CRSF, so it is not an ExpressLRS receiver on a serial port.', 'Set bf.serialrx_provider to CRSF first.'); }
+    const port = (await this.cli('serial')).split('\n').map(l => l.trim().match(/^serial (\S+) (\d+) /)).find(m => m && (Number(m[2]) & 64))?.[1];
+    if (!port) { await this.exitCli(); throw new DeviceError('unsupported', 'No serial port is set as the receiver.', 'Turn on "serial receiver" for the receiver UART in Ports.'); }
+    this.cliText = '';
+    this.mode = 'passthrough';
+    await this.transport.write(new TextEncoder().encode(`serialpassthrough ${port} 420000\n`));
+    await sleep(Math.max(200, this.timing.cliIdleMs * 4));
+  }
+  private async endPassthrough(reason: string) {
+    this.expectingReboot = false;
+    clearInterval(this.poll);
+    this.emit({ type: 'closed', reason });
+    await this.close();
   }
   logs(): LogEntry[] { return this.flash?.logs.map(l => ({ id: l.index, size: l.stats.bytes })) ?? []; }
   lastLogAnalysis() { return this.analysed; }

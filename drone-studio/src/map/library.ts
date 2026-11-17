@@ -112,6 +112,16 @@ export const PLAYBOOKS: Playbook[] = [
     ],
   },
   {
+    id: 'play.elrs-receiver', symptom: 'Bind or update an ExpressLRS receiver', words: ['elrs', 'expresslrs', 'bind', 'binding', 'receiver', 'update', 'flash', 'firmware', 'crsf', 'pair'], stacks: BF,
+    caution: 'Use the firmware built for this exact receiver. The flight controller must be unplugged and replugged afterwards.',
+    steps: [
+      { do: 'Check the receiver is set up as CRSF on a serial port.', use: { tool: 'read', arguments: { ids: ['bf.serialrx_provider'] } } },
+      { do: 'To bind: put the receiver in bind mode, then bind from the transmitter.', use: { tool: 'run_test', arguments: { id: 'receiver.bind' } } },
+      { do: 'To update: the person chooses the firmware file and starts the flash.', use: { tool: 'run_test', arguments: { id: 'receiver.flash' } } },
+      { do: 'After either, ask the person to unplug and replug the flight controller, then check the radio.', use: { tool: 'run_test', arguments: { id: 'radio.check' } } },
+    ],
+  },
+  {
     id: 'play.esc-passthrough-off', symptom: 'The ESCs cannot be read', words: ['esc', 'escs', 'passthrough', 'read', 'blheli', 'bluejay', 'cannot', 'timeout', 'no', 'answer'], stacks: AP,
     steps: [
       { do: 'Check passthrough is switched on.', use: { tool: 'read', arguments: { ids: ['param.SERVO_BLH_AUTO', 'param.SERVO_BLH_PORT'] } }, why: 'ArduPilot needs SERVO_BLH_AUTO at 1 and SERVO_BLH_PORT at 0 for USB.' },
@@ -144,6 +154,12 @@ export const REFERENCES: Reference[] = [
   { id: 'ref.video.wont-arm', title: 'Videos: why it will not arm', url: 'https://www.youtube.com/results?search_query=fpv+drone+wont+arm+troubleshooting', kind: 'video', part: 'safety', words: ['arm', 'arming', 'wont', 'video'], note: 'A search, not a single video.' },
   { id: 'ref.video.vibration', title: 'Videos: finding vibration', url: 'https://www.youtube.com/results?search_query=fpv+drone+vibration+oscillation+troubleshooting', kind: 'video', part: 'fc', words: ['vibration', 'shake', 'wobble', 'oscillation', 'video'], note: 'A search, not a single video.' },
   { id: 'ref.video.failsafe', title: 'Videos: setting up failsafe', url: 'https://www.youtube.com/results?search_query=fpv+drone+failsafe+setup', kind: 'video', part: 'receiver', words: ['failsafe', 'video', 'setup'], note: 'A search, not a single video.' },
+  { id: 'ref.elrs.flashing', title: 'Updating ExpressLRS receivers', url: 'https://www.expresslrs.org/quick-start/receivers/updating/', kind: 'guide', part: 'receiver', words: ['elrs', 'expresslrs', 'receiver', 'update', 'flash', 'firmware'] },
+  { id: 'ref.elrs.binding', title: 'Binding ExpressLRS', url: 'https://www.expresslrs.org/quick-start/binding/', kind: 'guide', part: 'receiver', words: ['elrs', 'expresslrs', 'bind', 'binding', 'phrase'] },
+  { id: 'ref.bf.vtx', title: 'Betaflight video tables', url: 'https://betaflight.com/docs/wiki/guides/current/VTX-Tables', kind: 'guide', stacks: BF, part: 'vtx', words: ['vtx', 'video', 'table', 'band', 'channel', 'power'] },
+  { id: 'ref.bf.osd', title: 'Betaflight OSD', url: 'https://betaflight.com/docs/wiki/app/osd-tab', kind: 'guide', stacks: BF, part: 'osd', words: ['osd', 'display', 'layout', 'elements', 'goggles'] },
+  { id: 'ref.esc.am32', title: 'AM32 ESC firmware', url: 'https://github.com/am32-firmware/AM32', kind: 'guide', part: 'motors', words: ['am32', 'esc', 'firmware'] },
+  { id: 'ref.bf.blackbox', title: 'Betaflight blackbox', url: 'https://betaflight.com/docs/wiki/guides/current/Black-Box-logging-and-usage', kind: 'guide', stacks: BF, part: 'logging', words: ['blackbox', 'log', 'logs', 'bbl'] },
   { id: 'ref.mav.qgc', title: 'QGroundControl setup', url: 'https://docs.qgroundcontrol.com/master/en/qgc-user-guide/setup_view/setup_view.html', kind: 'guide', stacks: MAV, words: ['qgroundcontrol', 'setup', 'calibration', 'sensors'] },
 ];
 

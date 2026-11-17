@@ -82,7 +82,7 @@ const UNAVAILABLE: { words: string[]; stacks: Stack[] | 'all'; title: string; re
   { words: ['esc', 'escs', 'passthrough', 'direction'], stacks: ['px4'], title: 'ESC settings', reason: 'ESC passthrough is not available on PX4.' },
   { words: ['arm', 'takeoff', 'launch', 'fly', 'mission', 'land'], stacks: 'all', title: 'Arming and flight', reason: 'Lucidity never arms, launches or flies an aircraft for an assistant. The pilot does that.' },
   { words: ['blheli32', 'blheli_32'], stacks: 'all', title: 'BLHeli_32 ESCs', reason: 'BLHeli_32 is closed firmware and is not supported. BLHeli_S, Bluejay and AM32 are.' },
-  { words: ['elrs', 'expresslrs', 'esp', 'esp32', 'receiver', 'flash'], stacks: 'all', title: 'Receiver and radio firmware', reason: 'Flashing receiver or radio firmware is not built yet in the hosted app.' },
+  { words: ['stm32', 'spi'], stacks: 'all', title: 'STM32 and SPI receivers', reason: 'Only ESP-based ExpressLRS receivers can be flashed here. SPI receivers update with the flight controller firmware.' },
 ];
 
 const tokens = (text: string) => text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
