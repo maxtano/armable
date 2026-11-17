@@ -1,6 +1,6 @@
 # Lucidity as a tool app — architecture
 
-**Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** Design for the direction in [TOOL_APP_VISION.md](TOOL_APP_VISION.md). Sections marked *exists* describe code in the repository today; everything else is proposed. Build order is in [TOOL_APP_EXECUTION.md](TOOL_APP_EXECUTION.md).
+**Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** Design for the direction in [TOOL_APP_VISION.md](TOOL_APP_VISION.md) and the interface in [TOOL_APP_DESIGN.md](TOOL_APP_DESIGN.md). Sections marked *exists* describe code in the repository today; everything else is proposed. Build order is in [TOOL_APP_EXECUTION.md](TOOL_APP_EXECUTION.md).
 
 ## Where the code is today
 
@@ -126,7 +126,7 @@ Further rules:
 
 - **Physical conditions are not tool arguments.** `propsRemoved` appears in no tool schema. Only the card can supply it, and only the person at the bench tab can tick it.
 - On approval, the runtime re-reads the current value, refuses if it no longer matches `before` or if the aircraft has reconnected, writes, reads back, and reports. The cloud saves a receipt.
-- The assistant waits with `await_change`, which holds the call open (about 50 seconds per call, repeatable) and returns the outcome.
+- The assistant waits with `wait`, which holds the call open (about 50 seconds per call, repeatable) and returns the outcome.
 - Level 3 proposals are not run by approval. Approval opens the existing panel (motor test, bench show, firmware) pre-filled, and you press its own Start control.
 
 This is a stronger boundary than the earlier local design had. There, any program on your computer could have imitated the UI. Here, the assistant holds a token that cannot approve, and the hardware sits behind a tab the assistant cannot reach.
@@ -136,54 +136,77 @@ This is a stronger boundary than the earlier local design had. There, any progra
 - **People** sign in through a managed identity provider (email link, Google, Apple). Lucidity stores no passwords.
 - **Assistants** connect to one HTTPS address using the MCP streamable-HTTP transport. The first connection sends the user through a standard OAuth sign-in and consent screen ("Allow Claude to use Lucidity: observe, edit designs, propose device changes"). The assistant receives a token for that account with those scopes.
 - **Scopes** map to levels: `observe`, `design`, `propose`. There is no scope for approving, energising, or flying.
-- **Revocation:** Assistant status in the UI lists each connected assistant and can disconnect it, which revokes its token.
+- **Revocation:** the assistant chip in the UI lists each connected assistant and can disconnect it, which revokes its token.
 
 What each assistant app requires for a custom connector (plan tier, registration method, review for a public listing) must be checked against current documentation in phase 0. It is not assumed here.
 
+### 8. The aircraft model, the map, and the diagram
+
+One data structure describes the connected aircraft: its frame, motors, ESCs, sensors, ports, firmware versions, and what each supports. Three things are generated from it, so they cannot disagree:
+
+- **the map** the assistant searches;
+- **the diagram** the person sees ([TOOL_APP_DESIGN.md](TOOL_APP_DESIGN.md));
+- **the checks** that decide whether a test or change is allowed right now.
+
+The map is a catalogue of entries of five kinds:
+
+```ts
+type Entry =
+  | { kind: 'reading';   id: 'battery.voltage';        unit: 'V'; source: 'telemetry'; ageMs: 240 }
+  | { kind: 'test';      id: 'motor.spin';             level: 3; proves: string; needs: string[]; seconds: 1 }
+  | { kind: 'setting';   id: 'esc.3.direction';        level: 2; values: ['normal','reversed']; current: 'normal' }
+  | { kind: 'reference'; id: 'ref.failsafe.rc';        title: string; url: string; startSeconds?: number; firmware: string }
+  | { kind: 'playbook';  id: 'play.motor-wrong-way';   symptom: string; steps: Step[] };
+```
+
+- **Ids are stable and readable.** `param.ATC_RAT_RLL_P`, `esc.3.direction`, `log.latest.vibration`. A wrong id returns the nearest valid ones.
+- **Per aircraft.** An entry appears only if the connected hardware and firmware support it. An unsupported entry that someone asks for by name is returned as unavailable, with the reason.
+- **Search is local and instant.** A prebuilt index over ids, names, synonyms, and symptoms. No model, no network call; a few milliseconds.
+- **Playbooks and references are authored data,** kept in the repository and reviewed like code. Playbooks also drive the UI's guided checks. References hold links, titles, timestamps, and Lucidity's own notes, tagged by firmware version. Lucidity stores no third-party video or transcript.
+- **Parameter documentation** is imported from the firmware project's published metadata, matched to the aircraft's version. This fills a gap [WORKSPACE.md](WORKSPACE.md) already lists.
+
+The diagram is SVG, generated from the same model: frame class and type give motor positions and spin directions; port settings give the attached parts. Each part is one element bound to its readings and settings by the same ids the assistant uses. When the assistant reads `esc.3.direction`, the part with that id shows the reading ring. That link is the whole mechanism behind "watch the assistant work".
+
 ## The tool surface
 
-Tool definitions are sent to the model with every request, and models choose worse from long lists. So the surface is **small, stable, and generic where the domain allows**. The target is about 20 tools and under 3,000 tokens of definitions in total.
+Tool definitions are sent to the model with every request, and models choose worse from long lists. So the assistant gets **eleven actions and one map**, not a tool per feature. Definitions total well under 2,000 tokens. New hardware support adds map entries, not tools.
 
-| Tool | Level | Runs on | Purpose |
-| --- | --- | --- | --- |
-| `get_workspace` | 0 | cloud | The one-call orientation: whether a bench tab is open, connected aircraft, link freshness, armed state, your focus, open document and revision, pending proposals, running jobs |
-| `get_activity` | 0 | cloud | Recent activity and receipts, filterable |
-| `show_in_ui` | 0 | cloud | Point the UI at a page, parameter, ESC, scene, or time. Navigation only. |
-| `capture_view` | 0 | tab | A rendered image of one named view, for questions that are truly visual |
-| `get_aircraft` | 0 | mirror | Telemetry snapshot, status messages, pre-arm results |
-| `get_parameters` | 0 | mirror | By name, prefix, or search; or the difference against a snapshot |
-| `get_escs` | 0 | mirror | ESC identity and settings from the last read; says how old the read is |
-| `run_diagnostics` | 0 | device | The read-only automatic part of "Check my drone" |
-| `list_flight_logs`, `analyze_flight_log` | 0 | device | Onboard log list; bounded analysis report |
-| `list_storyboards`, `get_storyboard` | 0 | cloud | Library; bounded view of a show, scene, or drone set |
-| `get_edit_schema` | 0 | cloud | Operation shapes for `edit_storyboard`, fetched only when needed |
-| `sample_show` | 0 | cloud | Evaluated frames, audience viewpoint, and validation findings at given times |
-| `edit_storyboard` | 1 | cloud | A batch of operations against a base revision; `dryRun` returns the difference without applying |
-| `edit_tune`, `edit_file` | 1 | cloud | Motor melody; workspace text file |
-| `undo` | 1 | cloud | Undo the caller's own last edit on a document |
-| `propose_change` | 2–3 | device | One tool for every device change, selected by `kind`: `parameter.set` (batch), `esc.setting`, `esc.startup_melody`, `calibration.level`, `run.motor_test`, `run.bench_show`, `firmware.flash` |
-| `await_change`, `cancel_change` | 0 | cloud | Wait for, or withdraw, a proposal |
-| `stop_bench_run` | — | device | Stop a motor test or bench show. Always allowed. |
+| Tool | Level | Purpose |
+| --- | --- | --- |
+| `get_workspace` | 0 | One-call orientation: bench tab open or not, aircraft, link freshness, armed state, what you have selected, pending proposals, running jobs, and a count of what the map offers |
+| `find` | 0 | Search the map. Returns matching readings, tests, settings, references, and playbooks, each with the exact call to use next. |
+| `read` | 0 | Read up to 32 entries in one call: readings, settings, storyboard parts, activity, receipts. Answers from mirrored state with its age unless `fresh` is asked for. |
+| `run_test` | 0 or 3 | Run a test by id. Level 0 tests run at once. Level 3 tests become a proposal that you start. |
+| `propose_change` | 2 | Propose new values for one or more settings. Returns the before-and-after and a proposal id. |
+| `wait` | 0 | Hold until a proposal or job finishes; returns the outcome and readback. |
+| `edit` | 1 | Apply operations to a document (storyboard, tune, file) against a base revision; `dryRun` returns the difference only. |
+| `undo` | 1 | Undo the caller's own last edit on a document. |
+| `show` | 0 | Point the screen at a part, a setting, a chart, a scene, or a reference. Navigation only; it presses nothing. |
+| `capture_view` | 0 | A rendered image of one view, for questions that are truly visual. |
+| `stop` | — | Stop a bench run or cancel a proposal. Always allowed. |
 
-"Mirror" means the cloud answers from the state the bench tab last sent, and reports its age. Connecting to the drone is not a tool: the browser requires a person to pick the USB device.
+The usual sequence is `get_workspace` → `find` → `read` or `run_test` → `propose_change` → `wait`. For a well-known symptom, `find` returns a playbook and the assistant follows it.
 
-The 15 existing show tools in `src/agent/tools.ts` fold into `get_storyboard`, `sample_show`, and `edit_storyboard`. Their inspection code is reused, and it runs in the cloud because `src/core` is pure TypeScript. Their private-draft staging is replaced by `dryRun` plus undo.
+The 15 existing show tools in `src/agent/tools.ts` fold into `read`, `edit`, and show-specific tests such as `show.sample`. Their inspection code is reused and runs in the cloud, because `src/core` is pure TypeScript.
 
-Not published: shell commands, arbitrary file access, raw MAVLink, URL fetch, arm, mission start, LAND.
+Not published: shell commands, arbitrary file access, raw MAVLink, URL fetch, arm, mission start, LAND. Connecting to the drone is not a tool either: the browser requires a person to pick the USB device.
+
+**A design bet to verify.** Generic tools with ids are easier to discover and extend, but a model gets less help from the schema than it would from one tool per feature. Phase 0 measures both shapes on the same tasks with real assistants before the choice is final.
 
 ### Making it fast
 
-1. **Orientation in one call.** `get_workspace` answers the questions an assistant otherwise spends five calls on.
-2. **Answers sized for a model.** Each tool has a default response of about 2 KB and a hard cap. Lists page. A `detail` argument selects `summary` or `full`. Parameter queries return only what was asked for, never all of the roughly 1,000 parameters.
-3. **Typed output.** Every tool declares an output schema and returns structured content, so the assistant parses nothing.
-4. **Reads from the mirror.** Device reads are answered in the cloud from mirrored state. Only a fresh read or a write travels to the tab.
-5. **Errors that say what to do.** A stale revision returns the current one. A blocked operation names the unmet condition. "No bench tab open" says exactly that. The assistant recovers in one call.
-6. **Waiting without polling.** `await_change` and long jobs such as log download hold the call open and send MCP progress notifications.
-7. **Safe retries.** Writes take an idempotency key, so a retried call cannot apply twice.
-8. **Guidance shipped with the server.** The MCP `instructions` field carries a short operating guide: start with `get_workspace`; never claim a device change without a readback; propose, then wait.
-9. **Budgets in CI.** A test fails the build if total tool-definition size, a default response size, or the call count on a golden task grows past its limit.
+1. **Two calls to know everything.** `get_workspace` says where things stand; `find` says what can be done about it.
+2. **Batch reads.** One `read` call returns many values, so the assistant does not spend a turn per number.
+3. **Answers sized for a model.** Each tool has a default response of about 2 KB and a hard cap. Lists page. A `detail` argument selects `summary` or `full`.
+4. **Typed output.** Every tool declares an output schema and returns structured content.
+5. **Reads from the mirror.** Device reads are answered in the cloud from mirrored state. Only a fresh read, a test, or a write travels to the tab.
+6. **Ready-to-use results.** Every `find` hit includes the exact next call. Every error names what to do: the current revision, the unmet condition, the nearest valid id, or "no bench tab open".
+7. **Waiting without polling.** `wait` holds the call open and sends progress notifications.
+8. **Safe retries.** Writes take an idempotency key, so a retried call cannot apply twice.
+9. **Guidance shipped with the server.** The MCP `instructions` field carries a short guide: the five kinds of entry, the usual sequence, and the rule never to claim a change without a readback. Playbooks appear in assistant apps as ready-made prompts where the app supports them.
+10. **Budgets in CI.** A test fails the build if tool-definition size, a default response size, or the call count on a golden task grows past its limit.
 
-Where the time actually goes: a model turn takes seconds; a device write takes tens to hundreds of milliseconds on the wire; the network hop between assistant, cloud, and tab adds tens of milliseconds; the service's own work is a few milliseconds. Speed is won by needing fewer model turns, which is what items 1 to 5 do.
+Where the time actually goes: a model turn takes seconds; a device write takes tens to hundreds of milliseconds on the wire; the network hop between assistant, cloud, and tab adds tens of milliseconds; the service's own work is a few milliseconds. Speed is won by needing fewer model turns, which is what items 1, 2, and 6 do.
 
 ## Language choice
 
@@ -204,7 +227,7 @@ Hosting turns a single-user local tool into an internet service. These are the r
 - **Three credentials, three powers.** A browser session can do everything a person can. An assistant token can observe, design, and propose. The bench tab's local approval is required for anything that writes to hardware.
 - **Device text is data.** Status messages from an aircraft, log contents, file names, and parameter-file comments can contain anything. They are returned in clearly bounded fields, never mixed into tool descriptions or guidance. Tests plant instructions in each.
 - **Everything is journalled.** Every tool call, proposal, approval, and device command is recorded with the caller's identity.
-- **One hard stop.** Setting Assistant status to *Off* rejects every tool call for that account from that moment and cancels open proposals.
+- **One hard stop.** Setting the assistant chip to *Off* rejects every tool call for that account from that moment and cancels open proposals.
 - **Standard service hygiene.** HTTPS only, rate limits per account and per token, short-lived access tokens, strict content-security policy on the site, dependency and secret scanning in CI.
 - **Data minimisation.** Stored: documents, parameter snapshots, receipts, activity. Not stored unless the user saves them: raw flight logs, continuous telemetry. A privacy notice states this.
 
@@ -215,7 +238,7 @@ Hosting turns a single-user local tool into an internet service. These are the r
 | `src/core/**` (document model, commands, evaluator, validation) | Kept as is. Runs in the browser and in the cloud. |
 | `src/aircraft/**` (service, protocols, decoders) | Ported to the browser worker behind a transport interface. Middleware wrappers are replaced by registry definitions; the confirmation literals move from request schemas to proposal conditions. Tests keep running in Node against the mock transport. |
 | Mission and flight code (`mission-*`, `flight-*`, launch gate) | Kept in the repository, not shipped in the first hosted release. |
-| `src/platform/**`, `src/components/**`, design system | Kept. Stores switch from `localStorage` and polling to the cloud and the live channel. New: sign-in, Assistant status, Activity, change cards, change marks, Connect page. |
+| `src/platform/**`, `src/components/**`, design system | Design system, 3D stage, and editors kept. The text-heavy Tools pages are rebuilt around the diagram; `src/platform/catalog.ts` becomes the seed of the map. Stores switch from `localStorage` and polling to the cloud and the live channel. New: sign-in, the diagram, assistant chip, timeline ribbon, proposals on parts, Connect page. |
 | `src/platform/workbench-service.ts` (shell runner, local files) | Shell runner removed. Files become account documents. ESP flashing moves to the browser tool. |
 | `src/agent/tools.ts`, inspection modules (`viewpoint`, `audience-targets`, `review-moments`, `impact`, `draft-preview*`) | Inspection logic is reused behind the three show tools. Draft staging is retired. |
 | `src/agent/evaluation*.ts` and oracles | Repurposed as tool-contract and golden-task tests driven by a scripted MCP client. |
@@ -229,8 +252,9 @@ Hosting turns a single-user local tool into an internet service. These are the r
 1. **Web Serial against real hardware.** Does a browser tab hold a reliable link to the flight controller, and does the ESC four-way passthrough work through it, with the timing those protocols need? This is the largest technical risk and is tested first, in phase 0.
 2. **MAVLink in the browser.** Shim `node-mavlink`'s Node dependencies or replace it with a small codec. Decided in phase 0 by trying both on the existing decoder tests.
 3. **Background tabs.** Browsers slow timers in tabs that are not visible. Does a bench tab in the background keep a healthy link and answer assistant requests promptly? If not, the runtime needs a strategy (a held lock, a visible "keep this tab in front" state) before level 2 work ships.
-4. **Rendering for `capture_view`.** The simplest route asks the open tab to render and return an image. Start there and return a clear "no tab open" error otherwise.
-5. **Large shows.** A 100,000-drone storyboard is tens of megabytes of JSON. Whole-document writes per edit will not hold. Start with whole documents, measure, and move to patches when the measurement says so.
-6. **Assistant differences.** Each assistant app has its own limits on tool output size and call duration, and its own rules for custom connectors. Measured per app in phase 0.
-7. **ESC setting writes.** Writing an individual setting such as direction needs per-firmware layouts (Bluejay, BLHeli_S, AM32) and bench verification with props off.
-8. **Local-network devices.** Whether the DroneBridge Wi-Fi recovery flow can work from a hosted page under current browser rules.
+4. **Generic tools or specific ones.** Whether eleven id-driven tools beat a longer list of specific tools in accuracy and call count. Measured in phase 0.
+5. **Rendering for `capture_view`.** The simplest route asks the open tab to render and return an image. Start there and return a clear "no tab open" error otherwise.
+6. **Large shows.** A 100,000-drone storyboard is tens of megabytes of JSON. Whole-document writes per edit will not hold. Start with whole documents, measure, and move to patches when the measurement says so.
+7. **Assistant differences.** Each assistant app has its own limits on tool output size and call duration, and its own rules for custom connectors. Measured per app in phase 0.
+8. **ESC setting writes.** Writing an individual setting such as direction needs per-firmware layouts (Bluejay, BLHeli_S, AM32) and bench verification with props off.
+9. **Local-network devices.** Whether the DroneBridge Wi-Fi recovery flow can work from a hosted page under current browser rules.

@@ -1,10 +1,10 @@
 # Lucidity as a tool app — vision and product
 
-**Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** This document sets the product direction. Nothing here is implemented unless it says so. Companion documents: [architecture](TOOL_APP_ARCHITECTURE.md) and [execution plan](TOOL_APP_EXECUTION.md). This plan supersedes [CHATGPT_BRIDGE_PLAN.md](CHATGPT_BRIDGE_PLAN.md) and narrows the agent section of the [product brief](PRODUCT_BRIEF.md); the brief's audience, principles, and hardware boundaries still stand, except where "local service" is replaced below.
+**Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** This document sets the product direction. Nothing here is implemented unless it says so. Companion documents: [interface design](TOOL_APP_DESIGN.md), [architecture](TOOL_APP_ARCHITECTURE.md), and [execution plan](TOOL_APP_EXECUTION.md). This plan supersedes [CHATGPT_BRIDGE_PLAN.md](CHATGPT_BRIDGE_PLAN.md) and narrows the agent section of the [product brief](PRODUCT_BRIEF.md); the brief's audience, principles, and hardware boundaries still stand, except where "local service" is replaced below.
 
 ## The one-sentence version
 
-**Lucidity is the drone workbench that your own AI assistant can operate and you can watch.** You open a website, sign in, and plug in your drone. You connect Claude or ChatGPT, on the subscription you already pay for, by pasting one link. Lucidity gives the assistant fast, exact tools and gives you a complete interface where every change it makes shows up live.
+**Lucidity is the drone workbench that your own AI assistant can operate and you can watch.** You open a website, sign in, and plug in your drone. You connect Claude or ChatGPT, on the subscription you already pay for, by pasting one link. Lucidity gives the assistant a map of everything it can read, test, and change on your aircraft, and gives you a living diagram of the drone where every change shows up as it happens.
 
 ## The problem with what exists today
 
@@ -35,15 +35,17 @@ The assistant connection uses the Model Context Protocol (MCP). Lucidity publish
 
 ## Product principles
 
-1. **No model inside.** Lucidity never calls a model provider and never stores a provider key. If the assistant is disconnected, nothing is lost but the assistant.
-2. **Nothing to install.** A browser, a login, and a USB cable are the whole setup. No terminal, no configuration file.
-3. **One engine, two front doors.** Every operation is defined once. A button in the UI and a tool call from an assistant run the same code, the same checks, and leave the same record. There are no agent-only shortcuts and no UI-only capabilities, apart from the physical controls in principle 5.
-4. **The UI is the shared screen.** Anything an assistant reads or changes is visible in Lucidity as it happens, attributed to that assistant, and undoable where the change is undoable.
-5. **Human hands on physical things.** An assistant can observe hardware and propose changes to it. Writing to a device needs your approval in the Lucidity tab that the drone is plugged into. Spinning a motor, flashing firmware, and anything in flight are started by you, in the UI. The assistant's login does not carry the power to approve.
-6. **Evidence over claims.** A tool that changes something returns what was read back afterwards. The assistant reports the readback, and you can see the same evidence in the UI.
-7. **Fast by design.** A few small tools, compact answers, no screenshots for facts. Most requests should take one to three tool calls.
-8. **Complete without an assistant.** Every workflow stays fully usable by hand.
-9. **Your data is yours.** Lucidity stores what the product needs, says what that is, and lets you export or delete it.
+1. **Simple and beautiful.** The screen is a living diagram of your drone, not pages of text. Fewer words, fewer tools, fewer steps. When a choice is between more features and a clearer product, clearer wins.
+2. **The assistant knows what it can do.** Everything the aircraft offers is in one searchable map: readings, tests, settings, and references. The assistant finds the right one in a single call instead of guessing.
+3. **Fast by design.** A handful of tools, compact answers, no screenshots for facts. Most requests take one to three tool calls.
+4. **No model inside.** Lucidity never calls a model provider and never stores a provider key.
+5. **Nothing to install.** A browser, a login, and a USB cable are the whole setup.
+6. **One engine, two front doors.** Every operation is defined once. A button in the UI and a tool call from an assistant run the same code, the same checks, and leave the same record.
+7. **The screen shows; the assistant tells.** Anything an assistant reads or changes is visible on the diagram as it happens. Explanations come from the assistant, not from paragraphs in the UI.
+8. **Human hands on physical things.** An assistant can observe hardware and propose changes to it. Writing to a device needs your approval in the Lucidity tab that the drone is plugged into. Spinning a motor, flashing firmware, and anything in flight are started by you. The assistant's login does not carry the power to approve.
+9. **Evidence over claims.** A tool that changes something returns what was read back afterwards.
+10. **Complete without an assistant.** Every workflow stays usable by hand, with simple direct controls.
+11. **Your data is yours.** Lucidity stores what the product needs, says what that is, and lets you export or delete it.
 
 ## Who it is for
 
@@ -61,13 +63,13 @@ That is the whole setup. A demo aircraft is available from the first screen for 
 
 ### The motivating example: a motor spins the wrong way
 
-1. You are on **Tools → Motors**. You run the props-off 5% test on motor 3 and see it turning the wrong way.
+1. You are looking at the drone diagram. You tap motor 3, press **Test**, and see it turning the wrong way.
 2. In Claude, you say: *"Motor 3 is spinning backwards. Fix it."*
-3. Claude calls `get_workspace`. One call tells it which aircraft is connected, that it is disarmed, and that you are looking at motor 3 on the Motors page.
+3. Claude calls `get_workspace`. One call tells it which aircraft is connected, that it is disarmed, and that you have motor 3 selected.
 4. Claude calls `propose_change` for the direction setting on ESC 3. Lucidity answers with the exact difference, *Normal → Reversed*, and the status *waiting for approval in Lucidity*.
-5. A change card appears in Lucidity on the ESC page, where you are already looking: **"Claude proposes: ESC 3 direction, Normal → Reversed."** It lists the physical conditions only you can vouch for: props removed, direct USB. You tick them and press **Approve**.
-6. Lucidity writes the setting over USB, reads it back from the ESC, and saves a receipt. The ESC row updates and is marked *changed by Claude, just now*.
-7. Claude's waiting call returns with the readback. It tells you the change is confirmed and suggests re-running the spin test, which you start yourself from the Motors page.
+5. On the diagram, motor 3 grows a second, ghosted arrow pointing the other way, with **Approve** beside it. Two ticks ask for what only you can vouch for: props removed, direct USB. You tick them and press Approve.
+6. Lucidity writes the setting over USB, reads it back from the ESC, and saves a receipt. Motor 3's arrow flips and pulses once.
+7. Claude's waiting call returns with the readback. It tells you the change is confirmed and suggests re-running the spin test, which you start yourself by tapping the motor.
 
 You typed one sentence and clicked once. The assistant made three tool calls and took no screenshots.
 
@@ -75,29 +77,47 @@ Honest status: Lucidity can read ESC direction today but cannot write it. Buildi
 
 ### Three more, briefly
 
-- **"Why did it shake on that last flight?"** The assistant lists the onboard logs, asks Lucidity to analyse the newest one, and gets back the same bounded vibration and rate-error report the Flight logs page shows. It proposes two parameter changes as one reviewable batch.
-- **"Make the selected drones fade to cyan over the last two bars."** Lucidity knows your selection and playhead because the UI shares them. The edit lands in the open storyboard as one undo step and the affected drones pulse in the viewport. This works from a phone, with no drone attached, because storyboards live in your account.
-- **"What's different between this aircraft and my backup from last week?"** One call returns the changed parameters only, with both values.
+- **"Why did it shake on that last flight?"** The assistant searches the map for "shake" and gets back a ready-made playbook: which log readings to check, which test to run, which settings usually matter. It follows the playbook, shows you the vibration chart, and proposes two changes as one batch.
+- **"How do I set up my failsafe?"** The assistant finds the reference for your firmware version and a video that covers it. The video opens as a small card beside the receiver on the diagram, at the right moment.
+- **"Make the selected drones fade to cyan over the last two bars."** Lucidity knows your selection and playhead. The edit lands in the open storyboard as one undo step. This works from a phone, with no drone attached.
+
+## What the assistant can see and do
+
+The assistant does not get a long list of tools. It gets about ten simple actions and **one map of the aircraft** to use them on. The map has five kinds of entry, and it lists only what the connected aircraft actually supports.
+
+| Kind | What it is | Examples |
+| --- | --- | --- |
+| **Reading** | A value Lucidity can read, with its unit and age | Battery voltage, roll angle, any parameter, ESC 3 direction, vibration in the last flight |
+| **Test** | A procedure with a result, what it proves, and what it needs | Link check, pre-arm checks, full diagnostics, radio channels, motor spin |
+| **Setting** | Something that can be changed, with its allowed values | Any parameter, ESC direction, startup melody, level trim |
+| **Reference** | Help matched to your firmware version | Parameter documentation, setup guides, videos with timestamps |
+| **Playbook** | A symptom and the steps to investigate it | "Motor spins the wrong way", "Shakes in flight", "Won't arm", "Drifts" |
+
+The assistant asks the map one question, such as "motor direction" or "why won't it arm", and gets back the matching entries with exactly how to use each one. Adding support for a new sensor or firmware adds entries to the map; it does not add tools.
+
+Playbooks are what make the assistant good at this and not merely fast. They hold the knowledge an expert would apply: check these three readings, run this test, then consider these settings. The same playbooks drive the guided checks in the UI.
+
+References are links, titles, timestamps, and Lucidity's own short notes. Lucidity does not copy other people's videos or transcripts.
 
 ## The interface
 
-The existing apps stay: Home, Tools, Music, Drone Show, and Code, with the current design system. There is no chat box. Six additions make the assistant's work visible and controllable.
+**The drone is the interface.** Lucidity opens on a drawing of your aircraft, generated from its real configuration and alive with its real readings: motors with arrows turning in their set direction, a battery that fills, a flight controller that tilts as the real one does. You tap a part to get its few controls. The full design is in [TOOL_APP_DESIGN.md](TOOL_APP_DESIGN.md). In brief:
 
-| Addition | What it does |
+| Element | What it does |
 | --- | --- |
-| **Assistant status** (sidebar footer, beside the connection control) | Shows which assistants are connected by name. One switch sets what they may do: *Off*, *Observe*, or *Propose* (default). Off takes effect at once. Each assistant can be disconnected for good from here. |
-| **Activity** (right-hand dock, where the old chat dock sat) | A running record of everything done by you and by assistants: what was read, what changed, the before and after values, the readback, and an undo control where one applies. Filter by aircraft or project. |
-| **Change cards** | A proposed device change appears on the page it affects and in a global inbox with a count badge. Each card shows the exact difference, the target aircraft, the conditions you must confirm, and Approve / Reject. Cards expire, and they go stale if the aircraft reconnects or the value changes underneath them. |
-| **Change marks** | A field or object an assistant changed pulses once, then keeps a small mark with who changed it and when, until you dismiss it. |
-| **Follow** (toggle) | When on, Lucidity navigates to whatever the assistant is working on. When off, you get a quiet notice with a "show me" link. The assistant can point the UI at something but can never press a control in it. |
-| **Connect an assistant** (in Home) | One button per supported assistant, a connection test, and the list of tools Lucidity publishes with a plain description of each. |
+| **Living diagram** | The aircraft, drawn from its own settings. Readings sit on the part they belong to. Tap a part for up to three buttons, such as **Test · Reverse · Sound** on a motor. |
+| **Motion with meaning** | Six motions, one meaning each: live data, assistant reading, proposed, changed, needs you, no data. When data stops, motion stops. |
+| **Proposals on the object** | A proposed change appears as a ghost of the new state on the part itself, with Approve beside it. |
+| **Timeline ribbon** | A thin strip of dots along the bottom, one per action by you or an assistant. Tap a dot for before, after, and readback. It replaces a text log. |
+| **Assistant chip** | Shows which assistants are connected, with one switch: *Off*, *Observe*, or *Propose*. A ring sweeps on whatever part the assistant is reading. |
+| **Reference card** | A video or guide the assistant found, docked beside the part it concerns. |
+| **All settings** | The complete searchable parameter table, one step from any part, for exact work. |
 
-Two existing ideas get promoted:
+Three rules keep it simple: no label longer than three words, no paragraphs on a working screen, and no more than three main buttons per part. Manual editing is direct: tap the arrow to reverse the motor.
 
-- **Receipts.** Every device change, by anyone, saves a receipt: aircraft, before, after, readback, time, who. Receipts are the start of the per-aircraft history the product brief calls for.
-- **Shared focus.** The UI tells the server what you are looking at: page, aircraft, selection, playhead. That is what lets "this motor" and "this cue" mean something to the assistant.
+Other views follow the same rules: **Signals** (live gauges), **Flights** (each flight as charts), **Show** (the existing 3D editor), and **Sound** (the melody composer).
 
-One clear state is new with hosting: **the bench tab.** Hardware is reachable only while a Lucidity tab with the drone connected is open. If an assistant asks for something on the drone and no bench tab is open, it is told so and tells you: "Open Lucidity and plug in the drone."
+Hardware is reachable only while a Lucidity tab with the drone connected is open. This is the **bench tab**. If an assistant asks for something on the drone and no bench tab is open, it is told so and tells you: "Open Lucidity and plug in the drone."
 
 ## What an assistant may do
 
@@ -143,6 +163,10 @@ Hosting costs a few things. They are stated here so nobody discovers them later.
 | --- | --- |
 | Setup, from first visit to the first answered question | Under 5 minutes, with nothing installed and no key entered |
 | Tool calls for a typical request | 3 or fewer |
+| Calls for the assistant to find the right reading, test, or setting | 1 |
+| Tools the assistant has to choose between | About 10 |
+| Longest label on a working screen | 3 words |
+| Taps from the diagram to any common control | 2 or fewer |
 | Screenshots needed for a factual question | 0 |
 | Server time for a read from mirrored state | Under 50 ms at the median |
 | Time from device confirmation to the change showing in the UI | Under 100 ms |
