@@ -82,14 +82,15 @@ export class WebSerialTransport extends TransportBase implements ByteTransport {
   private async pump() {
     try {
       while (this.open && this.port.readable) {
-        this.reader = this.port.readable.getReader();
+        const reader = this.port.readable.getReader();
+        this.reader = reader;
         try {
           for (;;) {
-            const { value, done } = await this.reader.read();
+            const { value, done } = await reader.read();
             if (done) break;
             if (value?.length) this.emit(value);
           }
-        } finally { this.reader.releaseLock(); }
+        } finally { reader.releaseLock(); }
         if (!this.open) break;
       }
     } catch { /* fall through to closed */ }

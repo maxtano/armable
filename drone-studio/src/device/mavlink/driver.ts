@@ -1,7 +1,8 @@
 import { analyzeDataFlash, type FlightLogAnalysis } from '../../aircraft/dataflash-analysis';
 import { ardupilotFrame, px4Frame } from '../airframe';
 import { ascii, deferred, DeviceError, f32, round, sleep, view } from '../bytes';
-import { encodeEscField, escSettings, ESC_TIMING, flashEsc, FourWay, parseEscHex, patchEscSettings, readEsc, type EscRead, type EscTiming } from '../esc/fourway';
+import { escSettings, ESC_TIMING, FourWay, type EscRead, type EscTiming } from '../esc/fourway';
+import { flashEscs, readAllEscs, writeEscChanges, type EscSession } from '../esc/session';
 import type { ByteTransport } from '../transport';
 import {
   DriverBase, type Airframe, type Change, type ChangeResult, type Condition, type Driver, type EscInfo, type Health, type Identity,
@@ -380,52 +381,16 @@ export class MavlinkDriver extends DriverBase implements Driver {
       await this.requestStreams().catch(() => {});
     }
   }
+  private session: EscSession = (write, ctx, fn) => this.escSession(write, ctx, fn);
   private async readEscs(ctx: RunContext): Promise<TestResult> {
-    const reads = await this.escSession(false, ctx, async (link, count) => {
-      const out: EscRead[] = [];
-      for (let i = 0; i < count; i++) {
-        ctx.progress?.('Reading ESCs', i, count);
-        try { out.push(await readEsc(link, i, this.now)); }
-        catch (error) { out.push({ info: { index: i + 1, at: this.now(), firmware: 'Unknown', writable: false, error: error instanceof Error ? error.message : 'Read failed.' } }); }
-        await link.reset(i).catch(() => {});
-      }
-      return out;
-    });
+    const { reads, result } = await readAllEscs(this.session, ctx, this.now);
     this.escReads = reads;
     this.emit({ type: 'settings' });
-    const failed = reads.filter(r => r.info.error);
-    return { id: 'esc.read', at: this.now(), ok: failed.length === 0, summary: `${reads.length - failed.length} of ${reads.length} ESCs read.`,
-      data: reads.map(r => ({ ...r.info, settings: r.block ? Object.fromEntries(escSettings(r.info, r.block).map(s => [s.name, s.value])) : undefined })) };
+    return result;
   }
   private async writeEscs(changes: Change[], ctx: RunContext): Promise<ChangeResult[]> {
-    const byEsc = new Map<number, Change[]>();
-    for (const c of changes) { const index = Number(c.id.split('.')[1]); byEsc.set(index, [...(byEsc.get(index) ?? []), c]); }
-    const results: ChangeResult[] = [];
-    try {
-      await this.escSession(true, ctx, async (link, count) => {
-        for (const [index, list] of byEsc) {
-          const fail = (note: string) => list.forEach(c => results.push({ id: c.id, before: null, requested: c.value, after: null, ok: false, note }));
-          if (!(index >= 1 && index <= count)) { fail(`There is no ESC ${index}.`); continue; }
-          try {
-            ctx.progress?.(`Writing ESC ${index}`);
-            const before = await readEsc(link, index - 1, this.now);
-            if (!before.info.writable || !before.block) { fail(before.info.error ?? 'Lucidity cannot change settings on this ESC firmware yet.'); await link.reset(index - 1).catch(() => {}); continue; }
-            const current = Object.fromEntries(escSettings(before.info, before.block).map(s => [s.id, s.value]));
-            const stale = list.find(c => c.expected !== undefined && String(current[c.id]) !== String(c.expected));
-            if (stale) { fail(`${stale.id} is now ${current[stale.id]}, not ${stale.expected}. Nothing was written.`); await link.reset(index - 1).catch(() => {}); continue; }
-            await patchEscSettings(link, list.map(c => encodeEscField(c.id.split('.').slice(2).join('.'), c.value, before.info.firmware)));
-            const after = await readEsc(link, index - 1, this.now);
-            const now = Object.fromEntries(escSettings(after.info, after.block!).map(s => [s.id, s.value]));
-            this.escReads = [...this.escReads.filter(r => r.info.index !== index), after].sort((a, b) => a.info.index - b.info.index);
-            for (const c of list) results.push({ id: c.id, before: current[c.id] ?? null, requested: c.value, after: now[c.id] ?? null, ok: String(now[c.id]) === String(c.value).toLowerCase() });
-            await link.reset(index - 1).catch(() => {});
-          } catch (error) { fail(error instanceof Error ? error.message : 'ESC write failed.'); if (!(error instanceof DeviceError) || error.code !== 'invalid') throw error; }
-        }
-      });
-    } catch (error) {
-      const note = error instanceof Error ? error.message : 'ESC session failed.';
-      for (const c of changes) if (!results.some(r => r.id === c.id)) results.push({ id: c.id, before: null, requested: c.value, after: null, ok: false, note });
-    }
+    const { reads, results } = await writeEscChanges(this.session, ctx, this.now, changes, this.escReads);
+    this.escReads = reads;
     return results;
   }
 
@@ -579,29 +544,10 @@ export class MavlinkDriver extends DriverBase implements Driver {
     return this.result('cal.compass', status === 4, status === 4 ? `Compass calibrated, fitness ${fitness}. Restart the flight controller.` : `Compass calibration failed (status ${status}). Try again outdoors, away from metal.`, { fitness, offsets: [report.ofs_x, report.ofs_y, report.ofs_z].map(v => round(Number(v), 1)) });
   }
   private async flashEscs(only: number | undefined, ctx: RunContext): Promise<TestResult> {
-    const file = await ctx.prompt?.({ kind: 'file', label: 'Choose the ESC firmware (.hex)', accept: '.hex' });
-    if (!(file instanceof Uint8Array)) throw new DeviceError('invalid', 'No firmware file was chosen.');
-    const firmware = parseEscHex(new TextDecoder().decode(file));
-    const done: { esc: number; ok: boolean; note: string }[] = [];
-    await this.escSession(true, ctx, async (link, count) => {
-      for (let i = 0; i < count; i++) {
-        if (only !== undefined && only !== i + 1) continue;
-        try {
-          const current = await readEsc(link, i, this.now);
-          await flashEsc(link, current, firmware, (label, a, b) => ctx.progress?.(`ESC ${i + 1}: ${label}`, a, b));
-          const after = await readEsc(link, i, this.now);
-          this.escReads = [...this.escReads.filter(r => r.info.index !== i + 1), after].sort((a, b) => a.info.index - b.info.index);
-          done.push({ esc: i + 1, ok: true, note: `${after.info.firmware} ${after.info.version}` });
-          await link.reset(i).catch(() => {});
-        } catch (error) {
-          done.push({ esc: i + 1, ok: false, note: error instanceof Error ? error.message : 'Flash failed.' });
-          if (!(error instanceof DeviceError) || !['mismatch', 'unsupported', 'invalid'].includes(error.code)) throw error;
-        }
-      }
-    });
+    const { reads, result } = await flashEscs(this.session, ctx, this.now, only, this.escReads);
+    this.escReads = reads;
     this.emit({ type: 'settings' });
-    const failed = done.filter(d => !d.ok);
-    return this.result('esc.flash', failed.length === 0 && done.length > 0, failed.length ? `${failed.length} ESC${failed.length > 1 ? 's' : ''} not flashed: ${failed[0].note}` : `${done.length} ESC${done.length > 1 ? 's' : ''} flashed and verified.`, done);
+    return result;
   }
 
   // ---- Flight logs --------------------------------------------------------------------------------------------

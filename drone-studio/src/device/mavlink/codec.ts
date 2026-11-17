@@ -118,7 +118,7 @@ function attempt(b: Uint8Array): Attempt {
 
 /** Incremental parser. Feed it bytes as they arrive; it returns complete, CRC-checked packets. */
 export class MavlinkParser {
-  private buffer = new Uint8Array(0);
+  private buffer: Uint8Array = new Uint8Array(0);
   /** Bytes that were not part of any valid frame, for protocol auto-detection. */
   junk = 0;
   /** Frames with an unknown message id (plausible framing, no definition). */

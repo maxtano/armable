@@ -28,7 +28,7 @@ export class EscBank {
   /** Make the next N responses a negative acknowledgement. */
   nackNext = 0;
   private msp = new MspParser();
-  private buffer = new Uint8Array(0);
+  private buffer: Uint8Array = new Uint8Array(0);
   constructor(readonly variant: string, firmwares: ('BLHeli_S' | 'Bluejay')[] = ['Bluejay', 'Bluejay', 'Bluejay', 'Bluejay'], directions: number[] = [1, 1, 2, 1]) {
     this.images = firmwares.map((f, i) => escImage(f, directions[i] ?? 1));
   }
