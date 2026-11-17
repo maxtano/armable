@@ -177,7 +177,7 @@ export class BetaflightSim {
     if ((m = command.match(/^aux (\d+) ([\d ]+)$/))) { this.aux[m[1]] = m[2].trim(); return ''; }
     if (command === 'map') return `map ${this.map}`;
     if ((m = command.match(/^map ([A-Z]{4}\d{4})$/))) { this.map = m[1]; return `map ${this.map}`; }
-    if ((m = command.match(/^get (\w*)$/))) {
+    if ((m = command.match(/^get ?(\w*)$/))) {
       const hits = Object.keys(this.settings).filter(name => name.includes(m![1]));
       return hits.length ? hits.map(name => this.describe(name)).join('\n') : `###ERROR IN get: INVALID NAME: ${m[1]}###`;
     }

@@ -64,6 +64,8 @@ describe('Betaflight driver against a simulated flight controller', () => {
     expect(all.filter(s => !s.id.includes('.feature.') && !s.id.includes('.serial.') && !s.id.includes('.aux.') && s.id !== 'bf.map')).toHaveLength(Object.keys(sim.settings).length);
     expect(all.find(s => s.id === 'bf.p_roll')).toMatchObject({ value: 45, type: 'number', part: 'tuning', scope: 'profile 0', title: 'Roll P' });
     expect(all.find(s => s.id === 'bf.dshot_bidir')).toMatchObject({ value: 'ON', type: 'bool', part: 'motors' });
+    expect(all.find(s => s.id === 'bf.motor_pwm_protocol')).toMatchObject({ type: 'enum', options: expect.arrayContaining([{ value: 'DSHOT300', label: 'DSHOT300' }]) });
+    expect(all.find(s => s.id === 'bf.p_roll')).toMatchObject({ min: 0, max: 250 });
     expect(all.find(s => s.id === 'bf.feature.GPS')).toMatchObject({ value: 'ON', type: 'bool' });
     expect(all.find(s => s.id === 'bf.feature.LED_STRIP')).toMatchObject({ value: 'OFF' });
     expect(all.find(s => s.id === 'bf.serial.1')).toMatchObject({ value: '64 115200 57600 0 115200', part: 'ports' });
