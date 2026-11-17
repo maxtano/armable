@@ -7,7 +7,7 @@ import type { Reference } from '../map/library';
 /** Everything the interface shows, in one place. Small on purpose: no library, one subscribe function. */
 export type View = 'drone' | 'signals' | 'flights' | 'show' | 'sound' | 'settings' | 'connect';
 export type AssistantMode = 'off' | 'observe' | 'propose';
-export interface Me { signedIn: boolean; email?: string; mode?: AssistantMode; mcpUrl?: string; assistants?: { clientId: string; name: string; scopes: string[]; lastSeen: number | null }[] }
+export interface Me { offline?: boolean; signedIn: boolean; email?: string; mode?: AssistantMode; mcpUrl?: string; assistants?: { clientId: string; name: string; scopes: string[]; lastSeen: number | null }[] }
 export interface ProposalCard {
   id: string; kind: 'change' | 'test'; by: string; reason?: string; level: 2 | 3; needs: string[]; part?: string;
   changes?: { id: string; value: string | number; expected?: string | number; before?: unknown; title?: string }[];

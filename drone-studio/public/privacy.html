@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lucidity privacy</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<style>
+  :root { color-scheme: light dark; --bg: #f6f3ec; --fg: #343137; --muted: #585259; --line: #d4cabd; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #161819; --fg: #ecece8; --muted: #b9bfbb; --line: #444c4d; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 48px 20px 64px; }
+  h1 { font: 400 34px/1.2 Georgia, serif; margin: 0 0 8px; }
+  h2 { font: 600 17px/1.3 system-ui, sans-serif; margin: 32px 0 6px; }
+  p, li { color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  td, th { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; font-size: 15px; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Privacy</h1>
+  <p>Lucidity is a drone workbench that your own AI assistant can operate. This page says what it keeps and why.</p>
+  <h2>What is stored</h2>
+  <table>
+    <tr><th>Data</th><th>Why</th></tr>
+    <tr><td>Email and a hashed password</td><td>To sign you in. The password itself is never stored.</td></tr>
+    <tr><td>Aircraft identity: firmware, version, board, craft name</td><td>To show your aircraft and its history.</td></tr>
+    <tr><td>Changes, tests and their results</td><td>So you and your assistant can see what changed and when.</td></tr>
+    <tr><td>Every call your assistant makes, with what it sent and got back</td><td>So you can audit what it did. Large answers are cut to 8 KB.</td></tr>
+    <tr><td>A reading of battery, signal, GPS and attitude every 10 seconds while connected</td><td>To show trends. Nothing finer is kept.</td></tr>
+    <tr><td>Shows, tunes, files and settings backups you save</td><td>Because you asked to keep them.</td></tr>
+  </table>
+  <h2>What is not stored</h2>
+  <p>Raw flight logs stay in your browser unless you save them. Continuous telemetry is not kept. Lucidity has no AI model and sends nothing to one; your assistant app does that under its own terms.</p>
+  <h2>Who can see it</h2>
+  <p>Only you, and assistants you connect. Each assistant sees only what its permissions allow, and you can disconnect it at any time. No data is sold or shared.</p>
+  <h2>Deleting it</h2>
+  <p>Export everything from your account at any time. Deleting your account deletes all of the above, including the tracking tables, at once.</p>
+  <h2>Contact</h2>
+  <p>Open an issue at <a href="https://github.com/maxtano/lucidity/issues">github.com/maxtano/lucidity</a>.</p>
+</main>
+</body>
+</html>
