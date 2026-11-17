@@ -1,11 +1,12 @@
 # Lucidity as a tool app — execution plan
 
-**Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** How to get from the current code to the product in [TOOL_APP_VISION.md](TOOL_APP_VISION.md), using the design in [TOOL_APP_ARCHITECTURE.md](TOOL_APP_ARCHITECTURE.md). No phase has started.
+**Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** How to get from the current code to the product in [TOOL_APP_VISION.md](TOOL_APP_VISION.md), with the interface in [TOOL_APP_DESIGN.md](TOOL_APP_DESIGN.md) and the design in [TOOL_APP_ARCHITECTURE.md](TOOL_APP_ARCHITECTURE.md). No phase has started.
 
 ## Approach
 
 - **Riskiest assumption first.** The hosted design depends on a browser tab talking reliably to a flight controller and its ESCs. That is tested before anything is built on it.
 - **Every phase ends in something a non-technical person can use.** No phase is pure plumbing.
+- **Design leads.** The diagram and its motion are prototyped before the screens are built, and each phase ships its part of the diagram, not a temporary text screen to be replaced later.
 - **Read before write, hardware before shows.** The motivating example is a device setting, so the device path is built first. Show editing follows on the same foundation.
 - **The current local app keeps working until the hosted one replaces it.** Nothing is deleted until its replacement is proven.
 - **Mock aircraft first, bench second.** Every device behaviour is proven against the existing fixtures before a real aircraft, and bench results are reported separately from software results.
@@ -18,10 +19,12 @@ Purpose: find out whether the hosted design holds, before committing to it.
 - **Web Serial spike.** A throwaway page in Chrome that connects to the real flight controller, receives a heartbeat, reads the full parameter list, and performs one ESC four-way passthrough read. Run it with the tab in front and in the background. Props off, battery disconnected.
 - **MAVLink in the browser.** Try shimming `node-mavlink` and try a small replacement codec, each against the existing decoder tests. Choose one.
 - **Assistant connector check.** Deploy the `direction-lab` MCP server to a temporary web address behind a login. Connect it from Claude and from ChatGPT. Record what each requires (plan tier, setup steps, limits on output size and call duration, how each prompts before a tool runs).
+- **Diagram prototype.** A clickable Drone view on the demo aircraft: the generated drawing, the six motions, tap-a-part controls, a ghosted proposal on a motor, the timeline ribbon. Shown to a few pilots who are not software people. This is where "simple and beautiful" is judged, before it is expensive to change.
+- **Tool-shape trial.** Run the same six tasks with real assistants against two mock servers: eleven id-driven tools with a map, and a longer list of specific tools. Compare accuracy and number of calls.
 - **Baseline.** Record time, tool calls, and screenshots for six fixed tasks done today by an assistant driving the browser: read aircraft status; find one parameter; compare against a backup; summarise a flight log; open a storyboard; change a light cue.
 - **Decisions.** Confirm the five decisions at the end of the vision document. Choose the identity provider, database, and host.
 
-**Done when:** the spike either works or shows exactly what does not; the connector flow has been completed by hand in both assistants; baseline numbers are written down.
+**Done when:** the spike either works or shows exactly what does not; the connector flow has been completed by hand in both assistants; the diagram prototype has been used by people outside the project and revised; the tool shape is chosen from measured results; baseline numbers are written down.
 
 **If the spike fails:** fall back to a small installed companion that bridges USB to the cloud. The rest of the plan is unchanged; the device runtime runs in the companion instead of the tab.
 
@@ -34,15 +37,18 @@ Build:
 - The capability registry as a shared package.
 - The remote MCP endpoint with OAuth sign-in and the three scopes.
 - A synthetic demo aircraft per account, built from the existing fixtures.
-- Tools: `get_workspace`, `get_aircraft`, `get_parameters`, `get_escs`, `get_activity`, against the demo aircraft.
+- The aircraft model and the map, with readings, level 0 tests, and settings for the demo aircraft, plus the first three playbooks: motor spins the wrong way, won't arm, shakes in flight.
+- Tools: `get_workspace`, `find`, `read`, `run_test` (level 0 only), `show`.
 - The existing UI deployed as the hosted site, signed-in, still using browser storage for documents.
-- UI: Assistant status with the Off / Observe switch; a first Activity dock; the Connect an assistant page.
+- UI: the Drone view driven by the demo aircraft, with readings on parts, the live and no-data motions, and the reading ring when the assistant looks at a part; the assistant chip with the Off / Observe switch; the timeline ribbon; the Connect an assistant page.
 - Tests: contract tests through an in-memory MCP client; cross-account isolation tests; size-budget test; planted-instruction tests on device text.
 
 **Done when:**
 - A tester who has never used a terminal goes from the landing page to an answered question in under five minutes, in Claude and in ChatGPT.
 - "What's connected, and is anything off with its failsafe parameters?" is answered correctly in three calls or fewer with no screenshots.
-- Each call appears in the Activity dock, and switching to Off blocks the next call.
+- "What can you check on this drone?" is answered from one `find` call, and it lists only what the demo aircraft supports.
+- Each call appears as a dot on the timeline ribbon and a ring on the part concerned, and switching to Off blocks the next call.
+- No working screen breaks the three-word, three-button rules.
 - One account cannot read another's data by any tool or route.
 
 ## Phase 2 — Hardware in the browser *(large)*
@@ -55,7 +61,9 @@ Build:
 - State mirror from the bench tab to the cloud; bench-tab presence in `get_workspace`.
 - Manual tools working on the hosted site: connection, parameters (read, reviewed single write, backup, compare), ESC read, flight logs, level calibration, motor test, Check my drone.
 - ESP flashing on the browser flashing tool.
-- Remaining level 0 device tools: `run_diagnostics`, `list_flight_logs`, `analyze_flight_log`.
+- The diagram generated from the real aircraft: frame, motor order and direction, attached parts; unknown parts drawn dashed.
+- Map entries for the real aircraft: log readings, full diagnostics, radio channels; firmware-matched parameter documentation; the first reference library of guides and videos with timestamps, shown as cards beside the part.
+- The Signals and Flights views.
 - Clear UI for unsupported browsers and for "no bench tab open".
 
 Order inside the phase: transport and codec → connection and telemetry → parameters → ESC read → logs → remaining tools. The existing test suites for each area are the acceptance tests for its port.
@@ -74,15 +82,16 @@ Purpose: the motor-direction story works end to end, and no assistant can change
 Build:
 - Proposal engine with both enforcement points: the cloud approve action and the bench tab's local approval check.
 - Move the confirmation literals (`confirmed`, `propsRemoved`, and the rest) out of request schemas and into proposal conditions.
-- `propose_change`, `await_change`, `cancel_change`, `stop_bench_run`.
+- `propose_change`, `wait`, `stop`, and level 3 tests through `run_test`.
 - Change kinds, in order: `parameter.set` as a batch with automatic snapshot and per-parameter readback; `calibration.level`; `esc.startup_melody`; then `esc.setting`, including direction.
 - **New protocol work:** writing individual ESC settings through the four-way passthrough, starting with Bluejay and BLHeli_S direction.
-- UI: change cards on the affected page and in a global inbox; receipts; staleness and expiry handling.
+- UI: proposals drawn on the part as a ghost of the new state with Approve beside it; a count badge for proposals off screen; the changed pulse and mark; direct manual edits on the diagram through the same path; receipts on the timeline; staleness and expiry handling.
 - Level 3 hand-off: `run.motor_test`, `run.bench_show`, `firmware.flash` open the existing panel pre-filled and leave Start to you.
 
 **Done when:**
 - A test client holding only an assistant token cannot approve a proposal by any route, and a device command without a local approval is refused by the runtime. Both tests are in CI.
-- On the demo aircraft: "motor 3 is backwards" leads to one change card, one click, a readback, a receipt, and a confirmed answer in the assistant.
+- On the demo aircraft: "motor 3 is backwards" leads to a ghost arrow on motor 3, one click, the arrow flipping, a readback, a receipt, and a confirmed answer in the assistant.
+- Tapping the arrow by hand produces the same reviewed change with no assistant connected.
 - A proposal goes stale when the value changes underneath it, when the aircraft reconnects, and when it expires; each is tested.
 - On the bench, props removed: one parameter change and one ESC direction change are completed and verified by a physical spin check. Recorded separately as bench evidence.
 
@@ -94,7 +103,7 @@ Build:
 - Document store with revisions and undo; file import from the local app; export and account deletion.
 - Storyboards first, then tunes, parameter snapshots, check-up reports, bookmarks.
 - UI focus publishing; `get_workspace` includes page, selection, and playhead.
-- Level 1 tools: `list_storyboards`, `get_storyboard`, `get_edit_schema`, `sample_show`, `edit_storyboard`, `edit_tune`, `edit_file`, `undo`, `show_in_ui`.
+- Level 1 tools: `edit` and `undo`; storyboards, scenes, and tunes as map entries for `find` and `read`; show sampling as a level 0 test.
 - UI: change marks and pulses; Follow toggle; the "review design edits first" setting.
 - Repurpose the evaluation oracles as golden-task tests against the new show tools.
 - Delete `harness.ts`, `openai.ts`, checkpoints, and all `OPENAI_*` handling.
@@ -109,6 +118,8 @@ Build:
 ## Phase 5 — From working to great *(medium)*
 
 - `capture_view` for visual questions.
+- A wider playbook and reference library, shaped by what people actually ask.
+- A motion and performance pass: 60 frames a second on an ordinary laptop, and the reduced-motion alternative for every motion.
 - Scoped grants: pre-approve a narrow class of changes for a limited period.
 - Per-aircraft history built from receipts, with comparison between any two points.
 - Offline use of manual tools once the site has loaded, with documents syncing on reconnect.
@@ -151,12 +162,20 @@ Build:
 | Running a service: uptime, cost, support, data responsibility | Ongoing work that a local app did not have | Single small service to start; managed identity and database; minimal stored data; export and deletion from the first release |
 | A flaw exposes one account's data to another | Loss of trust; aircraft data leak | Account scoping in one place, not per query; isolation tests on every capability in CI |
 | Assistant apps differ in limits, rules, and plan requirements | A flow that works in one fails in another | Measured in phase 0; design to the tightest limit; both tested every phase |
-| The tool list grows until models choose badly | Slower, less accurate assistants | Hard budget on tool count and definition size in CI; new behaviour goes into an existing tool's `kind` where it fits |
-| Calls that wait on a human outlast an assistant's timeout | Assistant reports failure while the change proceeds | `await_change` returns "still waiting" before the limit and can be called again; the proposal carries the truth |
+| Generic id-driven tools confuse models more than specific ones | Wrong calls, extra turns | Measured against the alternative in phase 0 before committing; every `find` hit carries the exact next call; wrong ids return the nearest valid ones |
+| The diagram looks beautiful but hides what experts need | Experts leave for older tools | All settings is one step from every part; tested with expert users in phase 0; a density control if testing calls for it |
+| A playbook or reference gives wrong advice | A user makes a bad change on good authority | Playbooks are reviewed data with sources; references are tagged by firmware version; every change still needs approval and readback |
+| Motion costs performance or distracts | A sluggish or noisy screen | Six motions only, each with a meaning; frame-rate budget in CI; reduced-motion alternative |
+| Calls that wait on a human outlast an assistant's timeout | Assistant reports failure while the change proceeds | `wait` returns "still waiting" before the limit and can be called again; the proposal carries the truth |
 | Moving documents loses someone's storyboards | Lost work | Import is by file and the local copy is untouched; verified on import |
 | ESC setting layouts vary by firmware and version | A wrong write to an ESC | Per-firmware layouts with version checks; refuse unknown versions; read back after every write; props-off bench verification before the kind is enabled |
 | No internet at the flying field | Product unusable where drones are flown | Offline manual tools in phase 5; stated plainly until then |
 
 ## What to do first
 
-Phase 0, starting with the Web Serial spike on the real flight controller. It is a few days of throwaway work, it needs the bench and not much else, and its result decides whether the browser can be the hardware bridge. The assistant connector check can run alongside it, since it needs only the `direction-lab` server and a temporary web address.
+Phase 0, as two tracks side by side.
+
+- **Can it work?** The Web Serial spike on the real flight controller. It is throwaway work that needs the bench and little else, and it decides whether the browser can be the hardware bridge.
+- **Is it simple and beautiful?** The clickable Drone view on the demo aircraft. It needs no hardware and no server, and it is the fastest way to see and judge the product.
+
+The assistant connector check and the tool-shape trial can follow once either track is under way.
