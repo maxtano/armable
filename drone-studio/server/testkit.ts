@@ -66,10 +66,10 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { createApp } from './app';
 
 const freePort = () => new Promise<number>(resolve => { const s = createServer(); s.listen(0, () => { const port = (s.address() as { port: number }).port; s.close(() => resolve(port)); }); });
-export async function startApp(store: Store = new MemoryStore(), staticDir?: string) {
+export async function startApp(store: Store = new MemoryStore(), staticDir?: string, tracker?: import('./tracker').Tracker) {
   const port = await freePort();
   const base = `http://localhost:${port}`;
-  const app = createApp({ store, publicUrl: base, quiet: true, limits: false, staticDir });
+  const app = createApp({ store, publicUrl: base, quiet: true, limits: false, staticDir, tracker });
   await new Promise<void>(resolve => app.http.listen(port, '127.0.0.1', resolve));
   return { ...app, base, port, store };
 }
@@ -147,4 +147,21 @@ export async function openTab(browser: Browser, stack: 'ardupilot' | 'betaflight
     },
     async close() { bench.dispose(); ws.close(); await runtime.disconnect(); (source.sim as { stop?: () => void }).stop?.(); },
   };
+}
+
+// ---- Postgres for tests ----------------------------------------------------------------------------------------------
+
+import pg from 'pg';
+export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgres://lucidity:lucidity@127.0.0.1:5432/lucidity_test';
+/**
+ * A pool whose tables live in their own schema, emptied first, so test files can run in parallel on one database.
+ * Returns undefined when Postgres is not reachable (and throws in CI, where it must be).
+ */
+export async function testPool(schema: string, reset = true): Promise<pg.Pool | undefined> {
+  if (!reset) return new pg.Pool({ connectionString: TEST_DATABASE_URL, max: 6, options: `-c search_path=${schema}` });
+  const admin = new pg.Pool({ connectionString: TEST_DATABASE_URL, max: 1, connectionTimeoutMillis: 1500 });
+  try { await admin.query(`drop schema if exists ${schema} cascade; create schema ${schema}`); }
+  catch { await admin.end().catch(() => {}); if (process.env.CI) throw new Error('Postgres is required in CI but was not reachable.'); return undefined; }
+  await admin.end();
+  return new pg.Pool({ connectionString: TEST_DATABASE_URL, max: 6, options: `-c search_path=${schema}` });
 }

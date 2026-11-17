@@ -8,7 +8,7 @@ export const VERSION = '0.5.0';
 const MAX_RESULT = 24_000;
 
 /** Build an MCP server bound to one signed-in assistant. One is created per request; it holds no state. */
-export function buildMcp(services: Services, identity: { account: string; who: string; scopes?: string[] }): McpServer {
+export function buildMcp(services: Services, identity: { account: string; who: string; scopes?: string[]; clientId?: string }): McpServer {
   const server = new McpServer({ name: 'lucidity', title: 'Lucidity', version: VERSION }, { instructions: INSTRUCTIONS });
   const ctx: ToolContext = { ...identity, services, now: Date.now };
   for (const tool of TOOLS) {
@@ -16,8 +16,13 @@ export function buildMcp(services: Services, identity: { account: string; who: s
       title: tool.title, description: tool.description, inputSchema: tool.input,
       annotations: { title: tool.title, readOnlyHint: tool.readOnly, destructiveHint: false, idempotentHint: tool.readOnly, openWorldHint: false },
     }, async (args: Record<string, unknown>) => {
+      const started = Date.now();
+      const track = (ok: boolean, output: unknown, errorCode?: string) => void services.tracker.toolCall({
+        startedAt: started, account: identity.account, assistant: identity.who, clientId: identity.clientId, tool: tool.name, input: args, ok, errorCode, output, durationMs: Date.now() - started, aircraftId: services.currentAircraft(identity.account),
+      });
       try {
         const result = await tool.run(args, ctx) as Record<string, unknown>;
+        track(true, result.image ? { image: 'omitted' } : result);
         const image = result.image as { mimeType: string; base64: string } | undefined;
         if (image) return { content: [{ type: 'image' as const, data: image.base64, mimeType: image.mimeType }] };
         let text = JSON.stringify(result);
@@ -26,6 +31,7 @@ export function buildMcp(services: Services, identity: { account: string; who: s
       } catch (error) {
         if (!(error instanceof ToolError)) { console.error(`[mcp] ${tool.name} failed`, error); }
         const body = error instanceof ToolError ? { code: error.code, message: error.message, hint: error.hint, ...error.extra } : { code: 'internal', message: 'Lucidity hit an unexpected error.', hint: 'Try again. If it keeps happening, tell the person.' };
+        track(false, { error: body }, body.code);
         return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: body }) }] };
       }
     });

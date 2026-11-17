@@ -172,7 +172,7 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'read', title: 'Read values', level: 0, readOnly: true,
-    input: { ids: z.array(z.string().min(1).max(80)).min(1).max(32).describe('Ids from find. Also: "settings.load" (read every setting from the aircraft), "activity", "snapshots", "snapshot.diff:<snapshot id>", a document id, or a proposal id.'),
+    input: { ids: z.array(z.string().min(1).max(80)).min(1).max(32).describe('Ids from find. Also: "settings.load" (read every setting from the aircraft), "activity", "history.changes", "history.tests", "history.connections", "history.proposals", "history.aircraft", "snapshots", "snapshot.diff:<snapshot id>", a document id, or a proposal id.'),
       fresh: z.boolean().optional().describe('Ask the aircraft again for settings instead of using the last value Lucidity saw.'), detail: z.enum(['summary', 'full']).optional() },
     description: 'Read up to 32 things in one call: live readings, settings, documents, recent activity, snapshots. Each value comes with its age.',
     async run(args: { ids: string[]; fresh?: boolean; detail?: 'summary' | 'full' }, ctx) {
@@ -185,6 +185,13 @@ export const TOOLS: ToolDef[] = [
         try {
           if (id === 'settings.load') { connected(ctx); out.push({ id, value: await hub.call({ op: 'load' }, 90_000) }); }
           else if (id === 'activity') out.push({ id, value: (await ctx.services.activity(ctx.account, 15)).map(a => ({ who: a.who, kind: a.kind, title: a.title, ok: a.ok, secondsAgo: Math.round((ctx.now() - a.at) / 1000) })) });
+          else if (id.startsWith('history.')) {
+            const table = ({ 'history.changes': 'setting_changes', 'history.tests': 'test_runs', 'history.connections': 'aircraft_connections', 'history.proposals': 'proposal_events', 'history.aircraft': 'aircraft' } as const)[id as 'history.changes'];
+            if (!table) { out.push({ id, value: null, error: 'Use history.changes, history.tests, history.connections, history.proposals or history.aircraft.' }); continue; }
+            const rows = await ctx.services.tracker.list(table, ctx.account, 25);
+            const strip = ({ account: _a, id: _i, ...rest }: Record<string, unknown>) => rest;
+            out.push({ id, value: rows.map(strip) });
+          }
           else if (id === 'snapshots') out.push({ id, value: (await ctx.services.docs(ctx.account, 'snapshot')).slice(0, 10).map(r => docSummary(r)) });
           else if (id.startsWith('snapshot.diff:')) {
             const snap = await ctx.services.doc(ctx.account, id.slice(14));
@@ -240,6 +247,7 @@ export const TOOLS: ToolDef[] = [
         }
         const result = { ...trim(raw), ...(saved ? { savedAs: saved, compare: { tool: 'read', arguments: { ids: [`snapshot.diff:${saved}`] } } } : {}) };
         void ctx.services.log(ctx.account, { who: ctx.who, kind: 'test', part: spec.part, ok: result.ok, title: spec.name, detail: { summary: result.summary } });
+        void ctx.services.tracker.testRun({ account: ctx.account, aircraftId: ctx.services.currentAircraft(ctx.account), testId: spec.id, args: args.args, ok: result.ok, summary: result.summary, by: ctx.who });
         return result;
       }
       await gate(ctx, 2);

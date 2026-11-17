@@ -1,15 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import pg from 'pg';
 import { ConflictError, MemoryStore, PgStore, type Store } from './store';
+import { testPool } from './testkit';
 
-const url = process.env.TEST_DATABASE_URL ?? 'postgres://lucidity:lucidity@127.0.0.1:5432/lucidity_test';
-async function tryPg(): Promise<Store | undefined> {
-  const pool = new pg.Pool({ connectionString: url, max: 4, connectionTimeoutMillis: 1500 });
-  try { await pool.query('select 1'); await pool.query('drop table if exists lucidity_rows'); return await PgStore.open(pool); }
-  catch { await pool.end().catch(() => {}); return undefined; }
-}
-const postgres = await tryPg();
-if (!postgres && process.env.CI) throw new Error('Postgres is required in CI but was not reachable.');
+const pool = await testPool('test_store');
+const postgres = pool ? await PgStore.open(pool) : undefined;
 afterAll(async () => { await postgres?.close(); });
 
 const stores: [string, Store | undefined][] = [['memory', new MemoryStore()], ['Postgres', postgres]];

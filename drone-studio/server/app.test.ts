@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import pg from 'pg';
 import { PgStore } from './store';
-import { assistant, Browser, openTab, startApp } from './testkit';
+import { assistant, Browser, openTab, startApp, testPool } from './testkit';
 
 const closers: (() => Promise<unknown>)[] = [];
 afterEach(async () => { for (const close of closers.splice(0).reverse()) await close().catch(() => {}); });
@@ -262,18 +261,18 @@ describe('two people', () => {
 
 describe('on Postgres', () => {
   it('keeps accounts, sessions, documents and assistant tokens across a server restart', async () => {
-    const url = process.env.TEST_DATABASE_URL ?? 'postgres://lucidity:lucidity@127.0.0.1:5432/lucidity_test';
-    const pool = () => new pg.Pool({ connectionString: url, max: 4, connectionTimeoutMillis: 1500 });
-    const reachable = await pool().query('select 1').then(() => true, () => false);
-    if (!reachable) { if (process.env.CI) throw new Error('Postgres is required in CI.'); return; }
-    const first = await startApp(await PgStore.open(pool()));
+    const pool = () => testPool('test_app_restart', false);
+    const probe = await testPool('test_app_restart');
+    if (!probe) return;
+    await probe.end();
+    const first = await startApp(await PgStore.open((await pool())!));
     const browser = new Browser(first.base);
     await browser.signUp();
     const doc = (await browser.post('/api/docs', { kind: 'file', name: 'kept', content: 'still here' })).json;
     const grant = await browser.connectAssistant('Claude');
     await first.close(); await first.store.close();
 
-    const second = await startApp(await PgStore.open(pool()));
+    const second = await startApp(await PgStore.open((await pool())!));
     closers.push(async () => { await second.close(); await second.store.close(); });
     const again = new Browser(second.base);
     again.cookie = browser.cookie;
