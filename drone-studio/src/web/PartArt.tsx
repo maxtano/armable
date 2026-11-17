@@ -45,6 +45,7 @@ function draw(p: Drawable): ReactNode {
       const w = Math.max(30, Math.min(70, Number((s.stator ?? '22').slice(0, 2)) * 2.4)), h = Math.max(26, Math.min(44, Number((s.stator ?? '2207').slice(2, 4)) * 4.4)), x = 60 - w / 2, top = 70 - h / 2;
       return <>
         <rect className="pa-b" x={x - 4} y={top + h - 4} width={w + 8} height="12" rx="3" />
+        {Array.from({ length: 6 }, (_, i) => <rect key={`c${i}`} className="pa-cu" x={x + 2 + i * (w - 4) / 6} y={top + h - 8} width={(w - 4) / 6 - 1.5} height="8" rx="1.5" />)}
         <rect className="pa-a" x={x} y={top} width={w} height={h} rx="4" />
         {[0.2, 0.45, 0.7].map(f => <rect key={f} className="pa-d" x={x + w * f} y={top + 6} width={w * 0.12} height={h * 0.45} rx="1.5" />)}
         <ellipse className="pa-hi" cx="60" cy={top} rx={w / 2} ry="5" />

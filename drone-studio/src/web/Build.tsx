@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Antenna, ArrowLeftRight, BatteryFull, Bot, Camera, Check, ChevronDown, CircleCheck, Cog, Cpu, ExternalLink, Frame, Gamepad2, Glasses, ListFilter, Package, PackageCheck, PlugZap, Plus, RadioReceiver, RadioTower, Satellite, Search, Sparkles, Star, Trash2, TriangleAlert, Wind, X, type LucideIcon } from 'lucide-react';
+import { Antenna, ArrowLeftRight, BatteryFull, Bot, Camera, Check, ChevronDown, Cog, Cpu, ExternalLink, Frame, Gamepad2, Glasses, ListFilter, Package, PackageCheck, PlugZap, Plus, RadioReceiver, RadioTower, Satellite, Search, Sparkles, Star, Trash2, Wind, X, type LucideIcon } from 'lucide-react';
 import { analyse, cellRange, compareBuilds, emptyBuild, fitOf, groupOf, provenBuild, resolve, SLOT_LABEL, SLOTS, STYLES, type Build as BuildDoc, type BuildOp, type Check as BuildCheck, type Goal, type Item } from '../build/build';
 import { PART_BY_ID, PARTS, PROVEN, storeLinks, type Category, type Part, type Video } from '../build/catalog';
 import { api, ApiError } from './cloud';
 import { publishFocus, refreshDocs } from './controller';
+import { Coil, Dial, Lamp } from './Instruments';
 import { PartArt, type Drawable } from './PartArt';
 import { set, toast, useStore } from './store';
 import './build.css';
@@ -119,6 +120,7 @@ function Start() {
     <div className="bd-start">
       <div className="bd-hero">
         <div className="bd-start-copy">
+          <Coil width={140} height={36} />
           <h2>Don’t have a drone? <em>Build one.</em></h2>
           <p>Pick every part, see that they work together, and know what it costs and where to buy it before you spend anything.</p>
         </div>
@@ -177,10 +179,11 @@ function Sheet({ build, apply, docs }: { build: Loaded; apply: Apply; docs: { id
         </div>
       </div>
 
+      <Gauges a={a} goal={b.goal} />
+
       <div className={`bd-compat is-${problems.length ? 'bad' : cautions.length ? 'warn' : 'ok'}`} role="status">
-        {problems.length ? <TriangleAlert size={18} /> : <CircleCheck size={18} />}
+        <Lamp tone={problems.length ? 'bad' : cautions.length ? 'warn' : 'ok'} />
         <b>{problems.length ? `Compatibility: ${problems.length} problem${problems.length > 1 ? 's' : ''} found` : cautions.length ? `Compatibility: works, ${cautions.length} thing${cautions.length > 1 ? 's' : ''} to watch` : 'Compatibility: no problems found'}</b>
-        <span>{[a.weightG && `${a.weightG} g take-off`, a.thrustToWeight && `${a.thrustToWeight}:1 thrust`, a.flightMinutes && `${a.flightMinutes[0]}–${a.flightMinutes[1]} min`].filter(Boolean).join(' · ')}</span>
       </div>
 
       {a.checks.some(c => c.level !== 'ok') && (
@@ -213,6 +216,21 @@ function Sheet({ build, apply, docs }: { build: Loaded; apply: Apply; docs: { id
       <p className="lu-hint">Prices marked “typical” are a guide, not live; prices someone looked up show where and when they were seen. Store links search each shop for the part. Drawings show the kind of part, not a product photo.</p>
       {picking && <Browser build={b} category={picking} onClose={() => setPicking(undefined)} onOpen={setDetail} apply={async ops => { await apply(ops); setPicking(undefined); }} />}
       {detail && <Detail id={detail} build={b} onClose={() => setDetail(undefined)} apply={async ops => { await apply(ops); setDetail(undefined); }} />}
+    </div>
+  );
+}
+
+/** The build at a glance, on four dials. */
+function Gauges({ a, goal }: { a: ReturnType<typeof analyse>; goal: Goal }) {
+  const budget = goal.budgetUsd, costMax = Math.max(budget ? budget * 1.4 : 0, a.costUsd * 1.25, 200);
+  const weightMax = Math.max(1000, (a.weightG ?? 0) * 1.25), mid = a.flightMinutes ? (a.flightMinutes[0] + a.flightMinutes[1]) / 2 : undefined;
+  return (
+    <div className="lu-dials" aria-label="The build at a glance">
+      <Dial label="Cost" reading={money(a.costUsd)} value={a.costUsd} max={costMax} marks={budget ? [{ at: budget, label: 'Budget' }] : []} caution={budget ? [budget, costMax] : undefined}
+        note={budget === undefined ? 'No budget set' : a.budgetLeftUsd! >= 0 ? `${money(a.budgetLeftUsd!)} left` : `${money(-a.budgetLeftUsd!)} over`} tone={budget && a.costUsd > budget ? 'warn' : undefined} />
+      <Dial label="Take-off weight" reading={a.weightG ? `${a.weightG} g` : '—'} value={a.weightG} max={weightMax} marks={[{ at: 250, label: '250 g' }]} note={a.weightG ? (a.weightG < 250 ? 'Under 250 g' : 'Needs registering') : 'Add the main parts'} />
+      <Dial label="Thrust to weight" reading={a.thrustToWeight ? `${a.thrustToWeight} : 1` : '—'} value={a.thrustToWeight} max={16} caution={[0, 3]} note={a.thrustToWeight ? (a.thrustToWeight >= 6 ? 'Punchy' : a.thrustToWeight >= 3 ? 'Smooth' : 'Too heavy') : undefined} tone={a.thrustToWeight !== undefined && a.thrustToWeight < 3 ? 'bad' : undefined} />
+      <Dial label="Flight time" reading={a.flightMinutes ? `${a.flightMinutes[0]}–${a.flightMinutes[1]} min` : '—'} value={mid} max={Math.max(30, (mid ?? 0) * 1.2)} note={a.flightMinutes ? 'Rough estimate' : undefined} />
     </div>
   );
 }

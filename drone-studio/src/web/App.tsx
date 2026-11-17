@@ -9,6 +9,7 @@ import type { PartId } from '../device/types';
 import { Connect, Consent, ModeSwitch } from './Connect';
 import { answerPrompt, connectDemo, connectUsb, disconnect, go, select, signOut, start, stopAll } from './controller';
 import { Diagram } from './Diagram';
+import { Coil } from './Instruments';
 import { Flights } from './Flights';
 import { Landing } from './Landing';
 import { PartPanel, Proposal } from './PartPanel';
@@ -21,7 +22,7 @@ import { set, useStore, type View } from './store';
 import { Timeline } from './Timeline';
 
 const VIEWS: [View, typeof Activity, string][] = [['drone', Navigation, 'Drone'], ['build', Hammer, 'Build'], ['signals', Activity, 'Signals'], ['flights', ChartSpline, 'Flights'], ['show', Sparkles, 'Show'], ['sound', AudioLines, 'Sound'], ['settings', SlidersHorizontal, 'Settings'], ['history', HistoryIcon, 'History']];
-const theme = () => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+const theme = () => document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 function toggleTheme() { const next = theme() === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = next; try { localStorage.setItem('lucidity.appearance.v1', next); } catch { /* private mode */ } }
 
 function AssistantChip() {
@@ -70,6 +71,7 @@ function DroneView() {
         {radio && <RadioFlash onClose={() => setRadio(false)} />}
         {snap.status === 'idle' && (
           <div className="lu-idle">
+            <Coil className="lu-idle-coil" width={150} height={38} />
             <h1>Plug in your drone</h1>
             <button className="lu-btn is-primary is-big" disabled={!!busy} onClick={connectUsb}><Cable size={18} /> Connect over USB</button>
             <div className="lu-row"><span>No drone handy?</span><button className="lu-link" data-demo="betaflight" onClick={() => connectDemo('betaflight')}>Try a Betaflight demo</button><button className="lu-link" data-demo="ardupilot" onClick={() => connectDemo('ardupilot')}>ArduPilot demo</button></div>

@@ -1,6 +1,15 @@
 # Lucidity design system
 
-Lucidity uses a compact, technical interface: clear action hierarchy, restrained corners, readable metadata, and color that explains state. The same semantic tokens support graphite dark mode and warm cream light mode. Appearance changes must not change project data, aircraft state, or command behavior.
+Lucidity looks like a well-made instrument: retro-future, after Dieter Rams. Less, but better. A warm grey casing, charcoal controls, one signal orange for things that start something physical, copper where current flows (motor windings, coils, dial caps), round dials with plain ticks, and indicator lamps for state. One typeface, Manrope; headings are heavier, never a different face. Light is the default; dark is the same instrument at night. Appearance changes must not change project data, aircraft state, or command behavior.
+
+| Element | Where it lives |
+| --- | --- |
+| Palette, `--lu-signal`, `--lu-copper*`, `--lu-lamp`, `--lu-face` | [`tokens.css`](../src/design-system/tokens.css) |
+| Pills, raised faces, lamps, dial and coil styles | [`instruments.css`](../src/web/instruments.css) |
+| `Dial`, `Lamp`, `Coil` | [`Instruments.tsx`](../src/web/Instruments.tsx) |
+| Copper stator windings on the drone diagram | `Stator` in [`Diagram.tsx`](../src/web/Diagram.tsx) |
+
+Rules: one orange key per screen at most (Connect, Connect over USB); everything else is charcoal or plain. Numbers that have a range go on a dial; on/off state goes on a lamp. Keep words few and large enough to read.
 
 ## Source of truth
 
@@ -22,7 +31,7 @@ Define UI palette literals only in `tokens.css`. Components consume `--ds-*` tok
 | --- | --- |
 | Surfaces | `--ds-bg`, `surface`, `surface-raised`, `surface-inset`, `chrome`: workspace, panels, hover/raised surfaces, fields, navigation |
 | Text and separators | `--ds-text`, `text-muted`, `text-subtle`, `border`, `border-strong`; strong borders identify form controls |
-| Primary action | `--ds-primary`, `primary-hover`, `on-primary`; retain the cool gray filled action in dark mode and deep teal action in light mode |
+| Primary action | `--ds-primary`, `primary-hover`, `on-primary`; charcoal in light mode, warm white in dark mode |
 | Selection and emphasis | `--ds-accent`, `accent-bg`, `accent-border`; cool muted accent in dark mode, plum selection treatment in light mode |
 | Feature emphasis | `--ds-feature`, `feature-bg`, `feature-border`, `feature-text`, `on-feature`; muted terracotta for a feature banner or distinct show action |
 | Secondary identities | `--ds-sage` / `sage-bg` and `--ds-mauve` / `mauve-bg`; restrained complementary color |

@@ -3,6 +3,7 @@ import { runtime } from './controller';
 import { Bars, Line } from './Charts';
 import { format } from './parts';
 import { useStore } from './store';
+import { Dial } from './Instruments';
 
 /** A short rolling history of live readings, kept in this tab only. */
 const history = { roll: [] as number[], pitch: [] as number[], volts: [] as number[], amps: [] as number[] };
@@ -16,6 +17,22 @@ runtime.on(event => {
   push('roll', s.attitude?.roll); push('pitch', s.attitude?.pitch); push('volts', s.battery?.voltage); push('amps', s.battery?.current);
 });
 
+/** The readings that matter most, on dials. */
+function Gauges() {
+  const st = useStore(s => s.snap.state);
+  const volts = st?.battery?.voltage, amps = st?.battery?.current, cells = volts ? Math.max(1, Math.round(volts / 3.95)) : undefined;
+  const perCell = volts && cells ? volts / cells : undefined, channels = st?.rc?.channels.length ?? 0;
+  const roll = st?.attitude?.roll, pitch = st?.attitude?.pitch, tilt = roll !== undefined && pitch !== undefined ? Math.round(Math.max(Math.abs(roll), Math.abs(pitch))) : undefined;
+  return (
+    <div className="lu-dials" aria-label="Live readings">
+      <Dial label="Battery" reading={volts !== undefined ? `${volts.toFixed(1)} V` : '—'} value={perCell} min={3.2} max={4.35} caution={[3.2, 3.5]} note={perCell ? `${perCell.toFixed(2)} V a cell, ${cells}S` : 'No battery'} tone={perCell !== undefined && perCell < 3.5 ? 'bad' : undefined} />
+      <Dial label="Current" reading={amps !== undefined ? `${amps.toFixed(1)} A` : '—'} value={amps} max={Math.max(60, (amps ?? 0) * 1.2)} caution={[45, Math.max(60, (amps ?? 0) * 1.2)]} />
+      <Dial label="Tilt" reading={tilt !== undefined ? `${tilt}°` : '—'} value={tilt} max={90} caution={[25, 90]} note={tilt !== undefined && tilt <= 25 ? 'Level enough to arm' : undefined} />
+      <Dial label="Radio" reading={channels ? `${channels} ch` : 'No signal'} value={channels} max={18} note={channels ? 'Receiving' : 'Check the receiver'} tone={channels ? undefined : 'warn'} />
+    </div>
+  );
+}
+
 export function Signals() {
   const snap = useStore(s => s.snap), st = snap.state;
   const [, tick] = useReducer((n: number) => n + 1, 0);
@@ -25,6 +42,7 @@ export function Signals() {
   return (
     <section className="lu-page">
       <header className="lu-page-head"><h1>Signals</h1></header>
+      <Gauges />
       <div className="lu-grid">
         <article className="lu-card is-wide"><h3>Attitude <small>{format(st.attitude?.roll, '°')} · {format(st.attitude?.pitch, '°')}</small></h3><Line label="Roll and pitch" series={[{ values: history.roll, tone: 'a' }, { values: history.pitch, tone: 'b' }]} unit="°" /><div className="lu-legend"><i className="tone-a" />Roll<i className="tone-b" />Pitch</div></article>
         <article className="lu-card"><h3>Battery <small>{format(st.battery ? Number(st.battery.voltage.toFixed(2)) : undefined, 'V')}</small></h3><Line label="Battery voltage" series={[{ values: history.volts, tone: 'c' }]} unit=" V" height={100} /></article>

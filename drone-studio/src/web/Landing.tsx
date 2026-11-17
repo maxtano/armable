@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Cable, MessageSquare, MousePointerClick } from 'lucide-react';
 import { api, ApiError } from './cloud';
 import { ConnectMenu } from './ConnectMenu';
+import { Stator } from './Diagram';
+import { Coil } from './Instruments';
 
 /**
  * The intro page. One picture explains the product: you say it, the assistant proposes it on the drone,
@@ -34,7 +36,7 @@ function Scene() {
           const turn = n === 3 ? (flipped ? 'cw' : 'ccw') : spin;
           return (
             <g key={n} transform={`translate(${x} ${y})`} className={`dg-part dg-motor${n === 3 && p === 'look' ? ' is-reading' : ''}${n === 3 && (p === 'propose' || p === 'approve') ? ' needs-you' : ''}${n === 3 && flipped ? ' is-changed' : ''}${wrong && p !== 'say' ? ' is-wrong' : ''}`}>
-              <circle className="dg-disc" r="38" /><circle className="dg-ring" r="43" /><circle className="dg-sweep" r="48" pathLength="100" />
+              <circle className="dg-disc" r="38" /><Stator r={19} /><circle className="dg-ring" r="43" /><circle className="dg-sweep" r="48" pathLength="100" />
               <g className={`dg-spin ${turn}`}><g transform={turn === 'ccw' ? 'scale(-1 1)' : undefined}><g className="dg-arrows">{[0, 180].map(a => <g key={a} transform={`rotate(${a})`}><path d="M -25.1 -14.5 A 29 29 0 0 1 18.6 -22.2" fill="none" /><path d="M -6 -5 L 4 0 L -6 5" fill="none" transform="rotate(-50) translate(29 0) rotate(90)" /></g>)}</g></g></g>
               {n === 3 && (p === 'propose' || p === 'approve') && <g className="dg-spin dg-ghost cw"><g className="dg-ghost-arrows">{[0, 180].map(a => <g key={a} transform={`rotate(${a})`}><path d="M -31.2 -18 A 36 36 0 0 1 23.1 -27.6" fill="none" /></g>)}</g></g>}
               <circle className="dg-hub" r="11" /><text className="dg-num" y="4">{n}</text>
@@ -68,6 +70,7 @@ export function Landing({ onSignedIn }: { onSignedIn(): void }) {
       <header className="in-top"><span className="in-logo"><img src="/favicon.svg" alt="" width="22" height="22" />Lucidity</span><a href="#start" className="lu-btn">Sign in</a></header>
       <section className="in-hero">
         <div className="in-copy">
+          <Coil width={150} height={38} />
           <h1>Your drone.<br />Your AI.<br /><em>One bench.</em></h1>
           <p>Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen.</p>
           <div className="in-actions">

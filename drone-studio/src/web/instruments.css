@@ -1,0 +1,119 @@
+/* Retro-future, after Dieter Rams: less, but better. Warm grey casing, charcoal controls, one signal orange,
+ * copper where current flows, round dials and indicator lamps. One typeface, Manrope. Colours come from tokens. */
+
+body { font-size: 14.5px; letter-spacing: -0.005em; }
+h1, h2, h3 { letter-spacing: -0.02em; }
+
+/* ---- Casing ---- */
+.lu-rail { background: var(--ds-chrome); border-right: 1px solid var(--ds-border); gap: 6px; }
+.lu-rail > button { border-radius: 14px; }
+.lu-rail > button.is-on { background: var(--ds-surface); box-shadow: var(--lu-shadow-soft); color: var(--ds-text); }
+.lu-rail > button.is-on svg { color: var(--lu-signal); }
+.lu-rail > button.is-on .lu-rail-label { color: var(--ds-text); }
+.lu-top { background: var(--ds-bg); }
+.lu-status { align-items: center; }
+.lu-status i { width: 11px; height: 11px; box-shadow: inset 0 1px 2px var(--ds-shadow-color); }
+.lu-status.is-connected i { background: var(--lu-lamp); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lu-lamp) 22%, transparent), 0 0 10px color-mix(in srgb, var(--lu-lamp) 70%, transparent); }
+.lu-status.is-armed i { background: var(--lu-signal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lu-signal) 25%, transparent), 0 0 10px var(--lu-signal); }
+.lu-timeline { background: var(--ds-chrome); }
+
+/* ---- Controls: pills and round keys ---- */
+.lu-btn { height: 38px; padding: 0 18px; border-radius: 999px; border-color: var(--ds-border-strong); background: var(--ds-surface); box-shadow: var(--lu-shadow-soft); font-weight: 700; }
+.lu-btn:hover:not(:disabled) { background: var(--ds-surface-raised); }
+.lu-btn.is-primary { background: var(--ds-primary); border-color: var(--ds-primary); color: var(--ds-on-primary); }
+.lu-btn.is-primary:hover:not(:disabled) { background: var(--ds-primary-hover); }
+.lu-btn.is-big { height: 48px; padding: 0 26px; font-size: 15.5px; }
+/* The one orange key: start something physical. */
+.lu-top .lu-btn.is-primary, .lu-idle .lu-btn.is-primary { background: var(--lu-signal); border-color: var(--lu-signal); color: var(--ds-on-feature); }
+:root:not([data-theme='dark']) .lu-top .lu-btn.is-primary, :root:not([data-theme='dark']) .lu-idle .lu-btn.is-primary { color: var(--lu-face); }
+.lu-btn.is-stop { background: var(--ds-surface); }
+.lu-icon { border-radius: 50%; }
+.lu-segments { gap: 2px; padding: 3px; border: 0; border-radius: 999px; background: var(--ds-surface-raised); box-shadow: inset 0 1px 3px var(--ds-shadow-color); }
+.lu-segments button { height: 32px; padding: 0 14px; border: 0 !important; border-radius: 999px; color: var(--ds-text-muted); }
+.lu-segments button[aria-checked='true'] { background: var(--ds-surface); color: var(--ds-text); box-shadow: var(--lu-shadow-soft); }
+.lu-chips button { height: 32px; padding: 0 14px; border-color: var(--ds-border-strong); background: var(--ds-surface); color: var(--ds-text-muted); }
+.lu-chips button.is-on { background: var(--ds-primary); border-color: var(--ds-primary); color: var(--ds-on-primary); }
+.lu-chips.is-quiet button { background: none; }
+.lu-chips.is-quiet button.is-on { background: var(--ds-primary); color: var(--ds-on-primary); }
+.lu-link { color: var(--ds-accent); }
+.lu-search, .lu-stepper input, .bd-field select, .bd-money, .bd-switch, .bd-custom input, .bd-custom select, .bd-filters select { border-radius: 10px; }
+.lu-stepper button:first-child { border-radius: 10px 0 0 10px; }
+.lu-stepper button:nth-of-type(2) { border-radius: 0 10px 10px 0; }
+
+/* ---- Surfaces: a raised face on the casing ---- */
+.lu-card, .bd-goal, .bd-parts, .bd-product, .lu-panel, .bd-proven-card, .in-steps article, .in-form, .bd-table, .bd-spec-table { border-radius: 16px; box-shadow: var(--lu-shadow-soft); border-color: var(--ds-border); }
+.lu-panel { border-radius: 0; }
+.lu-card h3 { font-size: 14px; }
+.lu-dialog, .lu-consent-card, .bd-panel { border-radius: 20px; }
+.lu-toast { border-radius: 999px; padding: 11px 20px; background: var(--ds-primary); color: var(--ds-on-primary); border-color: var(--ds-primary); font-weight: 600; }
+.lu-toast.is-bad { color: var(--ds-on-primary); border-color: var(--ds-danger); box-shadow: 0 0 0 3px var(--ds-danger-bg); }
+.lu-page-head h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; }
+.lu-sub { font-weight: 800; }
+
+/* ---- The empty bench ---- */
+.lu-idle h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.035em; }
+.lu-idle-coil { margin-bottom: -6px; }
+
+/* ---- The diagram, as an instrument ---- */
+.dg-arm { stroke: color-mix(in srgb, var(--ds-text) 13%, var(--ds-bg)); }
+.dg-disc { fill: var(--lu-face); }
+.dg-ring, .dg-bezel { stroke: var(--ds-text-subtle); }
+.dg-hub { fill: var(--lu-copper); stroke: var(--lu-copper-dark); }
+.dg-num { fill: var(--lu-face); }
+.dg-stator { fill: color-mix(in srgb, var(--ds-text) 10%, var(--lu-face)); }
+.dg-coil { fill: var(--lu-copper); stroke: var(--lu-copper-dark); stroke-width: 1; }
+.dg-coil-turns { stroke: var(--lu-copper-light); stroke-width: 1.4; stroke-linecap: round; }
+.dg-tick { stroke: var(--ds-text-subtle); stroke-width: 1.4; }
+.dg-arrows path { stroke: var(--lu-signal); }
+.dg-plate { fill: var(--lu-face); }
+.dg-part.no-data .dg-coil { fill: var(--ds-border-strong); stroke: var(--ds-border-strong); }
+
+/* ---- Dials ---- */
+.in-dial { display: grid; justify-items: center; gap: 8px; margin: 0; }
+.in-dial svg { overflow: visible; }
+.in-dial-bezel { fill: var(--ds-surface-raised); stroke: var(--ds-border); stroke-width: 1; }
+.in-dial-face { fill: var(--lu-face); stroke: var(--ds-border); stroke-width: 1; }
+.in-dial-major { stroke: var(--ds-text); stroke-width: 1.8; stroke-linecap: round; }
+.in-dial-minor { stroke: var(--ds-text-subtle); stroke-width: 0.8; }
+.in-dial-mark { stroke: var(--lu-copper); stroke-width: 2.6; stroke-linecap: round; }
+.in-dial-caution { fill: none; stroke: color-mix(in srgb, var(--lu-signal) 32%, transparent); stroke-width: 6; }
+.in-dial-needle { transform-origin: 60px 60px; transition: transform 800ms cubic-bezier(0.3, 1.35, 0.5, 1); }
+.in-dial-needle line { stroke: var(--lu-signal); stroke-width: 2.6; stroke-linecap: round; }
+.in-dial-cap { fill: var(--lu-copper); stroke: var(--lu-copper-dark); stroke-width: 1; }
+.in-dial-cap-hi { fill: var(--lu-copper-light); }
+.in-dial-reading { font: 800 11.5px var(--font-sans); fill: var(--ds-text); letter-spacing: -0.01em; }
+.in-dial.is-warn .in-dial-reading { fill: var(--ds-warning); }
+.in-dial.is-bad .in-dial-reading { fill: var(--ds-danger); }
+.in-dial.is-empty .in-dial-needle { opacity: 0.3; }
+.in-dial figcaption { display: grid; justify-items: center; gap: 1px; text-align: center; }
+.in-dial figcaption b { font-size: 13px; font-weight: 700; }
+.in-dial figcaption small { color: var(--ds-text-subtle); font-size: 12px; }
+.lu-dials { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 18px 10px; padding: 18px 12px 14px; border: 1px solid var(--ds-border); border-radius: 16px; background: var(--ds-surface); box-shadow: var(--lu-shadow-soft); }
+
+/* ---- Lamps and coils ---- */
+.in-lamp { display: inline-block; width: 11px; height: 11px; flex-shrink: 0; border-radius: 50%; background: var(--ds-border-strong); box-shadow: inset 0 1px 2px var(--ds-shadow-color); }
+.in-lamp.is-on.is-ok { background: var(--lu-lamp); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lu-lamp) 22%, transparent), 0 0 10px color-mix(in srgb, var(--lu-lamp) 70%, transparent); }
+.in-lamp.is-on.is-warn { background: var(--ds-warning-border); box-shadow: 0 0 0 3px var(--ds-warning-bg), 0 0 10px var(--ds-warning-border); }
+.in-lamp.is-on.is-bad { background: var(--lu-signal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lu-signal) 25%, transparent), 0 0 10px var(--lu-signal); }
+.in-coil { display: block; }
+.in-coil-core { fill: color-mix(in srgb, var(--ds-text) 55%, var(--ds-bg)); }
+.in-coil-back { fill: none; stroke: var(--lu-copper-dark); stroke-width: 3; }
+.in-coil-front { fill: none; stroke: var(--lu-copper); stroke-width: 3.8; stroke-linecap: round; }
+.in-coil-lead { fill: none; stroke: var(--lu-copper); stroke-width: 2; stroke-linecap: round; }
+
+/* ---- Intro page ---- */
+.in-copy h1 em { color: var(--lu-signal); font-style: normal; }
+.in-steps svg { color: var(--lu-copper); }
+.in-drone { border-radius: 20px; background: var(--ds-surface); box-shadow: var(--lu-shadow-soft); }
+
+/* ---- Sensors as lamps ---- */
+.lu-sensors i { width: 11px; height: 11px; box-shadow: inset 0 1px 2px var(--ds-shadow-color); }
+.lu-sensors .is-ok i { background: var(--lu-lamp); box-shadow: 0 0 8px color-mix(in srgb, var(--lu-lamp) 60%, transparent); }
+.lu-sensors .is-bad i { background: var(--lu-signal); box-shadow: 0 0 8px var(--lu-signal); }
+
+@media (prefers-reduced-motion: reduce) { .in-dial-needle { transition: none; } }
+.bd-compat .in-lamp { margin-left: 0; }
+/* Charts: the signal orange first, then charcoal, then copper and sage. */
+.tone-b { stroke: var(--ds-text-muted); background: var(--ds-text-muted); }
+.tone-d { stroke: var(--lu-copper); background: var(--lu-copper); }
+.dg-coil { opacity: 0.92; }

@@ -13,6 +13,15 @@ const arc = (r: number, from: number, to: number) => {
   const p = (a: number) => `${(r * Math.cos((a * Math.PI) / 180)).toFixed(1)} ${(r * Math.sin((a * Math.PI) / 180)).toFixed(1)}`;
   return `M ${p(from)} A ${r} ${r} 0 ${Math.abs(to - from) > 180 ? 1 : 0} ${to > from ? 1 : 0} ${p(to)}`;
 };
+/** A motor seen from above: copper windings on the stator teeth, and a ring of ticks like a dial. */
+export function Stator({ r = 30, ticks = 0, tickR = r + 22 }: { r?: number; ticks?: number; tickR?: number }) {
+  return <g aria-hidden>
+    {ticks > 0 && Array.from({ length: ticks }, (_, i) => <line key={`t${i}`} className="dg-tick" x1="0" y1={-(tickR)} x2="0" y2={-(tickR + 4)} transform={`rotate(${(360 / ticks) * i})`} />)}
+    <circle className="dg-stator" r={r * 0.62} />
+    {Array.from({ length: 12 }, (_, i) => <g key={i} transform={`rotate(${i * 30})`}><rect className="dg-coil" x={-r * 0.13} y={-r} width={r * 0.26} height={r * 0.42} rx={r * 0.06} /><line className="dg-coil-turns" x1={-r * 0.11} x2={r * 0.11} y1={-r * 0.82} y2={-r * 0.82} /></g>)}
+  </g>;
+}
+
 /** Two curved arrows that show which way a motor turns. Drawn clockwise; mirrored for counter-clockwise. */
 function SpinArrows({ r, ghost }: { r: number; ghost?: boolean }) {
   return (
@@ -52,7 +61,7 @@ export function Diagram() {
     <svg className={cls('dg', live ? 'is-live' : 'is-still', !connected && 'is-idle')} viewBox="0 0 1000 700" data-capture="drone" role="group" aria-label={connected ? `${id?.firmware ?? 'Aircraft'} diagram` : 'No aircraft connected'}>
       <defs>
         <pattern id="dg-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" className="dg-grid-line" fill="none" /></pattern>
-        <radialGradient id="dg-fade" cx="50%" cy="47%" r="60%"><stop offset="0%" stopOpacity="0" /><stop offset="100%" className="dg-fade-stop" /></radialGradient>
+        <radialGradient id="dg-fade" cx="50%" cy="47%" r="60%"><stop offset="0%" stopOpacity="0" className="dg-fade-stop" /><stop offset="100%" className="dg-fade-stop" /></radialGradient>
         <clipPath id="dg-horizon"><circle r="38" /></clipPath>
       </defs>
       <rect width="1000" height="700" fill="url(#dg-grid)" />
@@ -82,6 +91,7 @@ export function Diagram() {
             onClick={pick('motors', m.number)} onKeyDown={pick('motors', m.number)} data-motor={m.number}>
             <circle className="dg-hit" r="66" />
             <circle className="dg-disc" r="50" />
+            <Stator r={24} ticks={24} tickR={52} />
             <circle className="dg-ring" r="56" />
             <circle className="dg-sweep" r="62" pathLength="100" />
             {m.spin !== 'unknown'
