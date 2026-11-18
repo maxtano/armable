@@ -127,6 +127,12 @@ export function createApp(options: AppOptions) {
   api.post('/login', limiter, wrap(async (req, res) => { const account = await auth.signIn(text(req.body.email), text(req.body.password)); setSession(res, await auth.startSession(account.id)); return { email: account.email }; }));
   api.post('/logout', wrap(async (req, res) => { await auth.endSession(sessionToken(req)); res.setHeader('Set-Cookie', cookie.serialize(COOKIE, '', { httpOnly: true, secure, sameSite: 'lax', path: '/', maxAge: 0 })); }));
   // Public: where assistants connect, for the “Connect your AI” menu on the intro page.
+  // Public: the name an assistant registered with, so the Allow screen can say who is asking before anyone signs in.
+  api.get('/oauth-client/:id', wrap(async req => {
+    const name = String(req.params.id).length <= 64 ? await auth.clientName(String(req.params.id)) : undefined;
+    if (!name) throw new ToolError('not_found', 'Unknown assistant.');
+    return { name };
+  }));
   api.get('/connect', wrap(async () => { const { mcpUrl, skillUrl } = onboardingUrls(publicUrl); return { mcpUrl, skillUrl }; }));
   // Try it without signing up: a guest bench that works fully, and can be saved later.
   api.post('/guest', limiter, wrap(async (req, res) => {
@@ -230,7 +236,7 @@ export function createApp(options: AppOptions) {
   api.delete('/account', wrap(async (req, res) => { await services.forgetRatings(req.account); await tracker.deleteAccount(req.account); await auth.deleteAccount(req.account); res.setHeader('Set-Cookie', cookie.serialize(COOKIE, '', { path: '/', maxAge: 0 })); }));
   api.get('/export', wrap(async req => ({ exportedAt: new Date().toISOString(), documents: (await services.docs(req.account)).map(r => ({ id: r.id, revision: r.rev, kind: r.data.kind, name: r.data.name, content: r.data.content })), activity: await services.activity(req.account, 1000) })));
 
-  api.get('/oauth/:id', wrap(async req => { const p = await auth.pending(String(req.params.id), req.account); return { client: p.client.name, scopes: p.params.scopes, redirectHost: new URL(p.params.redirectUri).host }; }));
+  api.get('/oauth/:id', wrap(async req => { const p = await auth.pending(String(req.params.id), req.account); return { client: p.client.name, clientId: p.client.id, scopes: p.params.scopes, redirectHost: new URL(p.params.redirectUri).host }; }));
   api.post('/oauth/:id', wrap(async req => { const redirect = await auth.decide(String(req.params.id), req.account, req.body.allow === true); services.hub(req.account).notify('assistants'); return { redirect }; }));
 
   const KINDS: DocKind[] = ['storyboard', 'tune', 'file', 'snapshot', 'build'];

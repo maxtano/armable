@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agentPrompt, claudeCodeCommand, claudeInstallLink, connectOptions, cursorLink, vscodeLink } from './connectLinks';
+import { agentPrompt, claudeChatLink, claudeCodeCommand, claudeInstallLink, connectOptions, cursorLink, vscodeLink } from './connectLinks';
 
 const MCP = 'https://armable.example/mcp', SKILL = 'https://armable.example/agent-onboarding/SKILL.md';
 
@@ -16,6 +16,9 @@ describe('Connect your AI', () => {
     expect(claude).toMatchObject({ href: claudeInstallLink(MCP), beside: true, copy: MCP });
     expect(chatgpt).toMatchObject({ beside: true, copy: MCP });
     expect(chatgpt.href).toMatch(/^https:\/\/chatgpt\.com\//);
+  });
+  it('opens a new Claude chat with the first message typed in', () => {
+    expect(claudeChatLink('Check my drone in Armable')).toBe('https://claude.ai/new?q=Check%20my%20drone%20in%20Armable');
   });
   it('gives every option steps, with signing in to Armable as the one it watches for', () => {
     for (const option of connectOptions(MCP, SKILL)) expect(option.steps.filter(s => s.startsWith('Sign in to Armable'))).toHaveLength(1);

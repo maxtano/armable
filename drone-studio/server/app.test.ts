@@ -79,7 +79,7 @@ describe('connecting an assistant', () => {
     const declined = await b.connectAssistant('Nosy', 'observe', false);
     expect(declined.denied).toBe('access_denied');
     const grant = await b.connectAssistant('Claude');
-    expect(grant.details).toEqual({ client: 'Claude', scopes: ['observe', 'design', 'propose'], redirectHost: 'localhost:9' });
+    expect(grant.details).toEqual({ client: 'Claude', clientId: grant.clientId, scopes: ['observe', 'design', 'propose'], redirectHost: 'localhost:9' });
     expect(grant.access_token).toBeTruthy();
     expect((await b.get('/api/me')).json.assistants).toMatchObject([{ name: 'Claude', scopes: ['observe', 'design', 'propose'] }]);
     const reuse = await fetch(`${app.base}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code: grant.code!, code_verifier: grant.verifier!, client_id: grant.clientId, redirect_uri: grant.redirect! }) });
@@ -430,6 +430,17 @@ describe('feedback and shared builds', () => {
   });
 });
 
+
+describe('the Allow screen', () => {
+  it('tells anyone the name an assistant registered with, and nothing about unknown ones', async () => {
+    const app = await startApp(); closers.push(() => app.close());
+    const person = new Browser(app.base);
+    await person.signUp();
+    const grant = await person.connectAssistant('Claude');
+    expect((await new Browser(app.base).get(`/api/oauth-client/${grant.clientId}`)).json).toEqual({ name: 'Claude' });
+    expect((await new Browser(app.base).get('/api/oauth-client/nope')).status).toBe(404);
+  });
+});
 
 describe('security', () => {
   it('turns away large anonymous requests before reading them, but not signed-in ones', async () => {

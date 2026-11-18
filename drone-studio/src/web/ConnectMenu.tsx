@@ -46,11 +46,11 @@ function useNewAssistant(watching: boolean, onConnected: (name: string) => void)
 }
 
 /** “Connect your AI”: Claude or ChatGPT in one click, side by side with Armable, and every other agent below. */
-export function ConnectMenu({ big }: { big?: boolean }) {
+export function ConnectMenu({ big, others }: { big?: boolean; /** Everything but Claude, behind a small link: Claude has its own button. */ others?: boolean }) {
   const [open, setOpen] = useState(false), [chosen, setChosen] = useState<ConnectOption>(), [connected, setConnected] = useState<string>();
   const box = useRef<HTMLDivElement>(null), button = useRef<HTMLButtonElement>(null);
   const addresses = useAddresses();
-  const options = addresses ? connectOptions(addresses.mcpUrl, addresses.skillUrl) : [];
+  const options = (addresses ? connectOptions(addresses.mcpUrl, addresses.skillUrl) : []).filter(o => !others || o.id !== 'claude');
   useEffect(() => {
     if (!open) return;
     const away = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
@@ -66,12 +66,13 @@ export function ConnectMenu({ big }: { big?: boolean }) {
     void (wasSignedIn ? refreshMe() : boot());
   });
   const choose = async (option: ConnectOption) => {
-    await navigator.clipboard?.writeText(option.copy).catch(() => {});
+    // Windows first, while the click still counts: browsers block windows opened after waiting on anything.
     if (option.href) {
-      if (option.beside) openBeside(option.href);
+      if (option.beside) { if (!openBeside(option.href)) window.open(option.href, '_blank', 'noopener,noreferrer'); }
       else if (option.href.startsWith('http')) window.open(option.href, '_blank', 'noopener,noreferrer');
       else location.href = option.href;
     }
+    await navigator.clipboard?.writeText(option.copy).catch(() => {});
     setConnected(undefined); setChosen(option);
   };
   const item = (option: ConnectOption, main: boolean) => {
@@ -86,10 +87,10 @@ export function ConnectMenu({ big }: { big?: boolean }) {
   };
   return (
     <div className="lu-connect" ref={box}>
-      <button ref={button} className={`lu-btn lu-connect-btn${big ? ' is-big' : ''}${open ? ' is-open' : ''}`} aria-haspopup="menu" aria-expanded={open}
+      <button ref={button} className={others ? `lu-link lu-connect-link${open ? ' is-open' : ''}` : `lu-btn lu-connect-btn${big ? ' is-big' : ''}${open ? ' is-open' : ''}`} aria-haspopup="menu" aria-expanded={open}
         onClick={() => { setOpen(!open); if (!open && connected) { setChosen(undefined); setConnected(undefined); } }}>
-        <span className="lu-connect-stack" aria-hidden>{(['claude', 'chatgpt', 'cursor'] as const).map(id => { const Icon = ICON[id]; return <span key={id}><Icon size={13} /></span>; })}</span>
-        Connect your AI <ChevronDown size={15} />
+        {!others && <span className="lu-connect-stack" aria-hidden>{(['claude', 'chatgpt', 'cursor'] as const).map(id => { const Icon = ICON[id]; return <span key={id}><Icon size={13} /></span>; })}</span>}
+        {others ? 'Use ChatGPT or another app' : 'Connect your AI'} <ChevronDown size={15} />
       </button>
       {open && (chosen ? (
         <div className="lu-connect-menu is-guide" role="dialog" aria-label={`Connect ${chosen.name}`}>
@@ -111,7 +112,7 @@ export function ConnectMenu({ big }: { big?: boolean }) {
       ) : (
         <div className="lu-connect-menu" role="menu" aria-label="Connect your AI">
           {options.filter(o => MAIN.includes(o.id)).map(o => item(o, true))}
-          {options.length > 0 && <span className="lu-connect-other">Coding tools and other agents</span>}
+          {options.length > 0 && <span className="lu-connect-other">{others ? 'Coding tools and agents' : 'Coding tools and other agents'}</span>}
           {options.filter(o => !MAIN.includes(o.id)).map(o => item(o, false))}
           {!addresses && <p className="lu-connect-next">Loading…</p>}
         </div>

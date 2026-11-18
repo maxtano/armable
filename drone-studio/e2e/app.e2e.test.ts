@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -30,7 +31,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     await page.goto(app.base);
     await expect(page.getByRole('heading', { name: /Your drone/ })).toBeTruthy();
     // No sign-up: a guest bench opens at once.
-    await page.click('button:has-text("Try it now")');
+    await page.click('button:has-text("just look around")');
     await page.waitForSelector('[data-demo=ardupilot]');
     return { page, context, errors };
   }
@@ -185,9 +186,9 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const errors: string[] = [];
     page.on('pageerror', (e: Error) => errors.push(e.message));
     await page.goto(app.base);
-    await page.getByRole('button', { name: /Connect your AI/ }).click();
+    await page.getByRole('button', { name: /Use ChatGPT or another app/ }).click();
     const items = page.locator('.lu-connect-menu [role=menuitem]');
-    expect((await items.allInnerTexts()).map((t: string) => t.split('\n')[0])).toEqual(['Claude', 'ChatGPT', 'Claude Code', 'Cursor', 'VS Code', 'Any other agent']);
+    expect((await items.allInnerTexts()).map((t: string) => t.split('\n')[0])).toEqual(['ChatGPT', 'Claude Code', 'Cursor', 'VS Code', 'Any other agent']);
     await page.click('[data-connect=agents]');
     await page.waitForSelector('.lu-connect-steps:has-text("Paste it into your agent")');
     const prompt = await page.evaluate(() => navigator.clipboard.readText());
@@ -203,26 +204,53 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     await context.close();
   });
 
-  it('opens Claude beside Armable with everything filled in, and notices by itself when Claude connects', async () => {
+  it('takes a new person from Start with Claude to a new Claude chat, with one Allow and nothing typed', async () => {
     const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
     await context.route('https://claude.ai/**', (route: any) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>Claude</title>' }));
+    await context.route('http://localhost:9/**', (route: any) => route.fulfill({ status: 200, contentType: 'text/html', body: 'back in Claude' }));
     const page = await context.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (e: Error) => errors.push(e.message));
     await page.goto(app.base);
-    await page.getByRole('button', { name: /Connect your AI/ }).click();
-    const [popup] = await Promise.all([page.waitForEvent('popup'), page.click('[data-connect=claude]')]);
-    const opened = new URL(popup.url());
-    expect(opened.origin + opened.pathname).toBe('https://claude.ai/customize/connectors');
-    expect(opened.searchParams.get('modal')).toBe('add-custom-connector');
-    expect(opened.searchParams.get('connectorUrl')).toBe(`${app.base}/mcp`);
-    await page.waitForSelector('.lu-connect-steps li.is-waiting:has-text("Sign in to Armable")');
-    // In Claude's window the person signs in (here: a guest bench) and allows Claude. This tab shares the cookie.
-    await page.evaluate(() => fetch('/api/guest', { method: 'POST', headers: { 'x-armable': '1', 'content-type': 'application/json' }, body: '{}' }));
-    const person = new Browser(app.base);
-    person.cookie = (await context.cookies()).map((c: any) => `${c.name}=${c.value}`).join('; ');
-    await person.connectAssistant('Claude');
-    // Armable notices, opens the bench, and says what to ask.
-    await page.waitForSelector('.lu-toast:has-text("Claude is connected")', { timeout: 10000 });
-    await page.waitForSelector('.lu-idle');
+    // 1. One button. Claude opens in its own window with Armable filled in.
+    const [claude] = await Promise.all([page.waitForEvent('popup'), page.click('[data-start=claude]')]);
+    await claude.waitForURL(/claude\.ai\/customize\/connectors/);
+    const install = new URL(claude.url());
+    expect(Object.fromEntries(install.searchParams)).toEqual({ modal: 'add-custom-connector', connectorName: 'Armable', connectorUrl: `${app.base}/mcp` });
+    await page.waitForSelector('.cs-steps li.is-now[data-step="1"]');
+    await page.waitForSelector('.cs-wait:has-text("Waiting for Claude")');
+    // 2. Claude's Connect opens Armable's sign-in. Not signed in: one screen, one Allow, no account needed.
+    const redirect = 'http://localhost:9/callback';
+    const client = await (await fetch(`${app.base}/register`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_name: 'Claude', redirect_uris: [redirect], token_endpoint_auth_method: 'none', grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] }) })).json() as { client_id: string };
+    const verifier = 'v'.repeat(64), challenge = createHash('sha256').update(verifier).digest('base64url');
+    const allow = await context.newPage();
+    await allow.goto(`${app.base}/authorize?${new URLSearchParams({ response_type: 'code', client_id: client.client_id, redirect_uri: redirect, code_challenge: challenge, code_challenge_method: 'S256', state: 's', scope: 'observe design propose' })}`);
+    await allow.waitForSelector('h1:has-text("Let Claude use Armable?")');
+    await allow.click('[data-allow]');
+    await allow.waitForURL(/localhost:9\/callback\?.*code=/);
+    const code = new URL(allow.url()).searchParams.get('code')!;
+    await fetch(`${app.base}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code, code_verifier: verifier, client_id: client.client_id, redirect_uri: redirect }) });
+    // 3. Armable notices by itself: Claude's window becomes a new chat with the first message typed.
+    await claude.waitForURL(/claude\.ai\/new\?q=/, { timeout: 10000 });
+    expect(new URL(claude.url()).searchParams.get('q')).toBe('Check my drone in Armable');
+    await page.waitForSelector('.cs h2:has-text("Claude is connected")');
+    await page.waitForSelector('.cs-light.is-on:has-text("Claude connected")');
+    // Armable moves to the right of Claude, and this tab says so.
+    const [right] = await Promise.all([page.waitForEvent('popup'), page.getByRole('button', { name: 'Put Armable on the right' }).click()]);
+    await right.waitForSelector('.lu-idle');
+    await page.waitForSelector('h1:has-text("Armable is open on the right")');
+    expect(errors).toEqual([]);
+    await context.close();
+  });
+
+  it('keeps the way back to setup in the top bar until Claude is connected', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(`${app.base}/?demo=betaflight`);
+    await page.waitForSelector('.lu-status.is-connected');
+    const [claude] = await Promise.all([context.waitForEvent('page'), page.click('.cs-light:has-text("Connect Claude")')]);
+    await page.waitForSelector('.cs h2:has-text("Connect Claude")');
+    await claude.close();
     await context.close();
   });
 

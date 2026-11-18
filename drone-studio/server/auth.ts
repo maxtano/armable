@@ -138,6 +138,11 @@ export class Auth {
   // ---- Assistants ------------------------------------------------------------------------------------------------
 
   /** Step one: the assistant app sent the person here. Park the request until they sign in and agree. */
+  /** The name an assistant app registered with, for “Let Claude use Armable?” before the person has signed in. */
+  async clientName(clientId: string): Promise<string | undefined> {
+    const row = await this.store.get<OAuthClientInformationFull>('oauth_clients', '', clientId);
+    return row ? clientName(row.data) : undefined;
+  }
   async park(client: OAuthClientInformationFull, account: string, params: AuthorizationParams): Promise<string> {
     const id = newId(12);
     const scopes = (params.scopes?.length ? params.scopes : [...SCOPES]).filter(s => (SCOPES as readonly string[]).includes(s));

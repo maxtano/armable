@@ -9,6 +9,7 @@ import { History } from './History';
 import { OsdEditor } from './OsdEditor';
 import { RadioFlash } from './RadioFlash';
 import type { PartId } from '../device/types';
+import { ClaudeLight, ClaudeSetup, MovedRight } from './ClaudeSetup';
 import { Connect, Consent, ModeSwitch } from './Connect';
 import { answerPrompt, connectDemo, connectUsb, disconnect, go, select, signOut, stopAll } from './controller';
 import { Diagram } from './Diagram';
@@ -117,6 +118,7 @@ function TopBar() {
       <div className={`lu-status is-${snap.status}${snap.state?.armed ? ' is-armed' : ''}`}>
         <i />{connected ? <><b>{id?.craftName ?? id?.firmware}</b><span>{id?.firmware} {id?.version}</span></> : snap.status === 'reconnecting' ? <b>Restarting…</b> : snap.status === 'connecting' ? <b>Connecting…</b> : <b>No drone</b>}
       </div>
+      <ClaudeLight />
       {pages.length > 1 && <nav className="lu-tabs" aria-label="Pages">{pages.map(([v, label]) => <button key={v} data-view={v} className={view === v ? 'is-on' : ''} aria-current={view === v ? 'page' : undefined} onClick={() => go(v)}>{label}</button>)}</nav>}
       <div className="lu-top-end">
         {connected && section === 'bench' && <PartsMenu />}
@@ -162,6 +164,7 @@ function Overlays() {
   useEffect(() => { if (!toast) return; const t = setTimeout(() => set(s => (s.toast === toast ? { toast: undefined } : {})), 5200); return () => clearTimeout(t); }, [toast]);
   return (
     <>
+      <ClaudeSetup />
       {toast && <div className={`lu-toast is-${toast.tone}`} role="status">{toast.text}</div>}
       <SaveDialog />
       <FeedbackDialog />
@@ -188,7 +191,7 @@ function Overlays() {
 }
 
 export function App() {
-  const me = useStore(s => s.me), view = useStore(s => s.view), live = useStore(s => s.live);
+  const me = useStore(s => s.me), view = useStore(s => s.view), live = useStore(s => s.live), moved = useStore(s => s.moved);
   const consent = new URLSearchParams(location.search).get('consent');
   const shared = location.pathname.match(/^\/b\/([\w-]{4,40})\/?$/)?.[1];
   useEffect(() => { if (!shared) void boot(); }, [shared]);
@@ -197,6 +200,7 @@ export function App() {
   if (!me) return <div className="boot" role="status" aria-label="Loading Armable"><div>Armable<i /></div></div>;
   if (!me.signedIn) return <Landing onSignedIn={() => void boot()} google={me.google} />;
   if (consent) return <><Consent id={consent} /><Overlays /></>;
+  if (moved) return <MovedRight />;
   return (
     <div className="lu">
       <Rail />

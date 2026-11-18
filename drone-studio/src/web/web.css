@@ -475,3 +475,34 @@ select, .lu-text { height: 34px; padding: 0 10px; border: 1px solid var(--ds-bor
 .lu-connect-next.is-connected { background: var(--ds-success-bg); }
 @keyframes lu-connect-wait { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .lu-connect-menu { animation: none; } .lu-connect-steps li.is-waiting > span { animation: none; } }
+
+/* ---- Connecting Claude: one path (ClaudeSetup.tsx) ------------------------------------------------------------------ */
+.cs { width: min(460px, 92vw); justify-items: stretch; }
+.cs header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cs header h2 { margin: 0; font-size: 19px; }
+.cs-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+.cs-steps li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; color: var(--ds-text-subtle); }
+.cs-steps li > span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--ds-surface-raised); font-weight: 700; font-size: 13px; }
+.cs-steps p { margin: 3px 0 0; font-size: 15px; line-height: 1.45; }
+.cs-steps small { display: block; margin-top: 2px; color: var(--ds-text-subtle); font-size: 12.5px; }
+.cs-steps li.is-now { color: var(--ds-text); }
+.cs-steps li.is-now > span { background: var(--lu-ai-bg); color: var(--lu-ai); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lu-ai) 14%, transparent); }
+.cs-steps li.is-done > span { background: var(--ds-success-bg); color: var(--ds-success); }
+.cs-wait { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--lu-ai-bg); font-size: 13.5px; }
+.cs-help { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--ds-text-muted); font-size: 13px; line-height: 1.45; }
+.cs-light { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border: 1px solid var(--ds-border); border-radius: 15px; background: var(--ds-surface); color: var(--ds-text-muted); font-size: 12.5px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.cs-light i { width: 8px; height: 8px; border-radius: 50%; background: var(--ds-border-strong); }
+.cs-light:hover { border-color: var(--ds-border-strong); color: var(--ds-text); }
+.cs-light:not(.is-on) { border-color: color-mix(in srgb, var(--lu-ai) 45%, var(--ds-border)); color: var(--ds-text); }
+.cs-light:not(.is-on) i { background: var(--lu-ai); animation: lu-connect-wait 1.6s ease-in-out infinite; }
+.cs-light.is-on i { background: var(--ds-success); }
+.cs-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin: 4px 0 22px; padding: 16px 18px; border: 1px solid color-mix(in srgb, var(--lu-ai) 40%, var(--ds-border)); border-radius: 10px; background: var(--lu-ai-bg); }
+.cs-card h3 { margin: 0 0 4px; font-size: 15px; }
+.cs-card p { margin: 0; color: var(--ds-text-muted); font-size: 13px; }
+.cs-allow { justify-items: center; text-align: center; }
+.cs-allow ul { justify-items: start; text-align: left; }
+.cs-allow > .lu-btn.is-big { width: 100%; justify-content: center; }
+.in-others { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-top: 6px; }
+.lu-connect-link { color: var(--ds-text-muted); }
+@media (prefers-reduced-motion: reduce) { .cs-light:not(.is-on) i { animation: none; } }
+@media (max-width: 640px) { .cs-light { display: none; } }

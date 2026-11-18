@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Copy, Eye, PencilRuler, Unplug, Wrench } from 'lucide-react';
 import { api } from './cloud';
+import { startClaude } from './ClaudeSetup';
 import { ConnectMenu } from './ConnectMenu';
+import { ALLOW_KEY } from './Landing';
 import { createGrant, refreshMe, revokeGrant, setMode } from './controller';
 import { Conditions } from './controls';
 import { PART_NAME } from './parts';
@@ -35,12 +37,9 @@ export function Connect() {
     <section className="lu-page is-narrow">
       <header className="lu-page-head"><h1>Your assistant</h1><ModeSwitch /></header>
       <p className="lu-hint lu-mode-hint">{MODE_HINT[me?.mode ?? 'observe']}</p>
-      <div className="lu-connect-row"><ConnectMenu /><span className="lu-hint">Opens your assistant beside Armable, with everything filled in where it can.</span></div>
-      <ol className="lu-steps">
-        <li><b>1</b><div><h3>Copy this address</h3><button className="lu-address" onClick={copy} aria-label="Copy the address">{me?.mcpUrl}<span>{copied ? <Check size={15} /> : <Copy size={15} />}</span></button></div></li>
-        <li><b>2</b><div><h3>Add it in your assistant</h3><p>Claude: use Connect your AI above. It opens Claude with Armable filled in.<br />ChatGPT: Settings → Apps &amp; Connectors → Advanced → Developer mode, then Create.</p></div></li>
-        <li><b>3</b><div><h3>Sign in when asked</h3><p>Then say: “Check my drone.”</p></div></li>
-      </ol>
+      {!me?.assistants?.some(a => /claude/i.test(a.name)) && (
+        <div className="cs-card"><div><h3>Connect Claude</h3><p>Claude opens beside Armable with everything filled in. Two clicks there, one here.</p></div><button className="lu-btn is-primary" data-start="claude" onClick={() => void startClaude()}>Connect Claude</button></div>
+      )}
       <h2 className="lu-sub">Connected</h2>
       {me?.assistants?.length ? (
         <ul className="lu-assistants">{me.assistants.map(a => (
@@ -51,16 +50,26 @@ export function Connect() {
       <h2 className="lu-sub">What it can use</h2>
       <ul className="lu-tools">{TOOLS.map(([name, what]) => <li key={name}><code>{name}</code><span>{what}</span></li>)}</ul>
       <p className="lu-hint">It can never approve a change, confirm “props removed”, or arm your drone.</p>
+      <h2 className="lu-sub">Another app</h2>
+      <div className="lu-connect-row"><ConnectMenu others /><button className="lu-address" onClick={copy} aria-label="Copy the address">{me?.mcpUrl}<span>{copied ? <Check size={15} /> : <Copy size={15} />}</span></button></div>
     </section>
   );
 }
 
 /** Shown when an assistant app sends the person here to allow a connection. */
 export function Consent({ id }: { id: string }) {
-  const [info, setInfo] = useState<{ client: string; scopes: string[]; redirectHost: string } | null | undefined>();
+  const [info, setInfo] = useState<{ client: string; clientId?: string; scopes: string[]; redirectHost: string } | null | undefined>();
   const [busy, setBusy] = useState(false);
   if (info === undefined) { setInfo(null); api('GET', `/oauth/${id}`).then(setInfo, () => setInfo({ client: '', scopes: [], redirectHost: '' })); }
   const decide = async (allow: boolean) => { setBusy(true); try { location.href = (await api('POST', `/oauth/${id}`, { allow })).redirect; } catch { setBusy(false); toast('This request has expired. Start again from your assistant.', 'bad'); } };
+  // The person already pressed Allow for this assistant a moment ago, on the screen before signing in. Only that
+  // screen, in this tab, sets the flag, so no other site can approve anything this way.
+  useEffect(() => {
+    if (!info?.clientId) return;
+    let flag: { clientId?: string; at?: number } = {};
+    try { flag = JSON.parse(sessionStorage.getItem(ALLOW_KEY) ?? '{}'); sessionStorage.removeItem(ALLOW_KEY); } catch { /* ask instead */ }
+    if (flag.clientId === info.clientId && Date.now() - (flag.at ?? 0) < 120_000) void decide(true);
+  }, [info?.clientId]);
   if (!info) return <div className="lu-consent" />;
   if (!info.client) return <div className="lu-consent"><div className="lu-consent-card"><h1>Request expired</h1><p>Start again from your assistant.</p><a className="lu-btn" href="/">Open Armable</a></div></div>;
   return (
