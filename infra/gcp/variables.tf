@@ -40,9 +40,19 @@ variable "cap_usd" {
   default     = 5
 }
 variable "alert_usd" {
-  description = "An email to the billing account's admins at this amount."
+  description = "Emails to the billing account's admins at half this amount and at this amount."
   type        = number
   default     = 1
+}
+variable "account_alert_usd" {
+  description = "An email when everything on the billing account, in any project, reaches this. Catches spending outside this project, for example if someone got into your Google account. 0 turns it off."
+  type        = number
+  default     = 2
+}
+variable "snapshot_weeks" {
+  description = "Weekly snapshots of the server's disk to keep. 0 turns them off."
+  type        = number
+  default     = 4
 }
 variable "currency" {
   description = "The billing account's currency."
@@ -59,9 +69,9 @@ variable "channel" {
   }
 }
 variable "egress_mbit" {
-  description = "Most the server may send, in megabits a second. 0 removes the limit."
+  description = "Most the server may send, in megabits a second. 0 removes the limit. Armable sends small messages; this caps what anyone could make it cost."
   type        = number
-  default     = 20
+  default     = 10
 }
 variable "cloudflare_only" {
   description = "Accept web traffic only from Cloudflare. Needs the DNS record proxied (orange cloud)."

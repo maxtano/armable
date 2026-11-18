@@ -20,9 +20,9 @@ fi
 # 2. A speed limit on everything the server sends. Armable sends small messages; this stops anyone from
 #    using it to send a lot of data, which is the one thing Google charges for by volume.
 IFACE="$(ip route show default 2>/dev/null | awk '{print $5; exit}' || true)"
-if [ -n "$IFACE" ] && [ "${EGRESS:-20}" != "0" ]; then
-  if tc qdisc replace dev "$IFACE" root tbf rate "${EGRESS:-20}mbit" burst 64kb latency 50ms; then
-    echo "[armable] outgoing traffic limited to ${EGRESS:-20} Mbit/s on $IFACE"
+if [ -n "$IFACE" ] && [ "${EGRESS:-10}" != "0" ]; then
+  if tc qdisc replace dev "$IFACE" root tbf rate "${EGRESS:-10}mbit" burst 64kb latency 50ms; then
+    echo "[armable] outgoing traffic limited to ${EGRESS:-10} Mbit/s on $IFACE"
   else echo "[armable] WARNING: could not set the outgoing speed limit"; fi
 elif [ -n "$IFACE" ]; then tc qdisc del dev "$IFACE" root 2>/dev/null || true; fi
 
@@ -32,6 +32,26 @@ if ! command -v docker >/dev/null; then
   curl -fsSL https://get.docker.com | sh
 fi
 command -v git >/dev/null || { apt-get update -y && apt-get install -y git; }
+
+# 3b. Security updates install themselves every night; the server restarts at 04:30 UTC when one needs it.
+dpkg -s unattended-upgrades >/dev/null 2>&1 || { apt-get update -y && apt-get install -y unattended-upgrades; }
+cat > /etc/apt/apt.conf.d/52armable <<'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "04:30";
+EOF
+# Armable's own logs rotate weekly, four kept, so they never fill the disk. (The app's logs rotate in compose.yaml.)
+cat > /etc/logrotate.d/armable <<'EOF'
+/var/log/armable-*.log {
+  weekly
+  rotate 4
+  compress
+  missingok
+  notifempty
+  copytruncate
+}
+EOF
 
 # 4. The code. update.sh (step 6) checks out the release this server should run.
 [ -d "$CODE/.git" ] || git clone -q --filter=blob:none "$REPO" "$CODE"

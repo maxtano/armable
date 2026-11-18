@@ -9,6 +9,7 @@ export function onboardingUrls(publicUrl: URL) {
 
 export function agentSkill(publicUrl: URL): string {
   const { mcpUrl, appUrl } = onboardingUrls(publicUrl);
+  const claudeLink = `https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Armable&connectorUrl=${encodeURIComponent(mcpUrl)}`;
   const cursorConfig = JSON.stringify({ mcpServers: { armable: { url: mcpUrl } } }, null, 2);
   const vscodeConfig = JSON.stringify({ servers: { armable: { type: 'http', url: mcpUrl } } }, null, 2);
   return `---
@@ -27,9 +28,21 @@ The person sees everything you do on a drawing of their drone and approves every
 The MCP server is **${mcpUrl}**. It uses streamable HTTP and OAuth 2.1 with dynamic client registration.
 There is no API key: the person signs in to Armable in a browser and chooses what you may do.
 
-Use whichever applies to you:
+**If you are a chat assistant** (claude.ai, the Claude apps, ChatGPT) you cannot add a connector yourself, and
+there is nothing to run. Do not try commands or ask about network settings. Reply with only this, and stop:
 
-- **Claude Code:** run \`claude mcp add --transport http armable ${mcpUrl}\`, then \`/mcp\` to sign in.
+> To connect Armable, click this link: ${claudeLink}
+> Claude opens with Armable filled in. Click **Add**, sign in to Armable, and press **Allow**. Then start a new chat
+> and say “Check my drone”.
+
+For ChatGPT, reply instead: “In ChatGPT, open Settings → Apps & Connectors → Advanced and turn on Developer mode.
+Then choose Create, name it Armable, paste ${mcpUrl}, pick OAuth, and sign in to Armable when it asks.”
+
+**If you can run commands or edit your own settings**, use whichever applies to you:
+
+- **Claude Code:** run \`claude mcp add --transport http armable ${mcpUrl}\` (ask the person to approve it if you
+  are asked), then tell them to run \`/mcp\`, choose armable and sign in. A server added mid-session may only load in
+  the next one. If a network policy blocks ${new URL(mcpUrl).host}, tell the person, rather than changing settings.
 - **Cursor:** add this to \`~/.cursor/mcp.json\` (or the project's \`.cursor/mcp.json\`):
 
 \`\`\`json
@@ -42,8 +55,6 @@ ${cursorConfig}
 ${vscodeConfig}
 \`\`\`
 
-- **Claude (claude.ai or the apps):** the person adds a custom connector in Customize → Connectors with the address above.
-- **ChatGPT:** the person adds it in Settings → Connectors → Create, with the address above.
 - **Any other MCP client:** add a remote HTTP server named \`armable\` with the address above.
 
 You cannot finish the sign-in yourself. When your client opens an Armable sign-in page, ask the person to sign in

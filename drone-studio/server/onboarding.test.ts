@@ -16,6 +16,9 @@ describe('agent onboarding', () => {
     expect(text).toContain(`claude mcp add --transport http armable ${app.base}/mcp`);
     expect(text).toContain('get_workspace');
     expect(text).toContain('Never say a change is done until `wait` returns it done');
+    // A chat assistant can't add connectors: it hands the person Claude's one-click link instead of trying.
+    expect(text).toContain(`https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Armable&connectorUrl=${encodeURIComponent(`${app.base}/mcp`)}`);
+    expect(text).toMatch(/If you are a chat assistant/);
   });
 
   it('tells the intro page where assistants connect, without signing in', async () => {

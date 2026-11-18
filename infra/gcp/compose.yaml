@@ -1,6 +1,11 @@
 # Armable on one small server: the app, its database, and Caddy for HTTPS.
 # Used by vm-startup.sh with the settings in /opt/armable-data/.env. Sized for Google Cloud's free e2-micro (1 GB).
 name: armable
+# Logs rotate at 10 MB, three files each, so they can never fill the disk.
+x-logging: &logging
+  driver: json-file
+  options: { max-size: 10m, max-file: '3' }
+
 services:
   db:
     image: postgres:16-alpine
@@ -13,6 +18,7 @@ services:
     volumes: ['/opt/armable-data/postgres:/var/lib/postgresql/data']
     healthcheck: { test: ['CMD', 'pg_isready', '-U', 'armable'], interval: 10s, retries: 10 }
     mem_limit: 200m
+    logging: *logging
 
   app:
     # The release the server runs; update.sh sets it (a version like v0.2.0, or edge for main).
@@ -30,6 +36,7 @@ services:
       FEEDBACK_WEBHOOK_URL: ${FEEDBACK_WEBHOOK_URL:-}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
     mem_limit: 600m
+    logging: *logging
 
   caddy:
     image: caddy:2-alpine
@@ -42,3 +49,4 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - /opt/armable-data/caddy:/data
     mem_limit: 80m
+    logging: *logging

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agentPrompt, claudeCodeCommand, connectOptions, cursorLink, vscodeLink } from './connectLinks';
+import { agentPrompt, claudeCodeCommand, claudeInstallLink, connectOptions, cursorLink, vscodeLink } from './connectLinks';
 
 const MCP = 'https://armable.example/mcp', SKILL = 'https://armable.example/agent-onboarding/SKILL.md';
 
@@ -7,11 +7,18 @@ describe('Connect your AI', () => {
   it('lists Claude first, ChatGPT second, and the agent setup last', () => {
     expect(connectOptions(MCP, SKILL).map(o => o.id)).toEqual(['claude', 'chatgpt', 'claude-code', 'cursor', 'vscode', 'agents']);
   });
-  it('copies the Armable address for the web assistants, and opens their connector settings', () => {
+  it('opens Claude with Armable filled in, using Claude’s documented install link', () => {
+    const link = new URL(claudeInstallLink(MCP));
+    expect(link.origin + link.pathname).toBe('https://claude.ai/customize/connectors');
+    expect(Object.fromEntries(link.searchParams)).toEqual({ modal: 'add-custom-connector', connectorName: 'Armable', connectorUrl: MCP });
+    expect(claudeInstallLink(MCP)).toContain(`connectorUrl=${encodeURIComponent(MCP)}`);
     const [claude, chatgpt] = connectOptions(MCP, SKILL);
-    expect(claude).toMatchObject({ copy: MCP, href: 'https://claude.ai/customize/connectors' });
-    expect(chatgpt).toMatchObject({ copy: MCP });
+    expect(claude).toMatchObject({ href: claudeInstallLink(MCP), beside: true, copy: MCP });
+    expect(chatgpt).toMatchObject({ beside: true, copy: MCP });
     expect(chatgpt.href).toMatch(/^https:\/\/chatgpt\.com\//);
+  });
+  it('gives every option steps, with signing in to Armable as the one it watches for', () => {
+    for (const option of connectOptions(MCP, SKILL)) expect(option.steps.filter(s => s.startsWith('Sign in to Armable'))).toHaveLength(1);
   });
   it('builds a Cursor install link with the config base64-encoded', () => {
     const link = new URL(cursorLink(MCP));

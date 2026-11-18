@@ -16,6 +16,7 @@ import type { Mirror } from '../src/map/map';
 import type { Condition } from '../src/device/types';
 import { Auth, OAuthProvider, SCOPES } from './auth';
 import { buildMcp } from './mcp';
+import { Allowance, busy, LIMITS } from './limits';
 import { isLocalPath } from './paths';
 import { Services, ToolError, type Account, type AssistantMode, type DocKind, type Focus } from './services';
 import type { Store } from './store';
@@ -30,6 +31,8 @@ export interface AppOptions {
   store: Store; publicUrl: string; staticDir?: string; quiet?: boolean; limits?: boolean; trustProxy?: number; tracker?: Tracker;
   /** Sign in with Google, when a client is configured. `fetch` is replaceable for tests. */
   google?: { clientId: string; clientSecret: string; fetch?: typeof fetch };
+  /** Caps across everyone, per hour (defaults in limits.ts). Off with `limits: false`, unless given here. */
+  hourly?: Partial<{ guests: number; signups: number; feedback: number }>;
   /** Where feedback is also posted, e.g. a Discord webhook. */
   feedbackWebhook?: string;
   /** Emails that may read all feedback at /api/admin/feedback. */
@@ -108,13 +111,19 @@ export function createApp(options: AppOptions) {
   };
   const wrap = (fn: (req: Authed, res: Response) => Promise<unknown>) => (req: Request, res: Response) => {
     fn(req as Authed, res).then(result => { if (!res.headersSent) res.json(result ?? { ok: true }); }).catch(error => {
-      if (error instanceof ToolError) res.status(error.code === 'not_found' ? 404 : error.code === 'stale' ? 409 : 400).json({ error: { code: error.code, message: error.message, hint: error.hint, ...error.extra } });
+      if (error instanceof ToolError) res.status({ not_found: 404, stale: 409, busy: 429, storage_limit: 413, storage_full: 503 }[error.code] ?? 400).json({ error: { code: error.code, message: error.message, hint: error.hint, ...error.extra } });
       else { if (!options.quiet) console.error('[api]', error); res.status(500).json({ error: { code: 'internal', message: 'Something went wrong.' } }); }
     });
   };
+  // Per-address limits above stop one person; these stop many addresses at once from overwhelming the server.
+  const hourly = (key: 'guests' | 'signups' | 'feedback', fallback: number) => {
+    const limit = options.hourly?.[key] ?? (options.limits === false ? Infinity : fallback);
+    return new Allowance(limit);
+  };
+  const newGuests = hourly('guests', LIMITS.guestsPerHour), newSignups = hourly('signups', LIMITS.signupsPerHour), newFeedback = hourly('feedback', LIMITS.feedbackPerHour);
   const text = (value: unknown, max = 200) => { if (typeof value !== 'string' || value.length > max) throw new ToolError('invalid', 'Invalid request.'); return value; };
 
-  api.post('/signup', limiter, wrap(async (req, res) => { const account = await auth.signUp(text(req.body.email), text(req.body.password)); setSession(res, await auth.startSession(account.id)); return { email: account.email }; }));
+  api.post('/signup', limiter, wrap(async (req, res) => { if (!newSignups.take()) throw busy('signing up'); const account = await auth.signUp(text(req.body.email), text(req.body.password)); setSession(res, await auth.startSession(account.id)); return { email: account.email }; }));
   api.post('/login', limiter, wrap(async (req, res) => { const account = await auth.signIn(text(req.body.email), text(req.body.password)); setSession(res, await auth.startSession(account.id)); return { email: account.email }; }));
   api.post('/logout', wrap(async (req, res) => { await auth.endSession(sessionToken(req)); res.setHeader('Set-Cookie', cookie.serialize(COOKIE, '', { httpOnly: true, secure, sameSite: 'lax', path: '/', maxAge: 0 })); }));
   // Public: where assistants connect, for the “Connect your AI” menu on the intro page.
@@ -123,6 +132,7 @@ export function createApp(options: AppOptions) {
   api.post('/guest', limiter, wrap(async (req, res) => {
     const current = await auth.session(sessionToken(req));
     if (current) return { signedIn: true };
+    if (!newGuests.take()) throw busy('trying Armable');
     const account = await auth.guest();
     setSession(res, await auth.startSession(account.id));
     return { signedIn: true, guest: true };
@@ -162,7 +172,8 @@ export function createApp(options: AppOptions) {
     const message = typeof b.text === 'string' ? b.text.trim().slice(0, 4000) : '';
     const helpful = typeof b.helpful === 'boolean' ? b.helpful : undefined;
     if (!message && helpful === undefined) throw new ToolError('invalid', 'Write a few words first.');
-    const screenshot = typeof b.screenshot === 'string' && b.screenshot.startsWith('data:image/') && b.screenshot.length < 4_000_000 ? b.screenshot : undefined;
+    if (!newFeedback.take()) throw busy('sending feedback');
+    const screenshot = typeof b.screenshot === 'string' && b.screenshot.startsWith('data:image/') && b.screenshot.length < 2_800_000 ? b.screenshot : undefined;
     const context = b.context && typeof b.context === 'object' && JSON.stringify(b.context).length <= 4000 ? b.context as Record<string, unknown> : {};
     const account = await services.account(req.account);
     const row = await store.append('feedback', '_feedback', { at: Date.now(), account: req.account, email: account?.email || undefined, guest: account?.guest ?? false, kind, text: message, helpful, context, screenshot });
@@ -341,7 +352,9 @@ export function createApp(options: AppOptions) {
 
   const dir = options.staticDir && existsSync(options.staticDir) ? resolve(options.staticDir) : undefined;
   if (dir) {
-    app.use(express.static(dir, { index: false, maxAge: '1h' }));
+    // Built files have a content hash in their name, so they never change: browsers and Cloudflare keep them a year.
+    // Everything else an hour, and the page itself is checked every time, so a new release shows at once.
+    app.use(express.static(dir, { index: false, maxAge: '1h', setHeaders: (res, file) => { if (/[\\/]assets[\\/]/.test(file)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); } }));
     const page = () => readFileSync(resolve(dir, 'index.html'), 'utf8');
     const escape = (s: string) => s.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
     // A shared build gets its own title and description, so the link previews well where it is posted.
@@ -353,7 +366,7 @@ export function createApp(options: AppOptions) {
       const head = `<title>${escape(title)}</title><meta property="og:title" content="${escape(title)}" /><meta property="og:description" content="${escape(description)}" /><meta name="description" content="${escape(description)}" />`;
       res.type('html').send(page().replace(/<title>[^<]*<\/title>/, head));
     });
-    app.get(/^\/(?!api\/|mcp|live|\.well-known\/).*/, (_req, res) => res.sendFile(resolve(dir, 'index.html')));
+    app.get(/^\/(?!api\/|mcp|live|\.well-known\/).*/, (_req, res) => res.set('Cache-Control', 'no-cache').sendFile(resolve(dir, 'index.html')));
   }
 
   // ---- The live channel to browser tabs ----------------------------------------------------------------------------

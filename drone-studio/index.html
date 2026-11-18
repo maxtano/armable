@@ -8,9 +8,19 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <title>Armable</title>
+    <!-- Shown the moment the page arrives, until the app takes over. Colours match the light and dark themes. -->
+    <style>
+      html, body { margin: 0; height: 100%; }
+      .boot { position: fixed; inset: 0; display: grid; place-items: center; background: #e9e7e2; color: #1c1c1a; font: 600 22px/1 Manrope, system-ui, sans-serif; letter-spacing: -0.01em; }
+      :root[data-theme='dark'] .boot { background: #151514; color: #efede7; }
+      .boot i { display: block; width: 112px; height: 2px; margin: 14px auto 0; border-radius: 1px; background: linear-gradient(90deg, transparent, #e2561c, transparent) 0 0 / 50% 100% no-repeat; animation: boot 1.2s ease-in-out infinite; }
+      @keyframes boot { from { background-position: -60% 0; } to { background-position: 160% 0; } }
+      @media (prefers-reduced-motion: reduce) { .boot i { animation: none; background-size: 100% 100%; } }
+    </style>
+    <script>try { var t = localStorage.getItem('armable.appearance.v1'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="boot" role="status" aria-label="Loading Armable"><div>Armable<i></i></div></div></div>
     <script type="module" src="/src/web/main.tsx"></script>
   </body>
 </html>

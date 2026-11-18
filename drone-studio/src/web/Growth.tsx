@@ -16,8 +16,10 @@ export async function boot() {
   const params = new URLSearchParams(location.search), path = location.pathname;
   const demo = params.get('demo'), build = path === '/build' || path === '/build/';
   const me = await refreshMe();
-  if (!me.signedIn && !me.offline && (demo === 'betaflight' || demo === 'ardupilot' || build)) await api('POST', '/guest').catch(() => {});
-  await start();
+  const guest = !me.signedIn && !me.offline && (demo === 'betaflight' || demo === 'ardupilot' || build);
+  if (guest) await api('POST', '/guest').catch(() => {});
+  // Only ask the server who this is again if a guest bench was just made.
+  await start(guest ? undefined : me);
   if (!get().me?.signedIn) return;
   if (demo === 'betaflight' || demo === 'ardupilot') { history.replaceState(null, '', '/'); go('drone'); void connectDemo(demo); }
   else if (build) { history.replaceState(null, '', '/'); go('build'); }

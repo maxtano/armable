@@ -1,41 +1,54 @@
 /**
- * One-click ways to add Armable to an assistant. Each entry either opens the assistant (a deep link, or its
- * connector settings) or copies something to paste. The Armable address is copied along the way, because the
- * web assistants have no link that pre-fills a custom connector.
+ * One-click ways to add Armable to an assistant. Each entry opens the assistant with Armable filled in where it
+ * can (Claude, Cursor, VS Code), or copies what to paste where it can't (ChatGPT, Claude Code, any agent).
  */
 export type ConnectTarget = 'claude' | 'chatgpt' | 'claude-code' | 'cursor' | 'vscode' | 'agents';
 export interface ConnectOption {
   id: ConnectTarget;
   name: string;
-  /** Opened in a new tab or handed to the installed app. */
+  /** Opened in a window beside Armable, or handed to the installed app. */
   href?: string;
+  /** Open href in a window on the left half of the screen, so the assistant and Armable sit side by side. */
+  beside?: boolean;
   /** Put on the clipboard when chosen. */
   copy: string;
-  /** What to do next, shown once the option is chosen. */
-  next: string;
+  /** What the person does next, in order. The step that needs Armable's sign-in is detected and ticked. */
+  steps: string[];
 }
 
 const NAME = 'armable';
 const base64 = (text: string) => btoa(String.fromCharCode(...new TextEncoder().encode(text)));
 
+/** Claude's documented install link: opens “Add custom connector” with the name and address filled in. */
+export const claudeInstallLink = (mcpUrl: string) => `https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Armable&connectorUrl=${encodeURIComponent(mcpUrl)}`;
 export const cursorLink = (mcpUrl: string) => `cursor://anysphere.cursor-deeplink/mcp/install?name=${NAME}&config=${encodeURIComponent(base64(JSON.stringify({ url: mcpUrl })))}`;
 export const vscodeLink = (mcpUrl: string) => `vscode:mcp/install?${encodeURIComponent(JSON.stringify({ name: NAME, type: 'http', url: mcpUrl }))}`;
 export const claudeCodeCommand = (mcpUrl: string) => `claude mcp add --transport http ${NAME} ${mcpUrl}`;
 export const agentPrompt = (skillUrl: string) => `Read and follow ${skillUrl}`;
 
+const SIGN_IN = 'Sign in to Armable when it asks, and press Allow.';
+
 export function connectOptions(mcpUrl: string, skillUrl: string): ConnectOption[] {
   return [
-    { id: 'claude', name: 'Claude', href: 'https://claude.ai/customize/connectors', copy: mcpUrl,
-      next: 'Address copied. In Claude: Add custom connector, paste it, then sign in to Armable when asked.' },
-    { id: 'chatgpt', name: 'ChatGPT', href: 'https://chatgpt.com/#settings/Connectors', copy: mcpUrl,
-      next: 'Address copied. In ChatGPT: Settings, Connectors, Create. Paste it, then sign in to Armable when asked.' },
+    { id: 'claude', name: 'Claude', href: claudeInstallLink(mcpUrl), beside: true, copy: mcpUrl,
+      steps: ['Claude opens on the left with Armable filled in. Click Add.', SIGN_IN, 'Start a new chat in Claude and say “Check my drone”.'] },
+    { id: 'chatgpt', name: 'ChatGPT', href: 'https://chatgpt.com/#settings/Connectors', beside: true, copy: mcpUrl,
+      steps: ['ChatGPT opens on the left. Under Apps & Connectors, Advanced, turn on Developer mode (once; needs Plus or Pro).', 'Choose Create. Name it Armable, paste the address (already copied), and pick OAuth.', SIGN_IN, 'In a new chat, add Armable from the + menu and say “Check my drone”.'] },
     { id: 'claude-code', name: 'Claude Code', copy: claudeCodeCommand(mcpUrl),
-      next: 'Command copied. Run it in a terminal, then /mcp in Claude Code to sign in.' },
+      steps: ['Command copied. Paste it in a terminal.', 'In Claude Code, run /mcp and choose armable.', SIGN_IN] },
     { id: 'cursor', name: 'Cursor', href: cursorLink(mcpUrl), copy: mcpUrl,
-      next: 'Cursor opens to add Armable. Sign in to Armable when it asks.' },
+      steps: ['Cursor opens to add Armable. Confirm it.', SIGN_IN] },
     { id: 'vscode', name: 'VS Code', href: vscodeLink(mcpUrl), copy: mcpUrl,
-      next: 'VS Code opens to add Armable. Sign in to Armable when it asks.' },
-    { id: 'agents', name: 'Setup for agents', copy: agentPrompt(skillUrl),
-      next: 'Copied. Paste it into any agent: it sets itself up from Armable’s instructions.' },
+      steps: ['VS Code opens to add Armable. Confirm it.', SIGN_IN] },
+    { id: 'agents', name: 'Any other agent', copy: agentPrompt(skillUrl),
+      steps: ['Setup prompt copied. Paste it into your agent: it reads Armable’s instructions and connects itself.', SIGN_IN] },
   ];
+}
+
+/** Open a window on the left half of the screen, so the assistant sits beside Armable. Falls back to a tab. */
+export function openBeside(url: string) {
+  const s = screen as Screen & { availLeft?: number; availTop?: number };
+  const width = Math.max(420, Math.round(s.availWidth / 2)), height = s.availHeight;
+  const win = window.open(url, 'armable-assistant', `popup,width=${width},height=${height},left=${s.availLeft ?? 0},top=${s.availTop ?? 0}`);
+  if (win) { win.opener = null; win.focus(); } else window.open(url, '_blank', 'noopener,noreferrer');
 }
