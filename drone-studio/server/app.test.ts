@@ -24,7 +24,7 @@ describe('signing in', () => {
     const b = new Browser(app.base);
     expect((await b.get('/api/me')).json).toMatchObject({ signedIn: false });
     const email = await b.signUp();
-    expect((await b.get('/api/me')).json).toMatchObject({ signedIn: true, email, mode: 'propose', mcpUrl: `${app.base}/mcp`, assistants: [] });
+    expect((await b.get('/api/me')).json).toMatchObject({ signedIn: true, email, mode: 'observe', mcpUrl: `${app.base}/mcp`, assistants: [] });
     await b.post('/api/logout');
     expect((await b.get('/api/docs')).status).toBe(401);
     expect((await b.post('/api/login', { email, password: 'wrong wrong' })).json.error.message).toBe('That email and password do not match.');
@@ -49,7 +49,7 @@ describe('signing in', () => {
     await b.signUp();
     const r = await fetch(`${app.base}/api/mode`, { method: 'PUT', headers: { cookie: b.cookie, 'content-type': 'application/json' }, body: JSON.stringify({ mode: 'off' }) });
     expect(r.status).toBe(403);
-    expect((await b.get('/api/me')).json.mode).toBe('propose');
+    expect((await b.get('/api/me')).json.mode).toBe('observe');
   });
 });
 
@@ -394,8 +394,13 @@ describe('feedback and shared builds', () => {
     expect((await b.post('/api/feedback', { text: 'Loved the dials.', context: { view: 'build', browser: 'Chrome' }, screenshot: 'data:image/png;base64,iVBORw0KGgo=' })).json).toEqual({ thanks: true });
     expect((await b.post('/api/feedback', { kind: 'helpful', helpful: true })).json).toEqual({ thanks: true });
     expect((await b.get('/api/admin/feedback')).status).toBe(404);
+    // Signing up with the admin email is not enough: sign-up never proves the address.
+    const impostor = new Browser(app.base);
+    await impostor.signUp('boss@example.test');
+    expect((await impostor.get('/api/admin/feedback')).status).toBe(404);
+    // Proving it with Google is.
     const boss = new Browser(app.base);
-    await boss.signUp('boss@example.test');
+    boss.cookie = `armable_session=${await app.auth.startSession((await app.auth.google({ sub: 'g-boss', email: 'boss@example.test' })).id)}`;
     const all = (await boss.get('/api/admin/feedback')).json;
     expect(all.map((f: any) => f.kind).sort()).toEqual(['feedback', 'helpful']);
     const note = all.find((f: any) => f.kind === 'feedback');
@@ -422,5 +427,56 @@ describe('feedback and shared builds', () => {
     expect((await stranger.get(`/api/shared/${shared.share}`)).status).toBe(404);
     const file = (await owner.post('/api/docs', { kind: 'file', name: 'f', content: 'x' })).json;
     expect((await owner.post(`/api/docs/${file.id}/share`)).json.error.code).toBe('invalid');
+  });
+});
+
+
+describe('security', () => {
+  it('turns away large anonymous requests before reading them, but not signed-in ones', async () => {
+    const app = await startApp(); closers.push(() => app.close());
+    const big = 'x'.repeat(200_000);
+    const anonymous = new Browser(app.base);
+    expect((await anonymous.post('/api/login', { email: big, password: 'correct horse' })).status).toBe(413);
+    const person = new Browser(app.base);
+    await person.post('/api/guest');
+    expect((await person.post('/api/docs', { kind: 'file', name: 'big notes', content: 'y'.repeat(150_000) })).status).toBe(200);
+  });
+
+  it('never sends a browser to another site after Google sign-in', async () => {
+    const claims = { iss: 'https://accounts.google.com', aud: 'c', sub: 'g-1', email: 'safe@example.test', email_verified: true, exp: Math.floor(Date.now() / 1000) + 600 };
+    const fakeFetch = (async () => new Response(JSON.stringify({ id_token: `x.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.y` }))) as typeof fetch;
+    const app = await startApp(undefined, undefined, undefined, { google: { clientId: 'c', clientSecret: 's', fetch: fakeFetch } }); closers.push(() => app.close());
+    for (const next of ['//evil.example', '/\\evil.example', 'https://evil.example']) {
+      const start = await fetch(`${app.base}/auth/google?next=${encodeURIComponent(next)}`, { redirect: 'manual' });
+      const state = new URL(start.headers.get('location')!).searchParams.get('state')!;
+      const back = await fetch(`${app.base}/auth/google/callback?code=a&state=${encodeURIComponent(state)}`, { redirect: 'manual', headers: { cookie: start.headers.get('set-cookie')!.split(';')[0] } });
+      expect(back.headers.get('location'), next).toBe('/');
+    }
+  });
+
+  it('when Google proves an email, whoever registered it first loses their password, sessions and assistants', async () => {
+    const app = await startApp(); closers.push(() => app.close());
+    const attacker = new Browser(app.base);
+    await attacker.signUp('victim@example.test', 'attacker password');
+    const grant = await attacker.connectAssistant('Claude');
+    expect((await app.auth.verify(grant.access_token!)).extra?.account).toBeTruthy();
+    const account = await app.auth.google({ sub: 'g-victim', email: 'victim@example.test' });
+    expect(account.passwordHash).toBe('');
+    expect((await attacker.get('/api/me')).json.signedIn).toBe(false);
+    expect((await new Browser(app.base).post('/api/login', { email: 'victim@example.test', password: 'attacker password' })).json.error.code).toBe('invalid');
+    await expect(app.auth.verify(grant.access_token!)).rejects.toThrow();
+    // Signing in with Google again changes nothing.
+    expect((await app.auth.google({ sub: 'g-victim', email: 'victim@example.test' })).id).toBe(account.id);
+  });
+
+  it('lets an assistant app revoke only its own tokens', async () => {
+    const app = await startApp(); closers.push(() => app.close());
+    const person = new Browser(app.base);
+    await person.signUp();
+    const grant = await person.connectAssistant('Claude');
+    await app.auth.revoke(grant.access_token!, 'some-other-client');
+    expect((await app.auth.verify(grant.access_token!)).clientId).toBe(grant.clientId);
+    await app.auth.revoke(grant.access_token!, grant.clientId);
+    await expect(app.auth.verify(grant.access_token!)).rejects.toThrow();
   });
 });

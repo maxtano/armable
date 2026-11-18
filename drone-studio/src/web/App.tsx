@@ -139,6 +139,7 @@ function DroneView() {
           <div className="lu-idle">
             <Coil className="lu-idle-coil" width={150} height={38} />
             <h1>Plug in your drone</h1>
+            <p className="lu-hint">Props off before you connect. Armable is early software, so check each change before you fly.</p>
             <button className="lu-btn is-primary is-big" disabled={!!busy} onClick={connectUsb}><Cable size={18} /> Connect over USB</button>
             <div className="lu-row"><span>No drone handy?</span><button className="lu-link" data-demo="betaflight" onClick={() => connectDemo('betaflight')}>Try the demo drone</button><span>· it won’t arm. Find out why.</span><button className="lu-link" data-demo="ardupilot" onClick={() => connectDemo('ardupilot')}>ArduPilot demo</button></div>
             <button className="lu-link" onClick={() => setRadio(true)}><Radio size={14} /> Flash a receiver or radio over USB</button>

@@ -4,6 +4,7 @@ import { api, ApiError } from './cloud';
 import { captureView } from './capture';
 import { connectDemo, go, refreshMe, start } from './controller';
 import { get, set, toast, useStore } from './store';
+import { isLocalPath } from '../../server/paths';
 
 /**
  * Everything that makes Armable easy to try and easy to talk back to: links that open straight into the demo,
@@ -25,7 +26,7 @@ export async function boot() {
 /** Start a guest bench from the intro page, then carry on where the person was going. */
 export async function tryAsGuest(next?: string | null) {
   await api('POST', '/guest');
-  if (next?.startsWith('/')) location.href = next; else await boot();
+  if (next && isLocalPath(next)) location.href = next; else await boot();
 }
 
 export function GoogleButton({ next, label = 'Continue with Google' }: { next?: string; label?: string }) {

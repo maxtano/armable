@@ -46,13 +46,13 @@ export class Auth {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) throw new ToolError('invalid', 'Enter a valid email address.');
     if (password.length < 8 || password.length > 200) throw new ToolError('invalid', 'Use a password of at least 8 characters.');
     if (await this.store.lookup('accounts', email)) throw new ToolError('exists', 'An account with that email already exists. Sign in instead.');
-    const account: Account = { id: `acct_${newId(9)}`, email, passwordHash: await hashPassword(password), createdAt: this.now(), assistantMode: 'propose' };
+    const account: Account = { id: `acct_${newId(9)}`, email, passwordHash: await hashPassword(password), createdAt: this.now(), assistantMode: 'observe' };
     await this.store.put('accounts', '', account.id, account, { expectedRev: 0, lookup: email });
     return account;
   }
   /** A bench without sign-up: everything works, nothing is asked. Saved later with an email or Google. */
   async guest(): Promise<Account> {
-    const account: Account = { id: `acct_${newId(9)}`, email: '', passwordHash: '', createdAt: this.now(), assistantMode: 'propose', guest: true, lastSeen: this.now() };
+    const account: Account = { id: `acct_${newId(9)}`, email: '', passwordHash: '', createdAt: this.now(), assistantMode: 'observe', guest: true, lastSeen: this.now() };
     await this.store.put('accounts', '', account.id, account, { expectedRev: 0 });
     return account;
   }
@@ -76,8 +76,16 @@ export class Auth {
     const email = profile.email.trim().toLowerCase();
     const existing = await this.store.lookup<Account>('accounts', email);
     if (existing) {
-      if (existing.data.google !== profile.sub) await this.store.put('accounts', '', existing.id, { ...existing.data, google: profile.sub }, { expectedRev: existing.rev, lookup: email });
-      return { ...existing.data, google: profile.sub };
+      if (existing.data.google !== profile.sub) {
+        // Sign-up never proved who owns this email; Google just did. Whoever set a password on it before, and
+        // anything they signed in or connected, loses access. The owner signs in with Google from now on.
+        const proven: Account = { ...existing.data, google: profile.sub, passwordHash: '' };
+        await this.store.put('accounts', '', existing.id, proven, { expectedRev: existing.rev, lookup: email });
+        await this.endAllSessions(existing.id);
+        for (const r of await this.store.list<TokenRow>('oauth_tokens', '', 100_000)) if (r.data.account === existing.id) await this.store.delete('oauth_tokens', '', r.id);
+        return proven;
+      }
+      return existing.data;
     }
     const guest = current ? await this.store.get<Account>('accounts', '', current) : undefined;
     if (guest?.data.guest) {
@@ -85,7 +93,7 @@ export class Auth {
       await this.store.put('accounts', '', account.id, account, { expectedRev: guest.rev, lookup: email });
       return account;
     }
-    const account: Account = { id: `acct_${newId(9)}`, email, passwordHash: '', createdAt: this.now(), assistantMode: 'propose', google: profile.sub };
+    const account: Account = { id: `acct_${newId(9)}`, email, passwordHash: '', createdAt: this.now(), assistantMode: 'observe', google: profile.sub };
     await this.store.put('accounts', '', account.id, account, { expectedRev: 0, lookup: email });
     return account;
   }
@@ -120,6 +128,9 @@ export class Auth {
     const row = await this.store.get<SessionRow>('sessions', '', sha(token));
     if (!row || row.data.expiresAt < this.now()) return undefined;
     return row.data.account;
+  }
+  async endAllSessions(account: string) {
+    for (const r of await this.store.list<SessionRow>('sessions', '', 100_000)) if (r.data.account === account) await this.store.delete('sessions', '', r.id);
   }
   async endSession(token: string | undefined) { if (token) await this.store.delete('sessions', '', sha(token)); }
   async deleteAccount(account: string) { await this.store.delete('accounts', '', account); await this.store.deleteAccount(account); }
@@ -184,7 +195,10 @@ export class Auth {
     if (!row || row.data.kind !== 'access' || row.data.expiresAt < this.now()) throw new InvalidTokenError('Invalid or expired access token.');
     return { token, clientId: row.data.clientId, scopes: row.data.scopes, expiresAt: Math.floor(row.data.expiresAt / 1000), resource: row.data.resource ? new URL(row.data.resource) : undefined, extra: { account: row.data.account, clientName: row.data.clientName } };
   }
-  async revoke(token: string) { await this.store.delete('oauth_tokens', '', sha(token)); }
+  async revoke(token: string, clientId?: string) {
+    const row = await this.store.get<TokenRow>('oauth_tokens', '', sha(token));
+    if (row && (!clientId || row.data.clientId === clientId)) await this.store.delete('oauth_tokens', '', sha(token));
+  }
   /** Assistants this account has connected. */
   async grants(account: string): Promise<{ clientId: string; name: string; scopes: string[] }[]> {
     const rows = (await this.store.list<TokenRow>('oauth_tokens', '', 5000)).filter(r => r.data.account === account && r.data.kind === 'refresh' && r.data.expiresAt > this.now());
@@ -226,5 +240,5 @@ export class OAuthProvider implements OAuthServerProvider {
   exchangeAuthorizationCode(client: OAuthClientInformationFull, code: string, _verifier?: string, redirectUri?: string) { return this.auth.exchangeCode(client, code, redirectUri); }
   exchangeRefreshToken(client: OAuthClientInformationFull, refreshToken: string, scopes?: string[]) { return this.auth.exchangeRefresh(client, refreshToken, scopes); }
   verifyAccessToken(token: string) { return this.auth.verify(token); }
-  async revokeToken(_client: OAuthClientInformationFull, request: OAuthTokenRevocationRequest) { await this.auth.revoke(request.token); }
+  async revokeToken(client: OAuthClientInformationFull, request: OAuthTokenRevocationRequest) { await this.auth.revoke(request.token, client.client_id); }
 }

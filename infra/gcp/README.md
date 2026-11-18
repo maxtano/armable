@@ -11,7 +11,7 @@ Everything here is Terraform. One small server on Google Cloud's always-free tie
 
 | | |
 | --- | --- |
-| **Server** | One e2-micro (free tier), 30 GB standard disk, Debian 12, fixed address. It sets itself up on boot: swap, Docker, the app, Postgres, Caddy. Updates every 10 minutes from the image GitHub builds; backs up the database nightly. |
+| **Server** | One e2-micro (free tier), 30 GB standard disk, Debian 12, fixed address. It sets itself up on boot: swap, Docker, the app, Postgres, Caddy. Runs the newest release, checking every 10 minutes; backs up the database nightly. |
 | **Locked down** | No Google service account, so even a broken-into server can’t create anything or touch billing. Web ports open to Cloudflare only. SSH through Google sign-in only. Outgoing traffic limited to 20 Mbit/s. |
 | **Spending guard** | An email at **$1**. At the **$5 cap** a small function stops the server (its disk and data are kept). At **$10** it unlinks billing, so nothing more can be charged. |
 | **State** | Terraform’s state in a private bucket in your project. Your project ID and billing account stay in `terraform.tfvars`, which is never committed. |
@@ -49,6 +49,19 @@ And the website’s records, if you haven’t added them: four `A` records for `
 
 **6. Try it.** Within 15 minutes, **https://app.armable.ai** opens. In Claude: **Settings → Connectors → Add custom connector** → `https://app.armable.ai/mcp`. ChatGPT takes the same address. Open the demo drone and ask *“My new quad won’t arm. Why?”*
 
+## Release it
+
+The server runs the newest **release**, not whatever was last pushed to `main`. Pushing to `main` builds an `edge` image and changes nothing live. To ship:
+
+```sh
+git checkout main && git pull
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+GitHub builds the image and writes the release notes; the server picks it up within 15 minutes. To roll back, tag the older commit as a newer version (`v0.2.1`). Tags such as `v0.3.0-rc.1` get an image but never go live on their own.
+
+To have the server follow `main` instead, put `channel = "edge"` in `terraform.tfvars` and run `./deploy.sh` again.
+
 ## Change it
 
 Edit `terraform.tfvars` in Cloud Shell, for example `cap_usd = 10`, and run `./deploy.sh` again. Every setting is in [`variables.tf`](variables.tf).
@@ -62,7 +75,8 @@ From Cloud Shell:
 | Watch it start | `gcloud compute ssh armable --zone us-central1-a -- sudo tail -f /var/log/armable-startup.log` |
 | See the app’s log | `gcloud compute ssh armable --zone us-central1-a -- sudo docker compose -f /opt/armable/infra/gcp/compose.yaml logs -f app` |
 | Add Google sign-in, feedback alerts or admins | `gcloud compute ssh armable --zone us-central1-a -- sudo nano /opt/armable-data/.env`, then the next line |
-| Restart the app | `gcloud compute ssh armable --zone us-central1-a -- sudo /opt/armable/infra/gcp/update.sh` |
+| See which release is live | `gcloud compute ssh armable --zone us-central1-a -- git -C /opt/armable describe --tags` |
+| Update now, or restart the app | `gcloud compute ssh armable --zone us-central1-a -- sudo /opt/armable/infra/gcp/update.sh` |
 | Start it after the guard stopped it | `gcloud compute instances start armable --zone us-central1-a` |
 | Restore billing after the guard unlinked it | **Billing → Account management** in the console, link the project again |
 

@@ -34,7 +34,10 @@ export async function callTool(services: Services, account: string, name: string
 
 /** A whole bench in one process: a simulated aircraft, the runtime, and the tab link wired straight into a hub. */
 export async function openBench(services: Services, account: string, stack: 'ardupilot' | 'betaflight' = 'ardupilot', simOptions: Record<string, unknown> = {}) {
-  const source = stack === 'ardupilot' ? ardupilotDemo({ tickMs: 10, ...simOptions }) : betaflightDemo(simOptions);
+  // realHardware: the simulator, presented as a real drone rather than the demo.
+  const { realHardware, ...sim } = simOptions;
+  const source = stack === 'ardupilot' ? ardupilotDemo({ tickMs: 10, ...sim }) : betaflightDemo(sim);
+  if (realHardware) source.demo = false;
   const runtime = new Runtime(FAST);
   const hub = services.hub(account);
   const tabId = `tab_${Math.random().toString(36).slice(2, 8)}`;
@@ -131,7 +134,10 @@ export async function openTab(browser: Browser, stack: 'ardupilot' | 'betaflight
   const ws = new WebSocket(browser.base.replace('http', 'ws') + '/live', { headers: { cookie: browser.cookie, origin: browser.base } });
   await new Promise<void>((resolve, reject) => { ws.once('open', () => resolve()); ws.once('error', reject); });
   const events: { event: string; data: any }[] = [];
-  const source = stack === 'ardupilot' ? ardupilotDemo({ tickMs: 10, ...simOptions }) : betaflightDemo(simOptions);
+  // realHardware: the simulator, presented as a real drone rather than the demo.
+  const { realHardware, ...sim } = simOptions;
+  const source = stack === 'ardupilot' ? ardupilotDemo({ tickMs: 10, ...sim }) : betaflightDemo(sim);
+  if (realHardware) source.demo = false;
   const runtime = new Runtime(FAST);
   const send = (message: unknown) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(message)); };
   const bench = new Bench(runtime, { mirror: mirror => send({ type: 'mirror', mirror }), reply: (id, ok, payload) => send({ type: 'reply', id, ok, payload }) }, { stateEveryMs: 30 });

@@ -72,6 +72,7 @@ resource "google_compute_instance" "app" {
   metadata = {
     domain                 = var.domain
     repo                   = var.repo
+    channel                = var.channel
     egress_mbit            = tostring(var.egress_mbit)
     behind_proxy           = var.cloudflare_only ? "cloudflare" : ""
     startup-script         = file("${path.module}/vm-startup.sh")

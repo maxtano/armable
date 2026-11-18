@@ -15,10 +15,16 @@ const TOOLS: [string, string][] = [
 const SCOPE: Record<string, [typeof Eye, string]> = { observe: [Eye, 'Read your drone'], design: [PencilRuler, 'Edit shows and sounds'], propose: [Wrench, 'Propose changes'] };
 
 export function ModeSwitch() {
-  const mode = useStore(s => s.me?.mode ?? 'propose');
+  const mode = useStore(s => s.me?.mode ?? 'observe');
   const options: [AssistantMode, string][] = [['off', 'Off'], ['observe', 'Observe'], ['propose', 'Propose']];
   return <div className="lu-segments is-mode" role="radiogroup" aria-label="What assistants may do">{options.map(([value, label]) => <button key={value} role="radio" aria-checked={mode === value} onClick={() => setMode(value)}>{label}</button>)}</div>;
 }
+
+const MODE_HINT: Record<AssistantMode, string> = {
+  off: 'Off: assistants can’t see or do anything here.',
+  observe: 'Observe: assistants read your drone and help with builds and shows, but can’t change your drone. The demo drone accepts changes either way.',
+  propose: 'Propose: assistants can also suggest changes to your drone. Nothing happens until you approve each one here.',
+};
 
 /** Connect your own assistant: one address to paste, then sign in. */
 export function Connect() {
@@ -28,6 +34,7 @@ export function Connect() {
   return (
     <section className="lu-page is-narrow">
       <header className="lu-page-head"><h1>Your assistant</h1><ModeSwitch /></header>
+      <p className="lu-hint lu-mode-hint">{MODE_HINT[me?.mode ?? 'observe']}</p>
       <div className="lu-connect-row"><ConnectMenu /><span className="lu-hint">One click for your assistant, or follow the three steps.</span></div>
       <ol className="lu-steps">
         <li><b>1</b><div><h3>Copy this address</h3><button className="lu-address" onClick={copy} aria-label="Copy the address">{me?.mcpUrl}<span>{copied ? <Check size={15} /> : <Copy size={15} />}</span></button></div></li>

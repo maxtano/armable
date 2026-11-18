@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { Auth } from './auth';
 import { find } from '../src/map/map';
 import { callTool, makeAccount, makeServices, openBench } from './testkit';
 import { INSTRUCTIONS, TOOLS } from './tools';
@@ -254,15 +255,22 @@ describe('with no aircraft', () => {
 });
 
 describe('the assistant switch', () => {
-  it('Off blocks everything and withdraws open proposals; Observe allows reading only', async () => {
+  it('starts new people on Observe, where the demo drone still accepts changes', async () => {
     const { call, services, account } = await setup();
+    expect((await new Auth(services.store).guest()).assistantMode).toBe('observe');
+    await services.setMode(account.id, 'observe');
+    await call('read', { ids: ['settings.load'] });
+    expect((await call('propose_change', { changes: [{ id: 'param.RTL_ALT', value: 2100 }] })).error).toBeUndefined();
+  });
+  it('Off blocks everything and withdraws open proposals; Observe reads, edits documents, but changes no real drone', async () => {
+    const { call, services, account } = await setup('ardupilot', { realHardware: true });
     await call('read', { ids: ['settings.load'] });
     const p = await call('propose_change', { changes: [{ id: 'param.RTL_ALT', value: 2000 }] });
     await services.setMode(account.id, 'observe');
     expect((await call('read', { ids: ['battery.voltage'] })).values[0].value).toBe(15.8);
     expect((await call('propose_change', { changes: [{ id: 'param.RTL_ALT', value: 2100 }] })).error.code).toBe('observe_only');
     expect((await call('run_test', { id: 'motor.spin', args: { motor: 1 } })).error.code).toBe('observe_only');
-    expect((await call('edit', { create: { kind: 'file', name: 'n' }, content: 'x' })).error.code).toBe('observe_only');
+    expect((await call('edit', { create: { kind: 'file', name: 'n' }, content: 'x' })).error).toBeUndefined();
     expect((await call('run_test', { id: 'battery.check' })).ok).toBe(true);
     await services.setMode(account.id, 'off');
     for (const name of ['get_workspace', 'find', 'read', 'run_test', 'propose_change', 'wait', 'edit', 'undo', 'show', 'capture_view'])

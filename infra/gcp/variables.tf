@@ -49,6 +49,15 @@ variable "currency" {
   type        = string
   default     = "USD"
 }
+variable "channel" {
+  description = "What the server runs: \"stable\" is the newest release tag (v1.2.3), so a push to main never reaches it; \"edge\" is the tip of main."
+  type        = string
+  default     = "stable"
+  validation {
+    condition     = contains(["stable", "edge"], var.channel)
+    error_message = "channel is \"stable\" or \"edge\"."
+  }
+}
 variable "egress_mbit" {
   description = "Most the server may send, in megabits a second. 0 removes the limit."
   type        = number

@@ -49,7 +49,10 @@ function connected(ctx: ToolContext): Mirror {
 async function gate(ctx: ToolContext, level: 0 | 1 | 2) {
   const mode = (await ctx.services.account(ctx.account))?.assistantMode ?? 'propose';
   if (mode === 'off') fail('assistants_off', 'Assistants are switched off in Armable.', 'The person can switch them on from the assistant chip in Armable.');
-  if (mode === 'observe' && level > 0) fail('observe_only', 'Assistants are set to observe only in Armable.', 'The person can allow changes from the assistant chip in Armable.');
+  // Observe: read the drone and edit builds and shows, but change a real drone only once the person allows it.
+  // The demo drone accepts changes either way, so the demo works before anyone has decided anything.
+  const mirror = ctx.services.hub(ctx.account).mirror, demo = mirror?.snapshot.status === 'connected' && !!mirror.snapshot.demo;
+  if (mode === 'observe' && level === 2 && !demo) fail('observe_only', 'Armable is set to read-only for this drone, so it cannot be changed.', 'The person can allow changes in Armable: Menu, Your assistant, Propose. The demo drone accepts changes either way.');
   const need = level === 2 ? 'propose' : level === 1 ? 'design' : 'observe';
   if (ctx.scopes && !ctx.scopes.includes(need)) fail('not_allowed', `This assistant was not given permission to ${need === 'propose' ? 'propose changes to the aircraft' : need === 'design' ? 'edit documents' : 'read'}.`, 'The person can reconnect the assistant and allow it.');
   ctx.services.hub(ctx.account).assistants.set(ctx.who, ctx.now());

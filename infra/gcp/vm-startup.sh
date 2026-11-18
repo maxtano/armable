@@ -33,8 +33,8 @@ if ! command -v docker >/dev/null; then
 fi
 command -v git >/dev/null || { apt-get update -y && apt-get install -y git; }
 
-# 4. The code: the repository, kept up to date.
-if [ -d "$CODE/.git" ]; then git -C "$CODE" pull --ff-only || true; else git clone --depth 1 "$REPO" "$CODE"; fi
+# 4. The code. update.sh (step 6) checks out the release this server should run.
+[ -d "$CODE/.git" ] || git clone -q --filter=blob:none "$REPO" "$CODE"
 
 # 5. Settings, written once and kept across updates. Edit /opt/armable-data/.env to add Google sign-in or feedback alerts.
 mkdir -p "$DATA/postgres" "$DATA/caddy" "$DATA/backups"
@@ -53,10 +53,8 @@ fi
 sed -i '/^TRUST_PROXY=/d' "$DATA/.env"; echo "TRUST_PROXY=$([ "$PROXY" = cloudflare ] && echo 2 || echo 1)" >> "$DATA/.env"
 ln -sf "$DATA/.env" "$CODE/infra/gcp/.env"
 
-# 6. Start. Use the image GitHub built; if it cannot be pulled, build it here (slower, but it works).
-cd "$CODE/infra/gcp"
-if docker compose pull app; then docker compose up -d --remove-orphans
-else echo "[armable] image not available, building on this server"; docker compose up -d --build --remove-orphans; fi
+# 6. Start the release this server should run (see update.sh).
+bash "$CODE/infra/gcp/update.sh"
 
 # 7. Updates every 10 minutes, a backup every night, both logged.
 cat > /etc/cron.d/armable <<EOF

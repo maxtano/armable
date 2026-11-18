@@ -1,18 +1,21 @@
 name: Build the app image
-# Builds Armable's Docker image on every push to main and publishes it to GitHub's container registry,
-# so the Google Cloud server (infra/gcp) only has to pull it. Make the package public once, under
-# your profile's Packages, so the server can pull it without signing in.
+# Builds Armable's Docker image and publishes it to GitHub's container registry, so the Google Cloud server
+# (infra/gcp) only has to pull it. Make the package public once, under your profile's Packages.
+#
+#   push to main         -> armable:edge          (servers on the edge channel)
+#   push a tag v1.2.3    -> armable:v1.2.3, :stable, and a GitHub release with notes (servers on stable)
 on:
   push:
     branches: [main]
+    tags: ['v*.*.*']
     paths: ['drone-studio/**', '.github/workflows/image.yml']
   workflow_dispatch:
 permissions:
   contents: read
   packages: write
 concurrency:
-  group: image
-  cancel-in-progress: true
+  group: image-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type == 'branch' }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,15 +27,38 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Choose tags
+        id: tags
+        run: |
+          base="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/armable"
+          if [[ "$GITHUB_REF_TYPE" = tag && "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "list=$base:$GITHUB_REF_NAME,$base:stable,$base:$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_REF_TYPE" = tag ]; then
+            # A pre-release such as v1.3.0-rc.1: its own image, but never stable.
+            echo "list=$base:$GITHUB_REF_NAME,$base:$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "list=$base:edge,$base:$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          fi
       - uses: docker/build-push-action@v6
         with:
           context: drone-studio
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/armable:latest
-            ghcr.io/${{ github.repository_owner }}/armable:${{ github.sha }}
+          tags: ${{ steps.tags.outputs.list }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.title=Armable
+            org.opencontainers.image.version=${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes --verify-tag $([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease) || gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY"

@@ -1,0 +1,26 @@
+# Weekly update pull requests for everything Armable depends on. Each one runs CI before anyone merges it.
+# Security fixes arrive as soon as they are published, whatever this schedule says.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /drone-studio
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      actions:
+        patterns: ['*']
+  - package-ecosystem: docker
+    directory: /drone-studio
+    schedule: { interval: weekly }
+  - package-ecosystem: pip
+    directory: /infra/gcp/guard
+    schedule: { interval: monthly }
+  - package-ecosystem: terraform
+    directories: [/infra/gcp, /infra/aws]
+    schedule: { interval: monthly }

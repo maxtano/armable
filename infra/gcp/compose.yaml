@@ -15,7 +15,8 @@ services:
     mem_limit: 200m
 
   app:
-    image: ghcr.io/maxtano/armable:latest
+    # The release the server runs; update.sh sets it (a version like v0.2.0, or edge for main).
+    image: ghcr.io/maxtano/armable:${ARMABLE_IMAGE_TAG:-stable}
     build: ../../drone-studio
     restart: always
     depends_on: { db: { condition: service_healthy } }

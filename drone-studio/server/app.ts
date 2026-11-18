@@ -16,7 +16,8 @@ import type { Mirror } from '../src/map/map';
 import type { Condition } from '../src/device/types';
 import { Auth, OAuthProvider, SCOPES } from './auth';
 import { buildMcp } from './mcp';
-import { Services, ToolError, type AssistantMode, type DocKind, type Focus } from './services';
+import { isLocalPath } from './paths';
+import { Services, ToolError, type Account, type AssistantMode, type DocKind, type Focus } from './services';
 import type { Store } from './store';
 import { MemoryTracker, TRACK_TABLES, type Tracker, type TrackTable } from './tracker';
 
@@ -92,7 +93,9 @@ export function createApp(options: AppOptions) {
   // ---- People: the browser API -----------------------------------------------------------------------------------
 
   const api = express.Router();
-  api.use(express.json({ limit: '34mb' }));
+  // Large bodies (storyboards, backups, screenshots) only for signed-in people, so nobody can tie up memory anonymously.
+  const smallBody = express.json({ limit: '64kb' }), largeBody = express.json({ limit: '34mb' });
+  api.use((req, res, next) => { auth.session(sessionToken(req)).then(id => (id ? largeBody : smallBody)(req, res, next), next); });
   // A custom header cannot be sent by another site's form or script without our permission, so it stands in for a CSRF token.
   api.use((req, res, next) => { if (req.method !== 'GET' && req.get('x-armable') !== '1') { res.status(403).json({ error: { code: 'forbidden', message: 'Missing request header.' } }); return; } next(); });
   const limiter = options.limits === false ? (_q: Request, _s: Response, n: NextFunction) => n() : rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
@@ -133,6 +136,8 @@ export function createApp(options: AppOptions) {
     return { signedIn: true, guest: account.guest ?? false, google: !!options.google, email: account.email, mode: account.assistantMode, mcpUrl: mcpUrl.href, assistants: (await auth.grants(account.id)).map(g => ({ ...g, lastSeen: hub.assistants.get(g.name) ?? null })) };
   }));
 
+  // Sign-up does not prove an email address; Google sign-in does. So only a Google-verified account can be an admin.
+  const isAdmin = (account: Account | undefined) => !!account?.email && !!account.google && (options.admins ?? []).includes(account.email);
   const ratedPart = (id: string) => { if (!PART_BY_ID.has(id)) throw new ToolError('not_found', 'Only parts in the catalog can be rated.'); return id; };
   const viewer = async (req: Request) => await auth.session(sessionToken(req));
   api.get('/ratings', wrap(async req => services.ratings(await viewer(req))));
@@ -158,24 +163,24 @@ export function createApp(options: AppOptions) {
     const helpful = typeof b.helpful === 'boolean' ? b.helpful : undefined;
     if (!message && helpful === undefined) throw new ToolError('invalid', 'Write a few words first.');
     const screenshot = typeof b.screenshot === 'string' && b.screenshot.startsWith('data:image/') && b.screenshot.length < 4_000_000 ? b.screenshot : undefined;
-    const context = b.context && typeof b.context === 'object' ? JSON.parse(JSON.stringify(b.context).slice(0, 4000).replace(/[^}]*$/, '') || '{}') as Record<string, unknown> : {};
+    const context = b.context && typeof b.context === 'object' && JSON.stringify(b.context).length <= 4000 ? b.context as Record<string, unknown> : {};
     const account = await services.account(req.account);
     const row = await store.append('feedback', '_feedback', { at: Date.now(), account: req.account, email: account?.email || undefined, guest: account?.guest ?? false, kind, text: message, helpful, context, screenshot });
     if (options.feedbackWebhook) {
       const line = kind === 'helpful' ? `${helpful ? '👍' : '👎'} Did this help? ${message}` : `💬 ${message}`;
       const where = [context.view, context.firmware, context.browser].filter(Boolean).join(' · ');
-      void fetch(options.feedbackWebhook, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: `${line}\n${where ? `_${where}_ · ` : ''}${account?.email || 'guest'}${screenshot ? ' · screenshot saved' : ''} · \`${row.id}\``.slice(0, 1900) }), signal: AbortSignal.timeout(5000) }).catch(() => {});
+      void fetch(options.feedbackWebhook, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ allowed_mentions: { parse: [] }, content: `${line}\n${where ? `_${where}_ · ` : ''}${account?.email || 'guest'}${screenshot ? ' · screenshot saved' : ''} · \`${row.id}\``.slice(0, 1900) }), signal: AbortSignal.timeout(5000) }).catch(() => {});
     }
     return { thanks: true };
   }));
   api.get('/admin/feedback', wrap(async req => {
     const account = await services.account(req.account);
-    if (!account?.email || !(options.admins ?? []).includes(account.email)) throw new ToolError('not_found', 'No such route.');
+    if (!isAdmin(account)) throw new ToolError('not_found', 'No such route.');
     return (await store.list<Record<string, unknown>>('feedback', '_feedback', 500)).map(r => ({ id: r.id, ...r.data, screenshot: r.data.screenshot ? `/api/admin/feedback/${r.id}/screenshot` : undefined }));
   }));
   api.get('/admin/feedback/:id/screenshot', async (req, res) => {
     const account = await services.account((req as unknown as Authed).account);
-    if (!account?.email || !(options.admins ?? []).includes(account.email)) { res.status(404).end(); return; }
+    if (!isAdmin(account)) { res.status(404).end(); return; }
     const row = await store.get<{ screenshot?: string }>('feedback', '_feedback', String(req.params.id));
     const match = row?.data.screenshot?.match(/^data:(image\/(?:png|jpeg|webp));base64,(.+)$/);
     if (!match) { res.status(404).end(); return; }
@@ -306,7 +311,7 @@ export function createApp(options: AppOptions) {
 
   const STATE = 'armable_google';
   const callback = new URL('/auth/google/callback', publicUrl).href;
-  const safeNext = (next: unknown) => typeof next === 'string' && /^\/(?!\/)/.test(next) ? next : '/';
+  const safeNext = (next: unknown) => typeof next === 'string' && isLocalPath(next) ? next : '/';
   app.get('/auth/google', (req, res) => {
     if (!options.google) { res.status(404).send('Google sign-in is not set up.'); return; }
     const state = `${randomBytes(16).toString('base64url')}.${Buffer.from(safeNext(req.query.next)).toString('base64url')}`;
