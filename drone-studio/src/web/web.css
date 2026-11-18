@@ -456,4 +456,22 @@ select, .lu-text { height: 34px; padding: 0 10px; border: 1px solid var(--ds-bor
 .lu-connect-item.is-agents .lu-connect-icon { background: transparent; color: var(--ds-text-muted); }
 .lu-connect-next { margin: 4px 6px 4px; padding: 9px 10px; border-radius: 7px; background: var(--lu-ai-bg); color: var(--ds-text); font-size: 13px; line-height: 1.45; }
 .lu-connect-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 18px; }
-@media (prefers-reduced-motion: reduce) { .lu-connect-menu { animation: none; } }
+/* Claude and ChatGPT first and larger; the guide that follows a choice ticks itself off as the assistant connects. */
+.lu-connect-menu { width: min(360px, calc(100vw - 32px)); }
+.lu-connect-item.is-main { padding: 12px 10px; }
+.lu-connect-item.is-main .lu-connect-icon { width: 38px; height: 38px; background: var(--lu-ai-bg); }
+.lu-connect-name small { display: block; margin-top: 2px; color: var(--ds-text-subtle); font-size: 12px; font-weight: 500; }
+.lu-connect-other { margin: 6px 10px 2px; padding-top: 10px; border-top: 1px solid var(--ds-border); color: var(--ds-text-subtle); font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.lu-connect-menu.is-guide { padding: 12px; gap: 10px; }
+.lu-connect-menu.is-guide header { display: flex; align-items: center; gap: 8px; }
+.lu-connect-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.lu-connect-steps li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; color: var(--ds-text); font-size: 13.5px; line-height: 1.45; }
+.lu-connect-steps li > span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ds-surface-raised); color: var(--ds-text-muted); font-size: 12px; font-weight: 700; }
+.lu-connect-steps li.is-waiting > span { background: var(--lu-ai-bg); color: var(--lu-ai); animation: lu-connect-wait 1.4s ease-in-out infinite; }
+.lu-connect-steps li.is-done { color: var(--ds-text-subtle); }
+.lu-connect-steps li.is-done > span { background: var(--ds-success-bg); color: var(--ds-success); }
+.lu-connect-steps li.is-now { font-weight: 600; }
+.lu-connect-menu.is-guide .lu-connect-next { margin: 0; font-size: 13px; }
+.lu-connect-next.is-connected { background: var(--ds-success-bg); }
+@keyframes lu-connect-wait { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .lu-connect-menu { animation: none; } .lu-connect-steps li.is-waiting > span { animation: none; } }
