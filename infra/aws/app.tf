@@ -53,7 +53,7 @@ resource "aws_iam_role_policy_attachment" "execution" {
 resource "aws_iam_role_policy" "execution_secrets" {
   role = aws_iam_role.execution.id
   policy = jsonencode({ Version = "2012-10-17", Statement = [{
-    Effect = "Allow", Action = ["ssm:GetParameters"], Resource = [aws_ssm_parameter.database_url.arn]
+    Effect = "Allow", Action = ["ssm:GetParameters"], Resource = concat([aws_ssm_parameter.database_url.arn], aws_ssm_parameter.google_client_secret[*].arn, aws_ssm_parameter.feedback_webhook[*].arn)
   }] })
 }
 # Used by the app while it runs. It needs no AWS permissions.
@@ -85,8 +85,14 @@ resource "aws_ecs_task_definition" "app" {
       { name = "STATIC_DIR", value = "dist" },
       { name = "TRUST_PROXY", value = "2" },
       { name = "DATABASE_CA_FILE", value = "/app/rds-global-bundle.pem" },
+      { name = "GOOGLE_CLIENT_ID", value = var.google_client_id },
+      { name = "ADMIN_EMAILS", value = var.admin_emails },
     ]
-    secrets = [{ name = "DATABASE_URL", valueFrom = aws_ssm_parameter.database_url.arn }]
+    secrets = concat(
+      [{ name = "DATABASE_URL", valueFrom = aws_ssm_parameter.database_url.arn }],
+      [for p in aws_ssm_parameter.google_client_secret : { name = "GOOGLE_CLIENT_SECRET", valueFrom = p.arn }],
+      [for p in aws_ssm_parameter.feedback_webhook : { name = "FEEDBACK_WEBHOOK_URL", valueFrom = p.arn }],
+    )
     logConfiguration = {
       logDriver = "awslogs"
       options = {
@@ -184,4 +190,18 @@ resource "aws_ecs_service" "app" {
     container_port   = 8787
   }
   depends_on = [aws_lb_listener_rule.from_cloudfront]
+}
+
+# Optional secrets, created only when set.
+resource "aws_ssm_parameter" "google_client_secret" {
+  count = var.google_client_secret == "" ? 0 : 1
+  name  = "/${local.name}/google-client-secret"
+  type  = "SecureString"
+  value = var.google_client_secret
+}
+resource "aws_ssm_parameter" "feedback_webhook" {
+  count = var.feedback_webhook_url == "" ? 0 : 1
+  name  = "/${local.name}/feedback-webhook"
+  type  = "SecureString"
+  value = var.feedback_webhook_url
 }

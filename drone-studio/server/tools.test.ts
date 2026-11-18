@@ -374,3 +374,27 @@ describe('an assistant helping someone build a drone', () => {
     expect((row.data.content as any).log.map((l: any) => l.by)).toEqual(expect.arrayContaining(['Claude']));
   });
 });
+
+describe('the video story: a new quad that will not arm', () => {
+  it('finds no receiver signal, traces it to the receiver protocol, and the fix lets it arm', async () => {
+    const { DEMO_FAULT } = await import('../src/device/sim/demo');
+    const { call, bench } = await setup('betaflight', DEMO_FAULT);
+    let w = await call('get_workspace');
+    for (let i = 0; i < 50 && !w.aircraft.armingBlocks; i++) { await new Promise(r => setTimeout(r, 20)); w = await call('get_workspace'); }
+    expect(w.aircraft.armingBlocks).toEqual(['No signal from the receiver']);
+    expect((await call('find', { query: 'wont arm' })).hits[0].id).toBe('play.wont-arm');
+    await call('read', { ids: ['settings.load'] });
+    const provider = (await call('read', { ids: ['bf.serialrx_provider'] })).values[0];
+    expect(provider.value).toBe('SBUS');
+    const proposal = await call('propose_change', { changes: [{ id: 'bf.serialrx_provider', value: 'CRSF' }], reason: 'Your ExpressLRS receiver speaks CRSF, not SBUS.' });
+    expect(proposal).toMatchObject({ status: 'awaiting_approval', changes: [{ id: 'bf.serialrx_provider', from: 'SBUS', to: 'CRSF' }] });
+    const outcome = await bench.approve(proposal.proposal);
+    expect(outcome.ok).toBe(true);
+    const done = await call('wait', { proposal: proposal.proposal });
+    expect(done.status).toBe('done');
+    let after = await call('get_workspace');
+    for (let i = 0; i < 100 && after.aircraft.armingBlocks; i++) { await new Promise(r => setTimeout(r, 30)); after = await call('get_workspace'); }
+    expect(after.aircraft).toMatchObject({ connected: true });
+    expect(after.aircraft.armingBlocks).toBeUndefined();
+  });
+});

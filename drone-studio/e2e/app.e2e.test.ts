@@ -29,9 +29,8 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     page.on('pageerror', (e: Error) => errors.push(e.message));
     await page.goto(app.base);
     await expect(page.getByRole('heading', { name: /Your drone/ })).toBeTruthy();
-    await page.fill('input[type=email]', `e2e${Date.now()}${Math.random().toString(36).slice(2, 6)}@example.test`);
-    await page.fill('input[type=password]', 'correct horse');
-    await page.click('button:has-text("Create account")');
+    // No sign-up: a guest bench opens at once.
+    await page.click('button:has-text("Try it now")');
     await page.waitForSelector('[data-demo=ardupilot]');
     return { page, context, errors };
   }
@@ -142,6 +141,41 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
       await page.waitForSelector('.bd-table');
       expect(errors).toEqual([]);
     } finally { await claude.close(); await context.close(); }
+  });
+
+  it('opens straight into the demo from a link, takes feedback, and shares a build anyone can open', async () => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (e: Error) => errors.push(e.message));
+    // A link posted anywhere: no sign-up, the demo drone connects, and it will not arm.
+    await page.goto(`${app.base}/?demo=betaflight`);
+    await page.waitForSelector('.lu-status.is-connected');
+    await page.waitForSelector('.dg-chip:has-text("Won\'t arm")');
+    expect(new URL(page.url()).search).toBe('');
+    await page.waitForSelector('.lu-save');
+    await page.click('button[aria-label="Send feedback"]');
+    await page.fill('textarea[aria-label="Your feedback"]', 'The demo is great.');
+    await page.click('.gr-dialog button:has-text("Send")');
+    await page.waitForSelector('.gr-thanks');
+    // Build, share, and open the link as someone else.
+    await page.click('.lu-rail button:has-text("Build")');
+    await page.click('text=Start from this >> nth=0');
+    await page.waitForSelector('.bd-row');
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
+    await page.click('.bd-sheet-head button:has-text("Share")');
+    const link = await page.locator('.bd-share a').getAttribute('href');
+    expect(link).toMatch(/\/b\/[\w-]+$/);
+    const stranger = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const view = await stranger.newPage();
+    await view.goto(link!);
+    await view.waitForSelector('.bd-public .bd-row');
+    expect(await view.title()).toMatch(/5" analog freestyle starter · a drone build on Lucidity/);
+    expect(await view.locator('.bd-public .bd-row').count()).toBe(9);
+    await view.click('button:has-text("Make a copy to change")');
+    await view.waitForSelector('.bd-sheet .bd-row');
+    expect(errors).toEqual([]);
+    await stranger.close(); await context.close();
   });
 
   it('offers one-click setup for assistants, and a prompt that lets any agent set itself up', async () => {

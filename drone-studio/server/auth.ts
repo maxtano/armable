@@ -50,11 +50,64 @@ export class Auth {
     await this.store.put('accounts', '', account.id, account, { expectedRev: 0, lookup: email });
     return account;
   }
+  /** A bench without sign-up: everything works, nothing is asked. Saved later with an email or Google. */
+  async guest(): Promise<Account> {
+    const account: Account = { id: `acct_${newId(9)}`, email: '', passwordHash: '', createdAt: this.now(), assistantMode: 'propose', guest: true, lastSeen: this.now() };
+    await this.store.put('accounts', '', account.id, account, { expectedRev: 0 });
+    return account;
+  }
+  /** Turn a guest bench into a normal account, keeping everything on it. */
+  async save(accountId: string, email: string, password: string): Promise<Account> {
+    email = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) throw new ToolError('invalid', 'Enter a valid email address.');
+    if (password.length < 8 || password.length > 200) throw new ToolError('invalid', 'Use a password of at least 8 characters.');
+    const row = await this.store.get<Account>('accounts', '', accountId);
+    if (!row?.data.guest) throw new ToolError('invalid', 'This bench is already saved.');
+    if (await this.store.lookup('accounts', email)) throw new ToolError('exists', 'An account with that email already exists. Sign in instead; this guest bench stays on this browser until then.');
+    const account: Account = { ...row.data, email, passwordHash: await hashPassword(password), guest: undefined };
+    await this.store.put('accounts', '', account.id, account, { expectedRev: row.rev, lookup: email });
+    return account;
+  }
+  /**
+   * Google sign-in, with an email Google has verified. Signs in to the account with that email if there is one;
+   * otherwise saves the current guest bench under it, or makes a new account.
+   */
+  async google(profile: { sub: string; email: string }, current?: string): Promise<Account> {
+    const email = profile.email.trim().toLowerCase();
+    const existing = await this.store.lookup<Account>('accounts', email);
+    if (existing) {
+      if (existing.data.google !== profile.sub) await this.store.put('accounts', '', existing.id, { ...existing.data, google: profile.sub }, { expectedRev: existing.rev, lookup: email });
+      return { ...existing.data, google: profile.sub };
+    }
+    const guest = current ? await this.store.get<Account>('accounts', '', current) : undefined;
+    if (guest?.data.guest) {
+      const account: Account = { ...guest.data, email, google: profile.sub, guest: undefined };
+      await this.store.put('accounts', '', account.id, account, { expectedRev: guest.rev, lookup: email });
+      return account;
+    }
+    const account: Account = { id: `acct_${newId(9)}`, email, passwordHash: '', createdAt: this.now(), assistantMode: 'propose', google: profile.sub };
+    await this.store.put('accounts', '', account.id, account, { expectedRev: 0, lookup: email });
+    return account;
+  }
+  /** Note that a guest is still using their bench, at most every few hours. */
+  async seen(account: Account) {
+    if (!account.guest || (account.lastSeen ?? 0) > this.now() - 6 * 3600_000) return;
+    const row = await this.store.get<Account>('accounts', '', account.id);
+    if (row) await this.store.put('accounts', '', account.id, { ...row.data, lastSeen: this.now() }, { expectedRev: row.rev }).catch(() => {});
+  }
+  /** Delete guest benches nobody has opened for this many days. Returns how many went. */
+  async purgeGuests(days = 30): Promise<string[]> {
+    const cutoff = this.now() - days * 86400_000, gone: string[] = [];
+    for (const row of await this.store.list<Account>('accounts', '', 100_000)) {
+      if (row.data.guest && (row.data.lastSeen ?? row.data.createdAt) < cutoff) { await this.deleteAccount(row.id); gone.push(row.id); }
+    }
+    return gone;
+  }
   async signIn(email: string, password: string): Promise<Account> {
     const row = await this.store.lookup<Account>('accounts', email.trim().toLowerCase());
     // Hash even when the account is missing, so timing does not reveal which emails exist.
     const ok = await checkPassword(password, row?.data.passwordHash ?? 'scrypt$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-    if (!row || !ok) throw new ToolError('invalid', 'That email and password do not match.');
+    if (!row || !ok || !row.data.passwordHash) throw new ToolError('invalid', 'That email and password do not match.', 'If you signed up with Google, use Continue with Google.');
     return row.data;
   }
   async startSession(account: string): Promise<string> {

@@ -66,3 +66,27 @@ variable "log_retention_days" {
   type    = number
   default = 30
 }
+
+# Optional: sign in with Google, feedback alerts, and who may read all feedback.
+variable "google_client_id" {
+  description = "OAuth client ID for Sign in with Google. Leave empty to offer email and guest benches only."
+  type        = string
+  default     = ""
+}
+variable "google_client_secret" {
+  description = "OAuth client secret for Sign in with Google. Stored in SSM as a SecureString."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+variable "feedback_webhook_url" {
+  description = "Where feedback is also posted, such as a Discord webhook. Stored in SSM as a SecureString."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+variable "admin_emails" {
+  description = "Comma-separated emails that may read all feedback at /api/admin/feedback."
+  type        = string
+  default     = ""
+}

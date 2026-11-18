@@ -52,7 +52,8 @@ export function Diagram() {
   const batteryTone = !battery || battery.voltage < 2 ? 'muted' : charge < 0.15 ? 'bad' : charge < 0.3 ? 'warn' : 'ok';
   const sats = state?.gps?.sats ?? 0, fix = (state?.gps?.fix ?? 0) >= 3;
   const rc = state?.rc?.channels ?? [];
-  const radioOk = rc.length > 0;
+  // Betaflight keeps sending channel values in failsafe; the receiver sensor says whether any are real.
+  const radioOk = rc.length > 0 && state?.sensors.receiver !== 'bad';
   const roll = state?.attitude?.roll ?? 0, pitch = state?.attitude?.pitch ?? 0;
   const id = snap.identity;
   const blocks = state?.armingBlocks.length ?? 0;

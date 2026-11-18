@@ -8,3 +8,10 @@ environment = "prod"
 
 # Set false if this AWS account already has the GitHub OIDC provider.
 # create_github_oidc_provider = false
+
+# Optional: Sign in with Google. Create an OAuth client (Web application) in Google Cloud with the redirect URI
+# <your address>/auth/google/callback. Pass the secret with TF_VAR_google_client_secret rather than in this file.
+# google_client_id = "1234567890-abc.apps.googleusercontent.com"
+
+# Optional: post feedback to a Discord channel (pass with TF_VAR_feedback_webhook_url), and who may read all of it.
+# admin_emails = "you@example.com"

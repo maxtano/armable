@@ -21,7 +21,7 @@ runtime.on(event => {
 function Gauges() {
   const st = useStore(s => s.snap.state);
   const volts = st?.battery?.voltage, amps = st?.battery?.current, cells = volts ? Math.max(1, Math.round(volts / 3.95)) : undefined;
-  const perCell = volts && cells ? volts / cells : undefined, channels = st?.rc?.channels.length ?? 0;
+  const perCell = volts && cells ? volts / cells : undefined, channels = st?.sensors.receiver === 'bad' ? 0 : st?.rc?.channels.length ?? 0;
   const roll = st?.attitude?.roll, pitch = st?.attitude?.pitch, tilt = roll !== undefined && pitch !== undefined ? Math.round(Math.max(Math.abs(roll), Math.abs(pitch))) : undefined;
   return (
     <div className="lu-dials" aria-label="Live readings">

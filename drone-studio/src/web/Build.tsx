@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Antenna, ArrowLeftRight, BatteryFull, Bot, Camera, Check, ChevronDown, Cog, Cpu, ExternalLink, Frame, Gamepad2, Glasses, ListFilter, Package, PackageCheck, PlugZap, Plus, RadioReceiver, RadioTower, Satellite, Search, Sparkles, Star, Trash2, Wind, X, type LucideIcon } from 'lucide-react';
+import { Antenna, ArrowLeftRight, BatteryFull, Bot, Camera, Check, ChevronDown, Cog, Cpu, ExternalLink, Frame, Gamepad2, Glasses, ListFilter, Package, PackageCheck, PlugZap, Plus, RadioReceiver, RadioTower, Satellite, Search, Share2, Sparkles, Star, Trash2, Wind, X, type LucideIcon } from 'lucide-react';
 import { analyse, cellRange, compareBuilds, emptyBuild, fitOf, groupOf, provenBuild, resolve, SLOT_LABEL, SLOTS, STYLES, type Build as BuildDoc, type BuildOp, type Check as BuildCheck, type Goal, type Item } from '../build/build';
 import { PART_BY_ID, PARTS, PROVEN, storeLinks, type Category, type Part, type Video } from '../build/catalog';
 import { api, ApiError } from './cloud';
 import { publishFocus, refreshDocs } from './controller';
 import { Coil, Dial, Lamp } from './Instruments';
 import { PartArt, type Drawable } from './PartArt';
-import { set, toast, useStore } from './store';
+import { askHelpful, set, toast, useStore } from './store';
 import './build.css';
 
 /**
@@ -146,6 +146,7 @@ function Start() {
 
 function Sheet({ build, apply, docs }: { build: Loaded; apply: Apply; docs: { id: string; name: string }[] }) {
   const b = build.content, a = useMemo(() => analyse(b), [b]);
+  useEffect(() => { if (a.complete && b.items.length >= 6) askHelpful('build'); }, [a.complete, b.items.length]);
   const [picking, setPicking] = useState<Category | undefined>(), [detail, setDetail] = useState<string>(), [name, setName] = useState(build.name), [focus, setFocus] = useState<string[]>([]);
   useEffect(() => setName(build.name), [build.name]);
   const goal = (patch: Partial<Goal>) => void apply([{ op: 'goal', set: patch }]);
@@ -166,6 +167,7 @@ function Sheet({ build, apply, docs }: { build: Loaded; apply: Apply; docs: { id
         <input className="bd-name" value={name} onChange={e => setName(e.target.value)} onBlur={() => { const n = name.trim(); if (n && n !== build.name) void apply([{ op: 'note', text: `Renamed to ${n}` }], n); }} aria-label="Build name" maxLength={80} />
         {docs.length > 1 && <select className="bd-switch" value={build.id} onChange={e => set({ build: e.target.value })} aria-label="Switch build">{docs.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select>}
         <button className="lu-btn" onClick={() => void createBuild('New build', [])}><Plus size={14} /> New</button>
+        <ShareButton id={build.id} />
         <button className="lu-icon" onClick={remove} aria-label="Delete this build" title="Delete this build"><Trash2 size={16} /></button>
       </div>
 
@@ -216,6 +218,24 @@ function Sheet({ build, apply, docs }: { build: Loaded; apply: Apply; docs: { id
       <p className="lu-hint">Prices marked “typical” are a guide, not live; prices someone looked up show where and when they were seen. Store links search each shop for the part. Drawings show the kind of part, not a product photo.</p>
       {picking && <Browser build={b} category={picking} onClose={() => setPicking(undefined)} onOpen={setDetail} apply={async ops => { await apply(ops); setPicking(undefined); }} />}
       {detail && <Detail id={detail} build={b} onClose={() => setDetail(undefined)} apply={async ops => { await apply(ops); setDetail(undefined); }} />}
+    </div>
+  );
+}
+
+/** One stable public link per build: anyone can read it, nobody can change it. */
+function ShareButton({ id }: { id: string }) {
+  const [url, setUrl] = useState<string | null>(), [open, setOpen] = useState(false);
+  useEffect(() => { setUrl(undefined); api('GET', `/docs/${id}/share`).then(r => setUrl(r.url ?? null), () => setUrl(null)); }, [id]);
+  const share = async () => {
+    const link = url ?? (await api('POST', `/docs/${id}/share`)).url;
+    setUrl(link); setOpen(true);
+    await navigator.clipboard.writeText(link).then(() => toast('Link copied. Anyone with it can see this build.', 'ok'), () => {});
+  };
+  const stop = async () => { await api('DELETE', `/docs/${id}/share`); setUrl(null); setOpen(false); toast('This build is private again.', 'info'); };
+  return (
+    <div className="bd-buy">
+      <button className="lu-btn" onClick={share}><Share2 size={14} /> {url ? 'Shared' : 'Share'}</button>
+      {open && url && <div className="bd-links bd-share" onMouseLeave={() => setOpen(false)}><a href={url} target="_blank" rel="noreferrer noopener">Open the public page<ExternalLink size={12} /></a><button className="lu-link" onClick={stop}>Stop sharing</button></div>}
     </div>
   );
 }
@@ -540,5 +560,54 @@ function Compare({ current }: { current?: Loaded }) {
         </div>
       )}
     </div>
+  );
+}
+
+// ---- A build someone shared ------------------------------------------------------------------------------------------
+
+/** The public page for a shared build. Read-only, works without an account, and offers to copy the build. */
+export function SharedBuild({ share }: { share: string }) {
+  const [data, setData] = useState<{ name: string; content: BuildDoc; updatedAt: number } | null>();
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api('GET', `/shared/${share}`).then(setData, () => setData(null)); }, [share]);
+  const copy = async () => {
+    setBusy(true);
+    try {
+      const me = await api('GET', '/me');
+      if (!me.signedIn) await api('POST', '/guest');
+      await api('POST', `/shared/${share}/copy`);
+      location.href = '/build';
+    } catch { toast('Could not copy it right now.', 'bad'); setBusy(false); }
+  };
+  if (data === undefined) return <div className="lu-boot" />;
+  if (data === null) return <div className="bd-public"><div className="lu-empty"><h2>This build isn’t shared any more</h2><a className="lu-btn is-primary" href="/build">Build your own</a></div></div>;
+  const b = data.content, a = analyse(b);
+  const problems = a.checks.filter(c => c.level === 'fail').length;
+  return (
+    <RatingsProvider>
+      <div className="bd-public">
+        <header className="bd-public-top"><a className="in-logo" href="/"><img src="/favicon.svg" alt="" width="22" height="22" />Lucidity</a><a className="lu-btn" href="/">What is this?</a></header>
+        <section className="lu-page bd">
+          <header className="lu-page-head"><h1>{data.name}</h1><button className="lu-btn is-primary" disabled={busy} onClick={copy}><Plus size={14} /> Make a copy to change</button></header>
+          <nav className="bd-tags">{b.goal.style && <span>{STYLE_LABEL[b.goal.style]}</span>}{b.goal.propIn && <span>{b.goal.propIn}"</span>}{b.goal.video && <span>{VIDEO_NAME[b.goal.video]}</span>}<span>Updated {new Date(data.updatedAt).toLocaleDateString()}</span></nav>
+          <Gauges a={a} goal={b.goal} />
+          <div className={`bd-compat is-${problems ? 'bad' : 'ok'}`} role="status"><Lamp tone={problems ? 'bad' : 'ok'} /><b>{problems ? `Compatibility: ${problems} problem${problems > 1 ? 's' : ''} found` : 'Compatibility: no problems found'}</b></div>
+          <div className="bd-parts" role="table" aria-label="Parts">
+            <div className="bd-head" role="row"><span role="columnheader">Component</span><span role="columnheader">Selection</span><span role="columnheader">Rating</span><span role="columnheader">Price</span><span role="columnheader" /></div>
+            {b.items.map(item => { const r = resolve(item), total = r.unitUsd !== undefined ? r.unitUsd * item.qty : undefined; return (
+              <div key={item.slot} className="bd-row" role="row">
+                <Slot slot={item.category} label={SLOT_LABEL[item.category]} />
+                <div className="bd-sel" role="cell"><span className="bd-thumb"><PartArt part={drawable(item)} size={52} /></span><div className="bd-what"><b className="bd-name-link">{r.brand && <span>{r.brand} </span>}{r.name}</b><small>{specLine(item)}</small></div></div>
+                <div className="bd-rate-cell" role="cell"><RatingBadge part={item.part} /></div>
+                <div className="bd-price" role="cell"><b>{total !== undefined ? money(total) : '—'}</b><small>{item.qty > 1 && r.unitUsd !== undefined ? `${item.qty} × ${money(r.unitUsd)} · ` : ''}{r.priceSource === 'seen' ? `at ${item.price?.store ?? 'store'}` : 'typical'}</small></div>
+                <div className="bd-actions" role="cell"><a className="lu-btn is-primary" href={r.links[0].url} target="_blank" rel="noreferrer noopener">Buy <ExternalLink size={12} /></a></div>
+              </div>
+            ); })}
+            <div className="bd-total" role="row"><span /><b>Total {money(a.costUsd)}</b></div>
+          </div>
+          <p className="lu-hint">Typical prices, not live. Checked by Lucidity for prop size, mounts, cell counts, motor speed, ESC current, and video and radio systems.</p>
+        </section>
+      </div>
+    </RatingsProvider>
   );
 }

@@ -23,6 +23,12 @@ if (process.env.DATABASE_URL) {
 }
 // How many proxies sit in front: 1 for a load balancer, 2 for CloudFront plus a load balancer.
 const trustProxy = Number(process.env.TRUST_PROXY ?? 1);
-const { http, close } = createApp({ store, publicUrl, staticDir: resolve(process.env.STATIC_DIR ?? 'dist'), trustProxy, tracker });
+const google = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET } : undefined;
+const admins = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+const { http, close, auth, services } = createApp({ store, publicUrl, staticDir: resolve(process.env.STATIC_DIR ?? 'dist'), trustProxy, tracker, google, feedbackWebhook: process.env.FEEDBACK_WEBHOOK_URL, admins });
+// Guest benches nobody has opened for 30 days are deleted, once a day.
+const purge = async () => { try { const gone = await auth.purgeGuests(30); for (const id of gone) await services.forgetRatings(id); if (gone.length) console.log(`[lucidity] removed ${gone.length} unused guest benches`); } catch (error) { console.error('[lucidity] guest cleanup failed', error); } };
+setTimeout(() => void purge(), 60_000).unref();
+setInterval(() => void purge(), 86400_000).unref();
 http.listen(port, process.env.HOST ?? '0.0.0.0', () => console.log(`[lucidity] ${publicUrl}  (assistants connect to ${new URL('/mcp', publicUrl).href})`));
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { void close().then(() => store.close()).finally(() => process.exit(0)); });

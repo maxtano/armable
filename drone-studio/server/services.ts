@@ -19,7 +19,14 @@ function summarise(row: RatingRow, account?: string): RatingSummary {
   const mine = account ? row.by[account] : undefined;
   return { average: all.length ? Math.round(all.reduce((s, r) => s + r.stars, 0) / all.length * 10) / 10 : 0, count: all.length, histogram, ...(mine ? { mine: { stars: mine.stars, review: mine.review } } : {}) };
 }
-export interface Account { id: string; email: string; passwordHash: string; createdAt: number; assistantMode: AssistantMode }
+export interface Account {
+  id: string; email: string; passwordHash: string; createdAt: number; assistantMode: AssistantMode;
+  /** A bench made without signing up. It becomes a normal account when the person saves it. */
+  guest?: boolean;
+  /** Set when the person signs in with Google. */
+  google?: string;
+  lastSeen?: number;
+}
 export type DocKind = 'storyboard' | 'tune' | 'file' | 'snapshot' | 'build';
 export interface Doc { kind: DocKind; name: string; content: unknown; updatedBy: string; history: { content: unknown; by: string; at: number }[] }
 export interface ActivityEntry { at: number; who: string; kind: 'read' | 'test' | 'change' | 'edit' | 'proposal' | 'connect' | 'show'; title: string; part?: string; ids?: string[]; ok?: boolean | null; detail?: unknown }

@@ -8,7 +8,7 @@ import { WebSerialTransport } from '../device/transport';
 import type { Change, Condition, PartId, PromptRequest, TestSpec } from '../device/types';
 import { api, ApiError, flushOutbox, Live, offlineError, queue, type ServerMessage } from './cloud';
 import { captureView } from './capture';
-import { clearMark, EMPTY_SNAP, get, mark, set, toast, type ProposalCard, type View } from './store';
+import { askHelpful, clearMark, EMPTY_SNAP, get, mark, set, toast, type ProposalCard, type View } from './store';
 
 /**
  * The one place that owns the drone connection in this tab. Every button calls a function here; every
@@ -118,6 +118,7 @@ function onServer(message: ServerMessage) {
     if (data.who !== 'you' && data.part && get().follow && get().view !== 'drone' && data.kind !== 'edit') { /* quiet: the ribbon shows it */ }
   } else if (event === 'proposal') {
     const open = data.status === 'awaiting_approval' || data.status === 'approved';
+    if (data.status === 'done' && data.kind === 'change' && data.by !== 'you') askHelpful('fix');
     set(s => ({ proposals: [...s.proposals.filter(p => p.id !== data.id), ...(open ? [data] : [])] }));
     if (data.status === 'awaiting_approval' && get().follow) { go('drone', (data.part ?? partOfId(data.changes?.[0]?.id)) as PartId, motorOf(data)); toast(`${data.by} proposes a change`, 'info'); }
   } else if (event === 'document') {
@@ -277,4 +278,7 @@ export async function createGrant(input: { parts: string[]; tests: string[]; min
 }
 export async function revokeGrant(id: string) { await api('DELETE', `/grants/${id}`).catch(() => {}); await refreshGrants(); }
 export async function setMode(mode: 'off' | 'observe' | 'propose') { await api('PUT', '/mode', { mode }); set({ me: { ...get().me!, mode } }); }
-export async function signOut() { await api('POST', '/logout'); location.reload(); }
+export async function signOut() {
+  if (get().me?.guest && !confirm('Sign out of this guest bench? It has not been saved, so you will not be able to get back to it.')) return;
+  await api('POST', '/logout'); location.reload();
+}

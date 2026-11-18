@@ -17,27 +17,23 @@ await page.goto(base);
 await page.waitForTimeout(9000); // The intro animation rests on its last frame, the fixed motor.
 await shot('intro');
 
-await page.fill('input[type=email]', `readme${Date.now()}@example.test`);
-await page.fill('input[type=password]', 'correct horse');
-await page.click('button:has-text("Create account")');
-await page.waitForSelector('[data-demo=ardupilot]');
-await page.click('[data-demo=ardupilot]');
+await context.addInitScript(() => { try { localStorage.setItem('lucidity.asked.v1', JSON.stringify(['fix', 'build'])); } catch { /* storage unavailable */ } });
+await page.goto(`${base}/?demo=betaflight`);
 await page.waitForSelector('.lu-status.is-connected');
+await page.waitForSelector('.dg-chip');
 
+// The demo drone will not arm. An assistant finds why and proposes the fix on the receiver.
 const person = new Browser(base);
 person.cookie = (await context.cookies()).map((c: { name: string; value: string }) => `${c.name}=${c.value}`).join('; ');
 const claude = await assistant(base, (await person.connectAssistant('Claude')).access_token!);
 await claude.call('read', { ids: ['settings.load'] });
-const read = await claude.call('run_test', { id: 'esc.read' });
-await page.waitForSelector(`[data-proposal="${read.proposal}"]`);
-for (const label of ['Props removed', 'Direct USB', 'Battery connected']) await page.locator(`[data-proposal="${read.proposal}"] label:has-text("${label}")`).click();
-await page.locator(`[data-proposal="${read.proposal}"] button:has-text("Approve")`).click();
-await claude.call('wait', { proposal: read.proposal });
-const proposal = await claude.call('propose_change', { changes: [{ id: 'esc.3.direction', value: 'normal' }], reason: 'Motor 3 turns the wrong way.' });
-await page.waitForSelector('[data-motor="3"].needs-you .dg-ghost');
-await page.waitForTimeout(1200);
+const proposal = await claude.call('propose_change', { changes: [{ id: 'bf.serialrx_provider', value: 'CRSF' }], reason: 'Your ExpressLRS receiver speaks CRSF, not SBUS.' });
+await page.waitForSelector(`[data-proposal="${proposal.proposal}"]`);
+await page.waitForTimeout(6000); // Let the notice fade.
 await shot('proposal');
-await claude.call('stop', { proposal: proposal.proposal });
+await page.locator(`[data-proposal="${proposal.proposal}"] button:has-text("Approve")`).click();
+await claude.call('wait', { proposal: proposal.proposal, seconds: 30 });
+await page.waitForFunction(() => !document.querySelector('.dg-chip'), undefined, { timeout: 20_000 }).catch(() => {});
 await page.click('.lu-panel button[aria-label="Close"]').catch(() => {});
 
 await page.click('.lu-rail button:has-text("Signals")');

@@ -8,7 +8,7 @@
 
 Plug in your drone. Ask Claude or ChatGPT. Approve the fix.
 
-<img src="docs/media/intro.png" alt="Lucidity: a quad drawn with copper motor windings, and a short exchange asking to fix motor 3" width="820" />
+<img src="docs/media/intro.png" alt="Lucidity: a quad that would not arm, now ready, with its receiver signal restored" width="820" />
 
 </div>
 
@@ -18,9 +18,11 @@ Plug in your drone. Ask Claude or ChatGPT. Approve the fix.
 
 Lucidity runs in your browser and connects to your drone over USB. Your assistant connects to Lucidity with one link. It reads the drone, finds the cause and proposes a change on the part it affects. Nothing is written until you approve it, and every change is read back from the drone to confirm it.
 
-<img src="docs/media/proposal.png" alt="Claude proposes reversing motor 3. A dashed arrow and an Approve button appear on the motor, with the change shown beside it." width="820" />
+Above, a new quad won’t arm. It hears nothing from its receiver: the receiver speaks CRSF, the flight controller expects SBUS. One approval, and it arms. The demo drone has the same problem, so you can try it yourself.
 
-1. **Plug in.** Chrome or Edge, a USB cable. Nothing to install.
+<img src="docs/media/proposal.png" alt="The demo quad will not arm because it hears nothing from its receiver. Claude proposes switching the receiver protocol from SBUS to CRSF, with an Approve button beside it." width="820" />
+
+1. **Plug in.** Chrome or Edge, a USB cable. Nothing to install, no sign-up. Or open the demo drone.
 2. **Connect your AI.** Claude, ChatGPT, Claude Code, Cursor, VS Code or any agent. No API key.
 3. **Approve.** You make the call. The drone changes only when you click.
 
@@ -84,7 +86,16 @@ npm run build && npm run serve   # http://localhost:8787, data kept in memory
 npm test
 ```
 
-Assistants connect to `<your address>/mcp`. Set `PUBLIC_URL` to the address people use.
+Assistants connect to `<your address>/mcp`.
+
+| Setting | What it does |
+| --- | --- |
+| `PUBLIC_URL` | The address people use |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional. Adds Continue with Google. The redirect address is `<your address>/auth/google/callback` |
+| `FEEDBACK_WEBHOOK_URL` | Optional. Posts feedback to a Discord channel as it arrives |
+| `ADMIN_EMAILS` | Optional. Who can read all feedback, with screenshots, at `/api/admin/feedback` |
+
+Anyone can try Lucidity without an account. Guest benches nobody opens for 30 days are deleted. Links that open straight in: `/?demo=betaflight`, `/?demo=ardupilot` and `/build`. A shared build lives at `/b/<id>`.
 
 To host it on AWS, [`infra/aws`](infra/aws/README.md) sets up CloudFront, ECS Fargate and RDS Postgres with keyless deploys from GitHub, for about $45 a month.
 

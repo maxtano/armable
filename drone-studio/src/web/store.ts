@@ -7,7 +7,7 @@ import type { Reference } from '../map/library';
 /** Everything the interface shows, in one place. Small on purpose: no library, one subscribe function. */
 export type View = 'drone' | 'build' | 'signals' | 'flights' | 'show' | 'sound' | 'settings' | 'history' | 'connect';
 export type AssistantMode = 'off' | 'observe' | 'propose';
-export interface Me { offline?: boolean; signedIn: boolean; email?: string; mode?: AssistantMode; mcpUrl?: string; assistants?: { clientId: string; name: string; scopes: string[]; lastSeen: number | null }[] }
+export interface Me { offline?: boolean; signedIn: boolean; guest?: boolean; google?: boolean; email?: string; mode?: AssistantMode; mcpUrl?: string; assistants?: { clientId: string; name: string; scopes: string[]; lastSeen: number | null }[] }
 export interface ProposalCard {
   id: string; kind: 'change' | 'test'; by: string; reason?: string; level: 2 | 3; needs: string[]; part?: string;
   changes?: { id: string; value: string | number; expected?: string | number; before?: unknown; title?: string }[];
@@ -45,6 +45,9 @@ export interface State {
   build?: string;
   buildTab?: 'mine' | 'parts' | 'proven' | 'compare';
   compare?: string[];
+  dialog?: 'save' | 'feedback';
+  /** The moment to ask “did this help?”, asked once each. */
+  helpful?: 'fix' | 'build';
 }
 export const EMPTY_SNAP: AircraftSnapshot = { status: 'idle', settingsLoaded: 'none', settingsCount: 0, tests: [], escs: [], logs: [] };
 let state: State = { view: 'drone', snap: EMPTY_SNAP, settings: [], proposals: [], activity: [], docs: [], marks: {}, live: false, follow: true, docRevision: 0, grants: [] };
@@ -69,6 +72,12 @@ export function useStore<T>(select: (s: State) => T): T {
     last.current = { value };
     return value;
   });
+}
+const ASKED = 'lucidity.asked.v1';
+/** Ask “did this help?” after this moment, unless it was asked before in this browser. */
+export function askHelpful(moment: 'fix' | 'build') {
+  try { const asked: string[] = JSON.parse(localStorage.getItem(ASKED) ?? '[]'); if (asked.includes(moment)) return; localStorage.setItem(ASKED, JSON.stringify([...asked, moment])); } catch { return; }
+  setTimeout(() => set({ helpful: moment }), 1500);
 }
 export function toast(text: string, tone: 'ok' | 'bad' | 'info' = 'info') { set({ toast: { text, tone, at: Date.now() } }); }
 export function mark(key: string, kind: Mark['kind'], by: string) {

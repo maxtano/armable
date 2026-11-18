@@ -43,7 +43,12 @@ export const BETAFLIGHT_SETTINGS: Record<string, Def> = {
 const FEATURES = ['RX_PPM', 'INFLIGHT_ACC_CAL', 'RX_SERIAL', 'MOTOR_STOP', 'SERVO_TILT', 'SOFTSERIAL', 'GPS', 'RANGEFINDER', 'TELEMETRY', '3D', 'RX_PARALLEL_PWM', 'RX_MSP', 'RSSI_ADC', 'LED_STRIP', 'DISPLAY', 'OSD', 'CHANNEL_FORWARDING', 'TRANSPONDER', 'AIRMODE', 'RX_SPI', 'ESC_SENSOR', 'ANTI_GRAVITY'];
 
 export interface BetaflightSimOptions {
-  battery?: number; rxLoss?: boolean; escDirections?: number[]; escKinds?: ('BLHeli_S' | 'Bluejay' | 'AM32')[];
+  battery?: number; rxLoss?: boolean;
+  /** The protocol the wired receiver speaks. If the flight controller is set to another, there is no signal, as on a real quad. */
+  receiver?: string;
+  /** Settings stored in flash at the start, in place of the defaults. */
+  stored?: Record<string, string>;
+  escDirections?: number[]; escKinds?: ('BLHeli_S' | 'Bluejay' | 'AM32')[];
   /** Firmware older than 4.5 restarts when the console is left, even without saving. */
   rebootOnExit?: boolean;
   version?: [number, number, number];
@@ -86,11 +91,14 @@ export class BetaflightSim {
   constructor(private options: BetaflightSimOptions = {}) {
     this.battery = options.battery ?? 16.1;
     this.rxLoss = options.rxLoss ?? false;
+    for (const [name, value] of Object.entries(options.stored ?? {})) if (this.settings[name]) this.settings[name].value = value as never;
     this.escBank = new EscBank('BTFL', options.escKinds ?? ['BLHeli_S', 'BLHeli_S', 'BLHeli_S', 'BLHeli_S'], options.escDirections ?? [1, 2, 1, 1]);
     this.saved = this.snapshot();
     const a = syntheticBlackbox(4, 1), b = syntheticBlackbox(3, 0.2);
     this.flash = options.emptyFlash ? new Uint8Array(0) : Uint8Array.from([...a, ...b]);
   }
+  /** No receiver signal: forced by the test, or because the receiver protocol in effect does not match the receiver. */
+  get signalLost() { return this.rxLoss || (!!this.options.receiver && String(this.saved.settings.serialrx_provider?.value) !== this.options.receiver); }
   private snapshot() { return { settings: structuredClone(this.settings), features: [...this.features], serial: { ...this.serial }, aux: { ...this.aux }, map: this.map, vtx: [...this.vtxTable] }; }
   /** Plug the (re)started flight controller into a port. */
   attach(port: LoopbackEnd) {
@@ -132,7 +140,7 @@ export class BetaflightSim {
       case MSP.FEATURE_CONFIG: { let mask = 0; FEATURES.forEach((f, i) => { if (this.features.has(f)) mask |= 1 << [0, 2, 3, 4, 5, 6, 7, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 25, 27, 28][i]; }); return this.reply(command, w.u32(mask >>> 0).done()); }
       case MSP.ATTITUDE: { const s = this.tick++ / 10; return this.reply(command, w.i16(Math.round(12 * Math.sin(s / 2))).i16(Math.round(8 * Math.cos(s / 3))).i16(69).done()); }
       case MSP.STATUS_EX: {
-        const disable = (this.rxLoss ? 1 << 2 : 0) | (this.cli ? 1 << 13 : 0) | (1 << 16);
+        const disable = (this.signalLost ? 1 << 2 : 0) | (this.cli ? 1 << 13 : 0) | (1 << 16);
         return this.reply(command, w.u16(125).u16(0).u16(1 | 2 | 8 | 32).u32(this.armed ? 1 : 0).u8(0).u16(14).u8(3).u8(0).u8(0).u8(26).u32(disable >>> 0).u8(0).done());
       }
       case MSP.BATTERY_STATE: return this.reply(command, w.u8(this.battery > 2 ? 4 : 0).u16(1300).u8(Math.round(this.battery * 10)).u16(210).u16(140).u8(0).u16(Math.round(this.battery * 100)).done());

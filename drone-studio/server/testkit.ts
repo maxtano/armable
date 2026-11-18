@@ -71,10 +71,10 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { createApp } from './app';
 
 const freePort = () => new Promise<number>(resolve => { const s = createServer(); s.listen(0, () => { const port = (s.address() as { port: number }).port; s.close(() => resolve(port)); }); });
-export async function startApp(store: Store = new MemoryStore(), staticDir?: string, tracker?: import('./tracker').Tracker) {
+export async function startApp(store: Store = new MemoryStore(), staticDir?: string, tracker?: import('./tracker').Tracker, extra: Partial<import('./app').AppOptions> = {}) {
   const port = await freePort();
   const base = `http://localhost:${port}`;
-  const app = createApp({ store, publicUrl: base, quiet: true, limits: false, staticDir, tracker });
+  const app = createApp({ store, publicUrl: base, quiet: true, limits: false, staticDir, tracker, ...extra });
   await new Promise<void>(resolve => app.http.listen(port, '127.0.0.1', resolve));
   return { ...app, base, port, store };
 }

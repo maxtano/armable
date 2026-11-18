@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
-import { Activity, AudioLines, Bot, Cable, ChartSpline, Eye, FileUp, Hammer, History as HistoryIcon, LogOut, Moon, Navigation, Plug, Radio, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
+import { Activity, AudioLines, Bot, Cable, ChartSpline, CloudUpload, Eye, FileUp, Hammer, History as HistoryIcon, LogOut, Moon, Navigation, Plug, Radio, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
 import { useState } from 'react';
-import { Build } from './Build';
+import { Build, SharedBuild } from './Build';
+import { boot, FeedbackButton, FeedbackDialog, HelpfulPrompt, SaveDialog } from './Growth';
 import { History } from './History';
 import { OsdEditor } from './OsdEditor';
 import { RadioFlash } from './RadioFlash';
 import type { PartId } from '../device/types';
 import { Connect, Consent, ModeSwitch } from './Connect';
-import { answerPrompt, connectDemo, connectUsb, disconnect, go, select, signOut, start, stopAll } from './controller';
+import { answerPrompt, connectDemo, connectUsb, disconnect, go, select, signOut, stopAll } from './controller';
 import { Diagram } from './Diagram';
 import { Coil } from './Instruments';
 import { Flights } from './Flights';
@@ -74,7 +75,7 @@ function DroneView() {
             <Coil className="lu-idle-coil" width={150} height={38} />
             <h1>Plug in your drone</h1>
             <button className="lu-btn is-primary is-big" disabled={!!busy} onClick={connectUsb}><Cable size={18} /> Connect over USB</button>
-            <div className="lu-row"><span>No drone handy?</span><button className="lu-link" data-demo="betaflight" onClick={() => connectDemo('betaflight')}>Try a Betaflight demo</button><button className="lu-link" data-demo="ardupilot" onClick={() => connectDemo('ardupilot')}>ArduPilot demo</button></div>
+            <div className="lu-row"><span>No drone handy?</span><button className="lu-link" data-demo="betaflight" onClick={() => connectDemo('betaflight')}>Try the demo drone</button><span>· it won’t arm. Find out why.</span><button className="lu-link" data-demo="ardupilot" onClick={() => connectDemo('ardupilot')}>ArduPilot demo</button></div>
             <button className="lu-link" onClick={() => setRadio(true)}><Radio size={14} /> Flash a receiver or radio over USB</button>
             <button className="lu-build-cta" onClick={() => go('build')}><Hammer size={18} /><span><b>Don’t have a drone? Build one.</b><small>Pick parts that work together, with prices and links.</small></span></button>
           </div>
@@ -94,6 +95,9 @@ function Overlays() {
   return (
     <>
       {toast && <div className={`lu-toast is-${toast.tone}`} role="status">{toast.text}</div>}
+      <SaveDialog />
+      <FeedbackDialog />
+      <HelpfulPrompt />
       {reference && (
         <aside className="lu-reference" aria-label="Guide">
           <button className="lu-icon" onClick={() => set({ reference: undefined })} aria-label="Close"><X size={16} /></button>
@@ -118,9 +122,11 @@ function Overlays() {
 export function App() {
   const me = useStore(s => s.me), view = useStore(s => s.view), live = useStore(s => s.live);
   const consent = new URLSearchParams(location.search).get('consent');
-  useEffect(() => { void start(); }, []);
+  const shared = location.pathname.match(/^\/b\/([\w-]{4,40})\/?$/)?.[1];
+  useEffect(() => { if (!shared) void boot(); }, [shared]);
+  if (shared) return <><SharedBuild share={shared} /><Overlays /></>;
   if (!me) return <div className="lu-boot" />;
-  if (!me.signedIn) return <Landing onSignedIn={() => void start()} />;
+  if (!me.signedIn) return <Landing onSignedIn={() => void boot()} google={me.google} />;
   if (consent) return <><Consent id={consent} /><Overlays /></>;
   return (
     <div className="lu">
@@ -128,6 +134,8 @@ export function App() {
         <button className="lu-logo" onClick={() => go('drone')} aria-label="Lucidity"><img src="/favicon.svg" alt="" width="24" height="24" /></button>
         {VIEWS.map(([id, Icon, label]) => <button key={id} className={view === id ? 'is-on' : ''} onClick={() => go(id)} aria-current={view === id ? 'page' : undefined}><Icon size={19} /><span className="lu-rail-label">{label}</span></button>)}
         <span className="lu-rail-gap" />
+        {me.guest && <button className="lu-save" onClick={() => set({ dialog: 'save' })} title="Save your bench"><CloudUpload size={18} /><span className="lu-rail-label">Save</span></button>}
+        <FeedbackButton />
         <AssistantChip />
         <button onClick={toggleTheme} aria-label="Light or dark"><Sun size={17} className="only-dark" /><Moon size={17} className="only-light" /></button>
         <button onClick={signOut} aria-label="Sign out" title={me.email}><LogOut size={17} /></button>

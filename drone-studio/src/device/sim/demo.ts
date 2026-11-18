@@ -9,7 +9,12 @@ export function ardupilotDemo(options: ArdupilotSimOptions = {}): PortSource & {
   const sim = new ArdupilotSim(undefined, options);
   return { sim, label: 'Demo drone · ArduPilot', demo: true, async open() { const [host, device] = loopback('Demo drone · ArduPilot'); sim.inBootloader = false; sim.attach(device); return host; } };
 }
-export function betaflightDemo(options: BetaflightSimOptions = {}): PortSource & { sim: BetaflightSim } {
+/**
+ * The Betaflight demo has the most common new-build problem: it will not arm. Its ExpressLRS receiver speaks CRSF,
+ * but the flight controller is set to SBUS, so there is no signal. Fix the receiver protocol, save, and it arms.
+ */
+export const DEMO_FAULT = { receiver: 'CRSF', stored: { serialrx_provider: 'SBUS' } };
+export function betaflightDemo(options: BetaflightSimOptions = DEMO_FAULT): PortSource & { sim: BetaflightSim } {
   const sim = new BetaflightSim(options);
   return { sim, label: 'Demo drone · Betaflight', demo: true, async open() { const [host, device] = loopback('Demo drone · Betaflight'); sim.inBootloader = false; sim.attach(device); return host; } };
 }

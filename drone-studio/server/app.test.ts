@@ -22,7 +22,7 @@ describe('signing in', () => {
   it('creates an account, signs out and back in, and rejects a wrong password', async () => {
     const app = await startApp(); closers.push(() => app.close());
     const b = new Browser(app.base);
-    expect((await b.get('/api/me')).json).toEqual({ signedIn: false });
+    expect((await b.get('/api/me')).json).toMatchObject({ signedIn: false });
     const email = await b.signUp();
     expect((await b.get('/api/me')).json).toMatchObject({ signedIn: true, email, mode: 'propose', mcpUrl: `${app.base}/mcp`, assistants: [] });
     await b.post('/api/logout');
@@ -254,7 +254,7 @@ describe('two people', () => {
     expect((await browser.get('/api/export')).json.documents).toHaveLength(1);
     await browser.request('DELETE', '/api/account');
     await expect(claude.call('get_workspace')).rejects.toThrow();
-    expect((await browser.get('/api/me')).json).toEqual({ signedIn: false });
+    expect((await browser.get('/api/me')).json).toMatchObject({ signedIn: false });
     const left = (await Promise.all(['docs', 'activity', 'proposals', 'sessions', 'oauth_tokens', 'accounts'].map(c => app.store.list(c, '')))).flat();
     expect(left.filter(r => JSON.stringify(r).includes('acct_'))).toEqual([]);
   });
@@ -324,6 +324,103 @@ describe('rating parts', () => {
     expect((await browser.request('PUT', '/api/ratings/not-a-part', { stars: 3 })).status).toBe(404);
     await other.request('DELETE', '/api/ratings/motor.velox-v2207-1950');
     expect((await browser.get('/api/ratings')).json['motor.velox-v2207-1950']).toMatchObject({ average: 4, count: 1 });
-    expect((await new Browser(app.base).get('/api/ratings')).status).toBe(401);
+    expect((await new Browser(app.base).get('/api/ratings')).json['motor.velox-v2207-1950']).toMatchObject({ average: 4, count: 1 });
+    expect((await new Browser(app.base).request('PUT', '/api/ratings/motor.velox-v2207-1950', { stars: 5 })).status).toBe(401);
+  });
+});
+
+describe('trying it without signing up', () => {
+  it('makes a guest bench that works fully, then saves it with an email and keeps everything', async () => {
+    const app = await startApp(); closers.push(() => app.close());
+    const b = new Browser(app.base);
+    expect((await b.get('/api/me')).json).toEqual({ signedIn: false, google: false });
+    expect((await b.post('/api/guest')).json).toEqual({ signedIn: true, guest: true });
+    expect((await b.get('/api/me')).json).toMatchObject({ signedIn: true, guest: true, email: '' });
+    const doc = (await b.post('/api/docs', { kind: 'file', name: 'notes', content: 'props off' })).json;
+    // An assistant can connect to a guest bench too.
+    const grant = await b.connectAssistant('Claude');
+    expect(grant.access_token).toBeTruthy();
+    expect((await b.post('/api/save', { email: 'Pilot@Example.test', password: 'short' })).json.error.code).toBe('invalid');
+    expect((await b.post('/api/save', { email: 'Pilot@Example.test', password: 'correct horse' })).json).toEqual({ email: 'pilot@example.test' });
+    expect((await b.get('/api/me')).json).toMatchObject({ signedIn: true, guest: false, email: 'pilot@example.test' });
+    expect((await b.post('/api/save', { email: 'x@example.test', password: 'correct horse' })).json.error.code).toBe('invalid');
+    const again = new Browser(app.base);
+    await again.post('/api/login', { email: 'pilot@example.test', password: 'correct horse' });
+    expect((await again.get(`/api/docs/${doc.id}`)).json).toMatchObject({ content: 'props off' });
+  });
+
+  it('deletes guest benches nobody has opened for 30 days, and keeps saved ones', async () => {
+    const app = await startApp(); closers.push(() => app.close());
+    const old = new Browser(app.base), kept = new Browser(app.base);
+    await old.post('/api/guest'); await kept.post('/api/guest');
+    await kept.post('/api/save', { email: 'kept@example.test', password: 'correct horse' });
+    const accounts = await app.store.list<{ guest?: boolean; lastSeen?: number }>('accounts', '', 100);
+    for (const row of accounts) await app.store.put('accounts', '', row.id, { ...row.data, lastSeen: Date.now() - 31 * 86400_000, createdAt: Date.now() - 31 * 86400_000 });
+    expect(await app.auth.purgeGuests(30)).toHaveLength(1);
+    expect((await old.get('/api/me')).json.signedIn).toBe(false);
+    expect((await kept.get('/api/me')).json).toMatchObject({ signedIn: true, email: 'kept@example.test' });
+  });
+
+  it('signs in with Google, saving the guest bench under the verified email', async () => {
+    const claims = { iss: 'https://accounts.google.com', aud: 'client-1', sub: 'google-42', email: 'flyer@example.test', email_verified: true, exp: Math.floor(Date.now() / 1000) + 600 };
+    const idToken = `x.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.y`;
+    const fakeFetch = (async () => new Response(JSON.stringify({ id_token: idToken }), { status: 200 })) as typeof fetch;
+    const app = await startApp(undefined, undefined, undefined, { google: { clientId: 'client-1', clientSecret: 'secret', fetch: fakeFetch } }); closers.push(() => app.close());
+    const b = new Browser(app.base);
+    await b.post('/api/guest');
+    const doc = (await b.post('/api/docs', { kind: 'file', name: 'mine', content: 'x' })).json;
+    expect((await b.get('/api/me')).json.google).toBe(true);
+    const start = await fetch(`${app.base}/auth/google?next=/build`, { redirect: 'manual', headers: { cookie: b.cookie } });
+    expect(start.headers.get('location')).toMatch(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?client_id=client-1/);
+    const state = new URL(start.headers.get('location')!).searchParams.get('state')!;
+    const stateCookie = start.headers.get('set-cookie')!.split(';')[0];
+    const forged = await fetch(`${app.base}/auth/google/callback?code=abc&state=wrong`, { redirect: 'manual', headers: { cookie: `${b.cookie}; ${stateCookie}` } });
+    expect(forged.headers.get('location')).toMatch(/^\/\?signin=/);
+    const back = await fetch(`${app.base}/auth/google/callback?code=abc&state=${encodeURIComponent(state)}`, { redirect: 'manual', headers: { cookie: `${b.cookie}; ${stateCookie}` } });
+    expect(back.headers.get('location')).toBe('/build');
+    b.cookie = back.headers.get('set-cookie')!.split(';')[0];
+    expect((await b.get('/api/me')).json).toMatchObject({ signedIn: true, guest: false, email: 'flyer@example.test' });
+    expect((await b.get(`/api/docs/${doc.id}`)).json.content).toBe('x');
+    expect((await b.post('/api/login', { email: 'flyer@example.test', password: 'anything long' })).json.error.code).toBe('invalid');
+  });
+});
+
+describe('feedback and shared builds', () => {
+  it('takes feedback with context and a screenshot, and only admins can read it all', async () => {
+    const app = await startApp(undefined, undefined, undefined, { admins: ['boss@example.test'] }); closers.push(() => app.close());
+    const b = new Browser(app.base);
+    await b.post('/api/guest');
+    expect((await b.post('/api/feedback', { text: '' })).json.error.code).toBe('invalid');
+    expect((await b.post('/api/feedback', { text: 'Loved the dials.', context: { view: 'build', browser: 'Chrome' }, screenshot: 'data:image/png;base64,iVBORw0KGgo=' })).json).toEqual({ thanks: true });
+    expect((await b.post('/api/feedback', { kind: 'helpful', helpful: true })).json).toEqual({ thanks: true });
+    expect((await b.get('/api/admin/feedback')).status).toBe(404);
+    const boss = new Browser(app.base);
+    await boss.signUp('boss@example.test');
+    const all = (await boss.get('/api/admin/feedback')).json;
+    expect(all.map((f: any) => f.kind).sort()).toEqual(['feedback', 'helpful']);
+    const note = all.find((f: any) => f.kind === 'feedback');
+    expect(note).toMatchObject({ text: 'Loved the dials.', guest: true, context: { view: 'build' } });
+    const image = await fetch(app.base + note.screenshot, { headers: { cookie: boss.cookie } });
+    expect(image.headers.get('content-type')).toMatch(/image\/png/);
+  });
+
+  it('shares a build by link for anyone to read, and lets others copy it', async () => {
+    const app = await startApp(); closers.push(() => app.close());
+    const owner = new Browser(app.base);
+    await owner.post('/api/guest');
+    const build = (await owner.post('/api/docs', { kind: 'build', name: 'Shared quad', content: { goal: {}, items: [], log: [] } })).json;
+    const shared = (await owner.post(`/api/docs/${build.id}/share`)).json;
+    expect(shared.url).toBe(`${app.base}/b/${shared.share}`);
+    expect((await owner.post(`/api/docs/${build.id}/share`)).json.share).toBe(shared.share);
+    const stranger = new Browser(app.base);
+    expect((await stranger.get(`/api/shared/${shared.share}`)).json).toMatchObject({ name: 'Shared quad', content: { items: [] } });
+    expect((await stranger.post(`/api/shared/${shared.share}/copy`)).status).toBe(401);
+    await stranger.post('/api/guest');
+    const copy = (await stranger.post(`/api/shared/${shared.share}/copy`)).json;
+    expect((await stranger.get(`/api/docs/${copy.id}`)).json).toMatchObject({ kind: 'build', name: 'Shared quad' });
+    await owner.request('DELETE', `/api/docs/${build.id}/share`);
+    expect((await stranger.get(`/api/shared/${shared.share}`)).status).toBe(404);
+    const file = (await owner.post('/api/docs', { kind: 'file', name: 'f', content: 'x' })).json;
+    expect((await owner.post(`/api/docs/${file.id}/share`)).json.error.code).toBe('invalid');
   });
 });
