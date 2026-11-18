@@ -4,9 +4,11 @@
 
 # Lucidity
 
-**The drone bench your AI can use.**
+**Drone tools for your AI.**
 
-Plug in your drone. Ask Claude or ChatGPT. Approve the fix.
+Lucidity gives Claude, ChatGPT and other assistants the tools to read, test and fix your FPV drone.<br />It runs on the subscription you already have.
+
+Free and open source · No sign-up · No install · No API key
 
 <img src="docs/media/intro.png" alt="Lucidity: a quad that would not arm, now ready, with its receiver signal restored" width="820" />
 
@@ -16,15 +18,29 @@ Plug in your drone. Ask Claude or ChatGPT. Approve the fix.
 
 ## Say what’s wrong. See it fixed.
 
-Lucidity runs in your browser and connects to your drone over USB. Your assistant connects to Lucidity with one link. It reads the drone, finds the cause and proposes a change on the part it affects. Nothing is written until you approve it, and every change is read back from the drone to confirm it.
+Your assistant does the thinking. Lucidity does the hardware. It runs in your browser, connects to your drone over USB, and hands your assistant a set of tools: read every setting, run a check, propose a change. The change appears on the part it affects. Nothing is written until you approve it, and every change is read back from the drone to confirm it.
 
 Above, a new quad won’t arm. It hears nothing from its receiver: the receiver speaks CRSF, the flight controller expects SBUS. One approval, and it arms. The demo drone has the same problem, so you can try it yourself.
 
 <img src="docs/media/proposal.png" alt="The demo quad will not arm because it hears nothing from its receiver. Claude proposes switching the receiver protocol from SBUS to CRSF, with an Approve button beside it." width="820" />
 
-1. **Plug in.** Chrome or Edge, a USB cable. Nothing to install, no sign-up. Or open the demo drone.
-2. **Connect your AI.** Claude, ChatGPT, Claude Code, Cursor, VS Code or any agent. No API key.
+1. **Plug in.** Chrome or Edge and a USB cable. Or open the demo drone.
+2. **Connect your AI.** Add Lucidity as a connector in Claude, ChatGPT, Claude Code, Cursor or VS Code, with one link. Any other agent can set itself up from a skill file.
 3. **Approve.** You make the call. The drone changes only when you click.
+
+&nbsp;
+
+## Your AI, your subscription.
+
+Lucidity has no AI of its own and never asks for an API key. It works through the assistant you already use, on the plan you already pay for, with your history and preferences intact. Lucidity adds the parts an assistant can’t do alone: a USB connection to the drone, a map of everything the aircraft offers, and a screen where you see each step and approve it.
+
+| | |
+| --- | --- |
+| **Claude** | Settings → Connectors → Add custom connector |
+| **ChatGPT** | Settings → Connectors → Create |
+| **Claude Code** | `claude mcp add --transport http lucidity <your address>/mcp` |
+| **Cursor · VS Code** | One click from Lucidity’s menu |
+| **Any agent** | Point it at `<your address>/agent-onboarding/SKILL.md` |
 
 &nbsp;
 
@@ -67,7 +83,7 @@ Also: a history of every change and test, short-lived permissions for small chan
 
 ## You stay in control.
 
-Your assistant can read, test and propose. It can’t approve a change, confirm that props are off, or arm the drone. Motor spins and firmware flashes are always started by you. Everything an assistant does is recorded.
+Your assistant can read, test and propose. It can’t approve a change, confirm that props are off, or arm the drone. Motor spins and firmware flashes are always started by you. Everything an assistant does is recorded, and you can switch it to read-only, or off, at any time.
 
 &nbsp;
 
@@ -86,7 +102,7 @@ npm run build && npm run serve   # http://localhost:8787, data kept in memory
 npm test
 ```
 
-Assistants connect to `<your address>/mcp`.
+Assistants connect to `<your address>/mcp`, a standard [MCP](https://modelcontextprotocol.io) endpoint with sign-in.
 
 | Setting | What it does |
 | --- | --- |

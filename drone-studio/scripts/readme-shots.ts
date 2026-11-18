@@ -35,6 +35,7 @@ await page.locator(`[data-proposal="${proposal.proposal}"] button:has-text("Appr
 await claude.call('wait', { proposal: proposal.proposal, seconds: 30 });
 await page.waitForFunction(() => !document.querySelector('.dg-chip'), undefined, { timeout: 20_000 }).catch(() => {});
 await page.click('.lu-panel button[aria-label="Close"]').catch(() => {});
+await page.waitForTimeout(6000); // Let the confirmation notice fade.
 
 await page.click('[data-view="signals"]');
 await page.waitForTimeout(2500);
@@ -43,6 +44,8 @@ await shot('signals');
 await page.click('[data-section="build"]');
 await page.click('text=Start from this >> nth=1');
 await page.waitForSelector('.bd-row');
+await page.fill('input[aria-label="Budget in dollars"]', '750');
+await page.locator('input[aria-label="Budget in dollars"]').blur();
 await page.waitForTimeout(6000); // Let the toast go.
 await shot('build');
 await page.click('[aria-label="Swap the Motors"]');
