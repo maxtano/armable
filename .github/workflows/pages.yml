@@ -4,7 +4,7 @@ name: Publish the Lucidity intro page to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['site/**', 'docs/media/**', '.github/workflows/pages.yml']
+    paths: ['site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,20 +17,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/configure-pages@v5
-      - name: Assemble the page
+      - name: Assemble the site
         env:
           LUCIDITY_URL: ${{ vars.LUCIDITY_URL }}
         run: |
-          mkdir -p _site/media
+          cp -r site _site
           cp drone-studio/public/favicon.svg _site/
-          cp docs/media/proposal.png _site/media/
+          touch _site/.nojekyll
           python3 - <<'PY'
-          import os, re
+          import os, re, pathlib
           url = os.environ.get('LUCIDITY_URL', '').strip().rstrip('/')
           if url and not re.fullmatch(r'https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?', url):
               raise SystemExit(f'LUCIDITY_URL must be a plain https address, got: {url!r}')
-          page = open('site/index.html').read().replace('__LUCIDITY_URL__', url)
-          open('_site/index.html', 'w').write(page)
+          for page in pathlib.Path('_site').rglob('*.html'):
+              page.write_text(page.read_text().replace('__LUCIDITY_URL__', url))
           PY
       - uses: actions/upload-pages-artifact@v4
         with:

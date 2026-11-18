@@ -3,79 +3,153 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lucidity</title>
-  <meta name="description" content="Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen, and approve every change." />
+  <title>Lucidity – Drone tools for Claude and ChatGPT | Betaflight, ArduPilot, PX4</title>
+  <meta name="description" content="Plug in your FPV drone, ask Claude or ChatGPT what’s wrong, and approve the fix. Free, open-source drone setup tools for Betaflight, INAV, ArduPilot and PX4. Runs in your browser, on the AI subscription you already have." />
+  <link rel="canonical" href="https://maxtano.github.io/lucidity/" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#e9e7e2" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <style>
-    :root {
-      --bg: #f6f3ec; --surface: #fffdf8; --ink: #343137; --muted: #585259; --line: #d4cabd;
-      --primary: #174f63; --on-primary: #f6f3ec; --ai: #59425b; --you: #8e5a17;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg: #161819; --surface: #202426; --ink: #ecece8; --muted: #b9bfbb; --line: #444c4d;
-        --primary: #d6e0dd; --on-primary: #161819; --ai: #cdb3cf; --you: #e3b36f; }
-    }
-    * { box-sizing: border-box; margin: 0; }
-    body { background: var(--bg); color: var(--ink); font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
-    header { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
-    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--ink); text-decoration: none; }
-    .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 48px; align-items: center; padding: 40px 0 56px; }
-    h1 { font: 400 clamp(40px, 6vw, 68px)/1.04 Georgia, "Times New Roman", serif; letter-spacing: -0.02em; }
-    h1 em { color: var(--ai); }
-    .lede { margin-top: 20px; font-size: 19px; color: var(--muted); max-width: 30ch; }
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
-    .btn { display: inline-flex; align-items: center; height: 46px; padding: 0 22px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
-    .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-    small { display: block; margin-top: 14px; color: var(--muted); font-size: 13px; }
-    .shot { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 20px 60px #0000001f; animation: rise 700ms ease-out both; }
-    @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
-    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 8px 0 56px; }
-    .step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
-    .step b { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: var(--on-primary); margin-bottom: 12px; }
-    .step h2 { font-size: 18px; } .step p { color: var(--muted); margin-top: 4px; }
-    .agents { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 56px; }
-    .agents h2 { font-size: 18px; } .agents p { color: var(--muted); margin-top: 4px; }
-    code { display: block; margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: var(--bg); border: 1px dashed var(--line); font: 14px/1.4 ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
-    footer { border-top: 1px solid var(--line); padding: 22px 0 40px; color: var(--muted); font-size: 14px; }
-    footer a { color: inherit; }
-    body[data-app=""] .needs-app { display: none; }
-    body:not([data-app=""]) .no-app { display: none; }
-    @media (max-width: 800px) { .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 16px; } .steps { grid-template-columns: 1fr; } }
-    @media (prefers-reduced-motion: reduce) { .shot { animation: none; } }
-  </style>
+  <link rel="preload" href="fonts/manrope-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="style.css" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Lucidity" />
+  <meta property="og:title" content="Lucidity – Drone tools for your AI" />
+  <meta property="og:description" content="Plug in your drone. Ask Claude or ChatGPT what’s wrong. Approve the fix. Free and open source." />
+  <meta property="og:url" content="https://maxtano.github.io/lucidity/" />
+  <meta property="og:image" content="https://maxtano.github.io/lucidity/media/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Lucidity: drone tools for your AI" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Lucidity – Drone tools for your AI" />
+  <meta name="twitter:description" content="Plug in your drone. Ask Claude or ChatGPT what’s wrong. Approve the fix." />
+  <meta name="twitter:image" content="https://maxtano.github.io/lucidity/media/og.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Lucidity",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Web browser (Chrome, Edge)",
+    "description": "Drone tools for Claude, ChatGPT and other AI assistants. Read, test and fix Betaflight, INAV, ArduPilot and PX4 drones over USB, approving every change.",
+    "url": "https://maxtano.github.io/lucidity/",
+    "image": "https://maxtano.github.io/lucidity/media/og.png",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "sameAs": ["https://github.com/maxtano/lucidity"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Do I need an API key to use Lucidity with Claude or ChatGPT?", "acceptedAnswer": { "@type": "Answer", "text": "No. Lucidity has no AI of its own. You add it to Claude or ChatGPT as a connector and it runs on the subscription you already have." } },
+      { "@type": "Question", "name": "Which drones and firmware does Lucidity work with?", "acceptedAnswer": { "@type": "Answer", "text": "FPV quads and other drones running Betaflight, INAV, ArduPilot or PX4, over USB in Chrome or Edge. ESCs running BLHeli_S, Bluejay or AM32, and ExpressLRS receivers." } },
+      { "@type": "Question", "name": "Can the AI change my drone without asking?", "acceptedAnswer": { "@type": "Answer", "text": "No. The assistant can read, test and propose. Every change waits for you to approve it in Lucidity, and is read back from the drone to confirm it. It can never arm the drone or spin motors on its own." } },
+      { "@type": "Question", "name": "Is Lucidity free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Lucidity is free and open source under the Apache 2.0 licence." } },
+      { "@type": "Question", "name": "Do I need a drone to try it?", "acceptedAnswer": { "@type": "Answer", "text": "No. A demo drone is built in, and it has a real problem to fix: it will not arm. There is also a drone builder that checks parts work together, with prices and store links." } }
+    ]
+  }
+  </script>
 </head>
 <!-- The deploy workflow replaces __LUCIDITY_URL__ with the hosted app's address (the LUCIDITY_URL repository variable), or with nothing. -->
 <body data-app="__LUCIDITY_URL__">
   <div class="wrap">
-    <header>
-      <a class="logo" href="./"><img src="favicon.svg" alt="" width="24" height="24" />Lucidity</a>
-      <a class="btn needs-app" href="__LUCIDITY_URL__">Sign in</a>
+    <header class="top">
+      <a class="logo" href="./"><img src="favicon.svg" alt="" width="28" height="28" />Lucidity</a>
+      <nav class="links" aria-label="Site">
+        <a href="#how">How it works</a>
+        <a href="#build">Build a drone</a>
+        <a href="guides/quad-wont-arm/">Quad won’t arm?</a>
+        <a href="https://github.com/maxtano/lucidity">GitHub</a>
+      </nav>
+      <a class="btn needs-app" href="__LUCIDITY_URL__">Open Lucidity</a>
     </header>
+
     <section class="hero">
       <div>
-        <h1>Your drone.<br />Your AI.<br /><em>One bench.</em></h1>
-        <p class="lede">Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen.</p>
+        <h1>Drone tools for <em>your AI.</em></h1>
+        <p class="lede">Plug in your FPV drone. Ask Claude or ChatGPT what’s wrong. Approve the fix. It runs on the subscription you already have.</p>
         <div class="actions">
-          <a class="btn primary needs-app" href="__LUCIDITY_URL__">Open Lucidity</a>
+          <a class="btn signal needs-app" href="__LUCIDITY_URL__/?demo=betaflight">Try the demo drone</a>
           <a class="btn primary no-app" href="https://github.com/maxtano/lucidity#run-it">Run it yourself</a>
-          <a class="btn" href="https://github.com/maxtano/lucidity">Source on GitHub</a>
+          <a class="btn" href="https://github.com/maxtano/lucidity">View on GitHub</a>
         </div>
-        <small>No install. No API key. Betaflight, INAV, ArduPilot and PX4.</small>
+        <span class="fine">Free and open source · No sign-up · No install · No API key<br />Betaflight · INAV · ArduPilot · PX4</span>
       </div>
-      <img class="shot" src="media/proposal.png" width="2560" height="1600" alt="Claude proposes reversing motor 3. A ghost arrow and an Approve button appear on the motor itself." />
+      <img class="shot" src="media/proposal.jpg" width="1600" height="1000" alt="A quad that won’t arm in Lucidity: it hears nothing from its receiver, and Claude proposes switching the receiver protocol from SBUS to CRSF, with an Approve button." />
     </section>
-    <section class="steps" aria-label="How it works">
-      <article class="step"><b>1</b><h2>Plug in</h2><p>USB, in Chrome or Edge. Or try a demo drone.</p></article>
-      <article class="step"><b>2</b><h2>Ask</h2><p>In the Claude or ChatGPT you already use. Lucidity is one connector.</p></article>
-      <article class="step"><b>3</b><h2>Approve</h2><p>Every change appears on the part it affects. Nothing touches the drone until you click.</p></article>
+
+    <section id="how" aria-labelledby="how-title">
+      <h2 id="how-title">Say what’s wrong. See it fixed.</h2>
+      <p class="lede">Your assistant does the thinking. Lucidity does the hardware, and you make every call.</p>
+      <div class="grid3">
+        <article class="card"><span class="num">1</span><h3>Plug in</h3><p>Connect your flight controller over USB in Chrome or Edge. Nothing to install. No drone? Open the demo.</p></article>
+        <article class="card"><span class="num">2</span><h3>Ask your AI</h3><p>Add Lucidity to Claude, ChatGPT, Claude Code, Cursor or VS Code as a connector, with one link. Then say “my quad won’t arm”.</p></article>
+        <article class="card"><span class="num">3</span><h3>Approve</h3><p>The fix appears on the part it affects. Nothing changes until you click, and every change is read back to confirm it.</p></article>
+      </div>
     </section>
-    <section class="agents needs-app">
-      <h2>Setup for agents</h2>
-      <p>Paste this into any AI agent and it connects itself.</p>
-      <code>Read and follow __LUCIDITY_URL__/agent-onboarding/SKILL.md</code>
+
+    <section class="feature" aria-labelledby="fix-title">
+      <div>
+        <h2 id="fix-title">Fix the problems that stop you flying.</h2>
+        <p>Won’t arm, motors spinning the wrong way, no receiver signal, a shaky tune, GPS that never gets a fix. Your assistant reads every setting, runs the right checks and explains the cause in plain words.</p>
+        <p><a href="guides/quad-wont-arm/">Why won’t my quad arm? Every Betaflight arming flag, explained →</a></p>
+      </div>
+      <img class="shot" src="media/signals.jpg" width="1600" height="1000" loading="lazy" alt="Live readings on dials: battery voltage per cell, current, tilt and radio channels, above live charts." />
     </section>
-    <footer>Open source · Apache 2.0 · You approve every change to your aircraft</footer>
+
+    <section id="build" class="feature flip" aria-labelledby="build-title">
+      <div>
+        <h2 id="build-title">No drone yet? Build one.</h2>
+        <p>Choose what you want to fly and your budget. Pick every part, or start from a proven build. Lucidity checks that the frame, motors, ESC, props, battery, receiver and video system work together, and shows the cost, take-off weight, thrust-to-weight and flight time as you go.</p>
+        <p>Every part links to the stores that sell it. Share a build with one link.</p>
+      </div>
+      <img class="shot" src="media/build.jpg" width="1600" height="1000" loading="lazy" alt="Building a 5-inch FPV drone: dials for cost, take-off weight, thrust to weight and flight time, and a compatibility check." />
+    </section>
+
+    <section aria-labelledby="works-title">
+      <h2 id="works-title">Works with what you fly.</h2>
+      <table>
+        <thead><tr><th></th><th>Betaflight · INAV</th><th>ArduPilot · PX4</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Live readings</th><td>Attitude, battery, radio, motors, GPS, sensors, arming blocks</td><td>Plus vibration, EKF and status messages</td></tr>
+          <tr><th scope="row">Settings</th><td>Every value, with ranges and readback</td><td>Every parameter, with readback</td></tr>
+          <tr><th scope="row">Tests</th><td>Health checks, motor spin, calibration</td><td>Plus level, gyro, barometer and arming checks</td></tr>
+          <tr><th scope="row">ESCs</th><td>BLHeli_S, Bluejay and AM32</td><td>Through passthrough</td></tr>
+          <tr><th scope="row">Firmware</th><td>Flight controller, ExpressLRS receivers</td><td>Flight controller</td></tr>
+          <tr><th scope="row">Flight logs</th><td>Blackbox download and analysis</td><td>Download and analysis</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section aria-labelledby="faq-title">
+      <h2 id="faq-title">Questions</h2>
+      <div style="margin-top: 24px">
+        <details open><summary>Do I need an API key?</summary><p>No. Lucidity has no AI of its own. You add it to Claude or ChatGPT as a connector, and it runs on the subscription you already have, with your history and preferences intact.</p></details>
+        <details><summary>Which drones does it work with?</summary><p>Anything running Betaflight, INAV, ArduPilot or PX4, connected over USB in Chrome or Edge. ESCs on BLHeli_S, Bluejay or AM32, and ExpressLRS receivers.</p></details>
+        <details><summary>Can the AI change my drone without asking?</summary><p>No. It can read, test and propose. Every change waits for your approval, and is read back from the drone to confirm it. It can never arm the drone, spin motors or flash firmware on its own.</p></details>
+        <details><summary>Do I need a drone to try it?</summary><p>No. The demo drone has a real problem to solve: it won’t arm. Ask your AI why.</p></details>
+        <details><summary>Is it free?</summary><p>Yes. Free and open source, under the Apache 2.0 licence.</p></details>
+      </div>
+    </section>
+
+    <div class="cta">
+      <h2>Your drone. Your AI. One bench.</h2>
+      <p>Free, open source, and running in your browser.</p>
+      <a class="btn needs-app" href="__LUCIDITY_URL__/?demo=betaflight">Try the demo drone</a>
+      <a class="btn no-app" href="https://github.com/maxtano/lucidity">Get it on GitHub</a>
+    </div>
+
+    <footer>
+      <span>Lucidity · Apache 2.0</span>
+      <a href="guides/quad-wont-arm/">Quad won’t arm?</a>
+      <a href="https://github.com/maxtano/lucidity">GitHub</a>
+      <a href="https://github.com/maxtano/lucidity/blob/main/SECURITY.md">Security</a>
+      <span>You approve every change to your aircraft.</span>
+    </footer>
   </div>
 </body>
 </html>

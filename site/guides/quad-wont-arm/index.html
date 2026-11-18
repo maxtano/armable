@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quad won’t arm? Every Betaflight arming flag explained, and how to fix it | Lucidity</title>
+  <meta name="description" content="Why your FPV quad won’t arm in Betaflight: RXLOSS, THROTTLE, ANGLE, NOT_DISARMED, RPMFILTER and every other arming disable flag in plain words, with the fix for each. Plus ArduPilot PreArm checks." />
+  <link rel="canonical" href="https://maxtano.github.io/lucidity/guides/quad-wont-arm/" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#e9e7e2" />
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml" />
+  <link rel="preload" href="../../fonts/manrope-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="../../style.css" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Lucidity" />
+  <meta property="og:title" content="Quad won’t arm? Every Betaflight arming flag, explained" />
+  <meta property="og:description" content="RXLOSS, THROTTLE, ANGLE, NOT_DISARMED and the rest, in plain words, with the fix for each." />
+  <meta property="og:url" content="https://maxtano.github.io/lucidity/guides/quad-wont-arm/" />
+  <meta property="og:image" content="https://maxtano.github.io/lucidity/media/og-wont-arm.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://maxtano.github.io/lucidity/media/og-wont-arm.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "TechArticle",
+        "headline": "Quad won’t arm? Every Betaflight arming flag explained, and how to fix it",
+        "description": "Why an FPV quad won’t arm in Betaflight, flag by flag, with the fix for each, plus ArduPilot PreArm checks.",
+        "image": "https://maxtano.github.io/lucidity/media/og-wont-arm.png",
+        "author": { "@type": "Organization", "name": "Lucidity", "url": "https://maxtano.github.io/lucidity/" },
+        "publisher": { "@type": "Organization", "name": "Lucidity", "logo": { "@type": "ImageObject", "url": "https://maxtano.github.io/lucidity/favicon.svg" } },
+        "datePublished": "2026-11-18",
+        "dateModified": "2026-11-18",
+        "mainEntityOfPage": "https://maxtano.github.io/lucidity/guides/quad-wont-arm/"
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Lucidity", "item": "https://maxtano.github.io/lucidity/" },
+          { "@type": "ListItem", "position": 2, "name": "Quad won’t arm", "item": "https://maxtano.github.io/lucidity/guides/quad-wont-arm/" }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "How do I see why my quad won’t arm in Betaflight?", "acceptedAnswer": { "@type": "Answer", "text": "Connect to Betaflight Configurator and look at Arming Disable Flags on the Setup tab, or type status in the CLI. The OSD also shows the first flag as a warning in your goggles." } },
+          { "@type": "Question", "name": "What does RXLOSS mean in Betaflight?", "acceptedAnswer": { "@type": "Answer", "text": "The flight controller is getting no signal from the receiver. The usual causes are a receiver that is not bound, Serial RX set on the wrong UART, or the wrong receiver protocol. ExpressLRS and Crossfire receivers need the protocol set to CRSF." } },
+          { "@type": "Question", "name": "Why does my quad show CLI and MSP arming flags?", "acceptedAnswer": { "@type": "Answer", "text": "Those two appear whenever the quad is plugged into a configurator. They are normal and clear when you unplug it." } },
+          { "@type": "Question", "name": "What does the THROTTLE arming flag mean?", "acceptedAnswer": { "@type": "Answer", "text": "Throttle is above the minimum Betaflight accepts for arming. Put the throttle stick all the way down. If it already is, check that your radio sends about 1000 at the bottom of the stick on the Receiver tab." } },
+          { "@type": "Question", "name": "What does the ANGLE arming flag mean?", "acceptedAnswer": { "@type": "Answer", "text": "The quad is tilted more than the arming limit, small_angle, which is 25 degrees by default. Put it on a level surface. If it is level, calibrate the accelerometer on the Setup tab." } }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body data-app="__LUCIDITY_URL__">
+  <div class="wrap narrow">
+    <header class="top">
+      <a class="logo" href="../../"><img src="../../favicon.svg" alt="" width="28" height="28" />Lucidity</a>
+      <a class="btn needs-app" href="__LUCIDITY_URL__/?demo=betaflight">Try the demo</a>
+    </header>
+
+    <article class="guide">
+      <p class="crumbs"><a href="../../">Lucidity</a> › Guides</p>
+      <h1 style="margin-top: 14px">Quad won’t arm? Here’s why.</h1>
+      <p class="lede">Betaflight always knows why it won’t arm. It just tells you in a code. This page translates every code, with the fix.</p>
+
+      <div class="callout ok"><b>The short version.</b> Plug the quad into Betaflight Configurator, open the CLI and type <code>status</code>. The line <code>Arming disable flags</code> lists every reason. Find each one below. Ignore <code>CLI</code> and <code>MSP</code>: those only appear because the configurator is connected.</div>
+
+      <h2>Where to find the reason</h2>
+      <ul>
+        <li><b>Setup tab:</b> Betaflight Configurator lists the active <b>Arming Disable Flags</b> on the Setup tab.</li>
+        <li><b>CLI:</b> type <code>status</code>. The flags are on the line that starts <code>Arming disable flags:</code>.</li>
+        <li><b>Goggles:</b> with the OSD on, the first flag shows as a warning in the middle of the screen when you try to arm.</li>
+        <li><b>Beeps:</b> many builds beep a pattern when arming is refused. It’s quicker to read the flag than to count beeps.</li>
+      </ul>
+
+      <h2>The one that catches most new builds: RXLOSS</h2>
+      <p><code>RXLOSS</code> means the flight controller hears nothing from your receiver. Everything else can be perfect and it still won’t arm. Check these in order:</p>
+      <ol>
+        <li><b>Is the receiver bound?</b> On ExpressLRS the receiver LED goes solid when it’s linked to your radio. A slow blink means it’s waiting for a bind or a matching binding phrase.</li>
+        <li><b>Is the protocol right?</b> ExpressLRS and Crossfire receivers speak <b>CRSF</b>. FrSky and Futaba usually speak SBUS, FlySky IBUS. A new flight controller often ships set to something else. In the CLI:
+          <pre>get serialrx_provider
+set serialrx_provider = CRSF
+save</pre></li>
+        <li><b>Is Serial RX on the right port?</b> On the Ports tab, turn on <b>Serial RX</b> for the UART your receiver is soldered to, and only that one.</li>
+        <li><b>Are TX and RX swapped?</b> Receiver TX goes to flight controller RX, and receiver RX to flight controller TX.</li>
+        <li><b>Does the receiver get power?</b> Some pads only carry power with the battery plugged in, not on USB alone.</li>
+      </ol>
+      <p>Once the Receiver tab shows the bars moving with your sticks, <code>RXLOSS</code> is gone.</p>
+
+      <h2>Every Betaflight arming flag</h2>
+      <table>
+        <thead><tr><th>Flag</th><th>What it means</th><th>What to do</th></tr></thead>
+        <tbody>
+          <tr><td><code>RXLOSS</code></td><td>No signal from the receiver.</td><td>Bind it, set the right protocol (CRSF for ExpressLRS), turn on Serial RX on the right UART. See above.</td></tr>
+          <tr><td><code>FAILSAFE</code></td><td>Failsafe is active: the radio link was lost.</td><td>Restore the link, then disarm and arm again. Check your failsafe settings once it’s working.</td></tr>
+          <tr><td><code>NOT_DISARMED</code></td><td>The arm switch was on when the quad powered up.</td><td>Flip the arm switch off, then on.</td></tr>
+          <tr><td><code>ARMSWITCH</code></td><td>The arm switch is already on while something else blocked arming.</td><td>Fix the other flag, then flip the switch off and on again.</td></tr>
+          <tr><td><code>THROTTLE</code></td><td>Throttle isn’t at the bottom.</td><td>Throttle stick all the way down. If it is, check the Receiver tab shows about 1000 there, and calibrate your radio’s endpoints.</td></tr>
+          <tr><td><code>ANGLE</code></td><td>The quad isn’t level enough. The limit is <code>small_angle</code>, 25° by default.</td><td>Put it on a level surface. If it’s level, calibrate the accelerometer.</td></tr>
+          <tr><td><code>NO_ACC_CAL</code></td><td>The accelerometer has never been calibrated.</td><td>Setup tab, Calibrate Accelerometer, on a level surface.</td></tr>
+          <tr><td><code>CALIB</code></td><td>Sensors are calibrating.</td><td>Keep it still for a few seconds.</td></tr>
+          <tr><td><code>BOOTGRACE</code></td><td>Still starting up.</td><td>Wait a few seconds after plugging in the battery.</td></tr>
+          <tr><td><code>CLI</code>, <code>MSP</code></td><td>A configurator is connected.</td><td>Normal while plugged in. They clear when you unplug.</td></tr>
+          <tr><td><code>RPMFILTER</code></td><td>RPM filtering is on, but the ESCs send no RPM data.</td><td>Use ESC firmware with bidirectional DShot (Bluejay, AM32, BLHeli_32), or turn off <code>dshot_bidir</code>. Check <code>motor_poles</code> matches your motors.</td></tr>
+          <tr><td><code>MOTOR_PROTO</code></td><td>No motor protocol is set.</td><td>Motors tab: choose DShot300 or DShot600, then save.</td></tr>
+          <tr><td><code>DSHOT_BBANG</code></td><td>DShot bitbang isn’t working on this board.</td><td>Try <code>set dshot_bitbang = OFF</code>, or update the firmware.</td></tr>
+          <tr><td><code>RUNAWAY</code></td><td>Runaway takeoff protection tripped: the quad spun up and didn’t behave.</td><td>Props off, then check motor order, motor direction and prop direction on the Motors tab. Disarm and arm again.</td></tr>
+          <tr><td><code>CRASH</code></td><td>Crash recovery tripped.</td><td>Disarm and arm again.</td></tr>
+          <tr><td><code>BOXFAILSAFE</code></td><td>A switch on your radio has failsafe mode on.</td><td>Turn that switch off.</td></tr>
+          <tr><td><code>NOPREARM</code></td><td>A prearm switch is set up and isn’t on.</td><td>Flip the prearm switch, then arm.</td></tr>
+          <tr><td><code>CMS</code></td><td>The OSD menu is open.</td><td>Exit the menu.</td></tr>
+          <tr><td><code>PARALYZE</code></td><td>Paralyze mode is on, after a crash or a lost model.</td><td>Power-cycle the quad.</td></tr>
+          <tr><td><code>GPS</code></td><td>GPS Rescue needs a fix before arming.</td><td>Wait for enough satellites, or change the GPS Rescue arming rule.</td></tr>
+          <tr><td><code>RESCUE_SW</code></td><td>The GPS Rescue switch is on.</td><td>Turn it off.</td></tr>
+          <tr><td><code>LOAD</code></td><td>The processor is overloaded.</td><td>Lower the PID loop rate or turn off features you don’t use.</td></tr>
+          <tr><td><code>REBOOT_REQD</code></td><td>A setting needs a restart.</td><td>Unplug and plug back in, or type <code>reboot</code> in the CLI.</td></tr>
+          <tr><td><code>NOGYRO</code></td><td>No gyro was found.</td><td>Usually the wrong firmware target for your board. Flash the right one. If that fails, the board may be damaged.</td></tr>
+        </tbody>
+      </table>
+      <p>Flag names can differ slightly between Betaflight versions. When in doubt, the CLI <code>status</code> line is the source of truth.</p>
+
+      <h2>ArduPilot and PX4: PreArm checks</h2>
+      <p>ArduPilot tells you in words. Messages starting <code>PreArm:</code> appear in Mission Planner’s Messages tab and on the HUD. The common ones on a new build are radio not calibrated, compass not calibrated, accelerometers inconsistent, battery below the failsafe voltage, and no GPS lock in a mode that needs one. Fix what the message names, then try again. PX4 shows the same kind of preflight failure in QGroundControl.</p>
+
+      <h2>Or let your AI find it</h2>
+      <p><a href="../../">Lucidity</a> gives Claude, ChatGPT and other assistants the tools to read your flight controller over USB, in the browser. Tell it “my quad won’t arm”. It reads the arming flags and your settings, finds the cause, and proposes the fix on the part it affects. Nothing changes until you approve it. It runs on the AI subscription you already have, with no API key.</p>
+      <img class="shot" style="margin-top: 22px" src="../../media/proposal.jpg" width="1600" height="1000" loading="lazy" alt="Lucidity finds a quad won’t arm because the receiver protocol is SBUS while the ExpressLRS receiver speaks CRSF, and proposes the fix with an Approve button." />
+    </article>
+
+    <div class="cta">
+      <h2>Try it on a quad that won’t arm.</h2>
+      <p>The demo drone has exactly this problem. Free and open source.</p>
+      <a class="btn needs-app" href="__LUCIDITY_URL__/?demo=betaflight">Open the demo drone</a>
+      <a class="btn no-app" href="https://github.com/maxtano/lucidity">Get Lucidity on GitHub</a>
+    </div>
+
+    <footer>
+      <a href="../../">Lucidity</a>
+      <a href="https://github.com/maxtano/lucidity">GitHub</a>
+      <span>Free and open source · Apache 2.0</span>
+    </footer>
+  </div>
+</body>
+</html>

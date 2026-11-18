@@ -8,7 +8,7 @@
 
 Lucidity gives Claude, ChatGPT and other assistants the tools to read, test and fix your FPV drone.<br />It runs on the subscription you already have.
 
-Free and open source · No sign-up · No install · No API key
+Free and open source · No sign-up · No install · No API key<br />For FPV quads and drones on Betaflight, INAV, ArduPilot and PX4 · [Website](https://maxtano.github.io/lucidity/)
 
 <img src="docs/media/intro.png" alt="Lucidity: a quad that would not arm, now ready, with its receiver signal restored" width="820" />
 
@@ -20,7 +20,7 @@ Free and open source · No sign-up · No install · No API key
 
 Your assistant does the thinking. Lucidity does the hardware. It runs in your browser, connects to your drone over USB, and hands your assistant a set of tools: read every setting, run a check, propose a change. The change appears on the part it affects. Nothing is written until you approve it, and every change is read back from the drone to confirm it.
 
-Above, a new quad won’t arm. It hears nothing from its receiver: the receiver speaks CRSF, the flight controller expects SBUS. One approval, and it arms. The demo drone has the same problem, so you can try it yourself.
+Above, a new quad won’t arm. It hears nothing from its receiver: the receiver speaks CRSF, the flight controller expects SBUS. One approval, and it arms. The demo drone has the same problem, so you can try it yourself. Fixing one by hand? [Every Betaflight arming flag, explained](https://maxtano.github.io/lucidity/guides/quad-wont-arm/).
 
 <img src="docs/media/proposal.png" alt="The demo quad will not arm because it hears nothing from its receiver. Claude proposes switching the receiver protocol from SBUS to CRSF, with an Approve button beside it." width="820" />
 
