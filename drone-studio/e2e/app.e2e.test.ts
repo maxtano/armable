@@ -153,13 +153,14 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     await page.waitForSelector('.lu-status.is-connected');
     await page.waitForSelector('.dg-chip:has-text("Won\'t arm")');
     expect(new URL(page.url()).search).toBe('');
-    await page.waitForSelector('.lu-save');
-    await page.click('button[aria-label="Send feedback"]');
+    await page.click('button[aria-label="Menu"]');
+    await page.waitForSelector('.lu-menu button:has-text("Save your bench")');
+    await page.click('.lu-menu button:has-text("Send feedback")');
     await page.fill('textarea[aria-label="Your feedback"]', 'The demo is great.');
     await page.click('.gr-dialog button:has-text("Send")');
     await page.waitForSelector('.gr-thanks');
     // Build, share, and open the link as someone else.
-    await page.click('.lu-rail button:has-text("Build")');
+    await page.click('[data-section="build"]');
     await page.click('text=Start from this >> nth=0');
     await page.waitForSelector('.bd-row');
     await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
@@ -218,7 +219,8 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     const { page, errors } = await signedInPage();
     await page.click('[data-demo=betaflight]');
     await page.waitForSelector('.lu-status.is-connected');
-    await page.click('.lu-chips.is-quiet button:has-text("On-screen display")');
+    await page.click('.lu-top button:has-text("Parts")');
+    await page.click('.lu-menu button:has-text("On-screen display")');
     const vbat = page.locator('[data-osd="vbat"]');
     await vbat.waitFor();
     await vbat.focus();
@@ -240,7 +242,8 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     const { page, errors } = await signedInPage();
     await page.click('[data-demo=betaflight]');
     await page.waitForSelector('.lu-status.is-connected');
-    await page.click('.lu-chips.is-quiet button:has-text("Video")');
+    await page.click('.lu-top button:has-text("Parts")');
+    await page.click('.lu-menu button:has-text("Video")');
     const table = page.locator('[data-setting="bf.vtxtable"]');
     await table.waitFor();
     await table.locator('select').selectOption('Tramp');
@@ -256,7 +259,7 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     const { page, errors } = await signedInPage();
     await page.click('[data-demo=betaflight]');
     await page.waitForSelector('.lu-status.is-connected');
-    await page.click('.lu-rail button:has-text("Flights")');
+    await page.click('[data-view="flights"]');
     await page.click('button:has-text("Analyse latest")');
     await page.waitForSelector('.lu-findings', { timeout: 30000 });
     expect(await page.locator('.lu-page-head').innerText()).toContain('Betaflight Blackbox');
@@ -272,7 +275,8 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     const { page, context, errors } = await signedInPage();
     await page.click('[data-demo=betaflight]');
     await page.waitForSelector('.lu-status.is-connected');
-    await page.click('.lu-rail button:has-text("Assistant")');
+    await page.click('button[aria-label="Menu"]');
+    await page.click('.lu-menu button:has-text("Your assistant")');
     await page.getByRole('button', { name: 'Allow' }).click();
     await page.waitForSelector('.lu-toast:has-text("Permission on")');
     const person = new Browser(app.base);
@@ -283,7 +287,8 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
       const p = await claude.call('propose_change', { changes: [{ id: 'bf.p_roll', value: 48 }] });
       expect(p.status).toBe('approved');
       expect((await claude.call('wait', { proposal: p.proposal, seconds: 30 })).status).toBe('done');
-      await page.click('.lu-rail button:has-text("History")');
+      await page.click('[data-section="bench"]');
+      await page.click('[data-view="history"]');
       await page.waitForSelector('.lu-hrow:has-text("propose_change")');
       await page.click('.lu-chips button:has-text("Changes")');
       await page.waitForSelector('.lu-hrow:has-text("bf.p_roll")');
@@ -313,7 +318,8 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     // Back online without a reload: the drone stays connected and the offline change reaches the history.
     await page.waitForSelector('.lu-toast:has-text("Back online")', { timeout: 10000 });
     expect(await page.locator('.lu-status.is-connected').count()).toBe(1);
-    await page.click('.lu-rail button:has-text("History")');
+    await page.click('[data-section="bench"]');
+      await page.click('[data-view="history"]');
     await page.click('.lu-chips button:has-text("Changes")');
     await page.waitForSelector('.lu-hrow:has-text("param.BATT_CAPACITY")', { timeout: 10000 });
     expect(errors.filter(e => !/Failed to fetch|NetworkError|ERR_INTERNET/.test(e))).toEqual([]);

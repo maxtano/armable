@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { Activity, AudioLines, Bot, Cable, ChartSpline, CloudUpload, Eye, FileUp, Hammer, History as HistoryIcon, LogOut, Moon, Navigation, Plug, Radio, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
+import { Activity, Bot, Cable, ChevronDown, CloudUpload, Eye, FileUp, Hammer, LogOut, Menu as MenuIcon, MessageSquarePlus, Moon, Navigation, Plug, Radio, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
 import { useState } from 'react';
 import { Build, SharedBuild } from './Build';
-import { boot, FeedbackButton, FeedbackDialog, HelpfulPrompt, SaveDialog } from './Growth';
+import { boot, FeedbackDialog, HelpfulPrompt, SaveDialog } from './Growth';
 import { History } from './History';
 import { OsdEditor } from './OsdEditor';
 import { RadioFlash } from './RadioFlash';
@@ -10,7 +10,7 @@ import type { PartId } from '../device/types';
 import { Connect, Consent, ModeSwitch } from './Connect';
 import { answerPrompt, connectDemo, connectUsb, disconnect, go, select, signOut, stopAll } from './controller';
 import { Diagram } from './Diagram';
-import { Coil } from './Instruments';
+import { Coil, Lamp } from './Instruments';
 import { Flights } from './Flights';
 import { Landing } from './Landing';
 import { PartPanel, Proposal } from './PartPanel';
@@ -22,37 +22,102 @@ import { Sound } from './Sound';
 import { set, useStore, type View } from './store';
 import { Timeline } from './Timeline';
 
-const VIEWS: [View, typeof Activity, string][] = [['drone', Navigation, 'Drone'], ['build', Hammer, 'Build'], ['signals', Activity, 'Signals'], ['flights', ChartSpline, 'Flights'], ['show', Sparkles, 'Show'], ['sound', AudioLines, 'Sound'], ['settings', SlidersHorizontal, 'Settings'], ['history', HistoryIcon, 'History']];
+/** Four places, no more: the drone, building one, shows, and a menu for everything about you and your assistant. */
+type Section = 'bench' | 'build' | 'create';
+const SECTIONS: [Section, typeof Activity, string, View][] = [['bench', Navigation, 'Drone', 'drone'], ['build', Hammer, 'Build', 'build'], ['create', Sparkles, 'Shows', 'show']];
+const PAGES: Record<Section, [View, string][]> = {
+  bench: [['drone', 'Drone'], ['signals', 'Signals'], ['flights', 'Flights'], ['settings', 'Settings'], ['history', 'History']],
+  build: [],
+  create: [['show', 'Show'], ['sound', 'Sound']],
+};
+const sectionOf = (view: View): Section | undefined => view === 'build' ? 'build' : view === 'show' || view === 'sound' ? 'create' : view === 'connect' ? undefined : 'bench';
 const theme = () => document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 function toggleTheme() { const next = theme() === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = next; try { localStorage.setItem('lucidity.appearance.v1', next); } catch { /* private mode */ } }
 
-function AssistantChip() {
-  const me = useStore(s => s.me), activity = useStore(s => s.activity), open = useStore(s => s.view === 'connect');
-  const last = [...activity].reverse().find(a => a.who !== 'you');
-  const active = !!last && Date.now() - last.at < 4000;
-  const names = me?.assistants?.map(a => a.name) ?? [];
+/** A small popover that closes when you click elsewhere or press Escape. */
+function usePopover() {
+  const [open, setOpen] = useState(false), ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    addEventListener('mousedown', away); addEventListener('keydown', key);
+    return () => { removeEventListener('mousedown', away); removeEventListener('keydown', key); };
+  }, [open]);
+  return { open, setOpen, ref };
+}
+
+function Rail() {
+  const view = useStore(s => s.view), me = useStore(s => s.me)!, pending = useStore(s => s.proposals.filter(p => p.status === 'awaiting_approval'));
+  const current = sectionOf(view);
   return (
-    <button className={`lu-assistant mode-${me?.mode ?? 'propose'}${active ? ' is-active' : ''}${open ? ' is-on' : ''}`} onClick={() => go('connect')} aria-label={`Assistant: ${names.join(', ') || 'none connected'}, ${me?.mode ?? 'propose'}`}>
-      <span className="lu-assistant-ring"><Bot size={18} /></span>
-      <span className="lu-rail-label">{names[0] ?? 'Assistant'}</span>
-    </button>
+    <nav className="lu-rail" aria-label="Sections">
+      <img className="lu-logo" src="/favicon.svg" alt="Lucidity" width="26" height="26" />
+      {SECTIONS.map(([id, Icon, label, home]) => (
+        <button key={id} data-section={id} data-label={label} aria-label={label} className={current === id ? 'is-on' : ''} aria-current={current === id ? 'page' : undefined}
+          onClick={() => id === 'bench' && pending.length ? go('drone', pending[0].part as PartId) : go(current === id ? view : home)}>
+          <Icon size={20} />
+          {id === 'bench' && pending.length > 0 && <i className="lu-count" aria-label={`${pending.length} waiting for you`}>{pending.length}</i>}
+        </button>
+      ))}
+      <span className="lu-rail-gap" />
+      <Menu guest={!!me.guest} email={me.email} />
+    </nav>
+  );
+}
+
+function Menu({ guest, email }: { guest: boolean; email?: string }) {
+  const { open, setOpen, ref } = usePopover();
+  const me = useStore(s => s.me), activity = useStore(s => s.activity), follow = useStore(s => s.follow), view = useStore(s => s.view);
+  const names = me?.assistants?.map(a => a.name) ?? [];
+  const last = [...activity].reverse().find(a => a.who !== 'you'), active = !!last && Date.now() - last.at < 4000;
+  const pick = (fn: () => void) => () => { setOpen(false); fn(); };
+  return (
+    <div className="lu-menu-wrap" ref={ref}>
+      <button className={`lu-menu-button${open || view === 'connect' ? ' is-on' : ''}${active ? ' is-active' : ''}`} data-label="Menu" aria-label="Menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <MenuIcon size={20} />
+        {names.length > 0 && <Lamp tone="ok" />}
+        {guest && <i className="lu-dot-signal" aria-hidden />}
+      </button>
+      {open && (
+        <div className="lu-menu" role="menu">
+          <button role="menuitem" onClick={pick(() => go('connect'))}><Bot size={17} /><span><b>Your assistant</b><small>{names.length ? `${names.join(', ')} connected` : 'Not connected yet'}</small></span></button>
+          <label className="lu-menu-switch"><Eye size={17} /><span><b>Follow the assistant</b><small>Show what it’s looking at</small></span><input type="checkbox" checked={follow} onChange={() => set({ follow: !follow })} /></label>
+          <hr />
+          {guest && <button role="menuitem" className="is-signal" onClick={pick(() => set({ dialog: 'save' }))}><CloudUpload size={17} /><span><b>Save your bench</b><small>Keep it, from any browser</small></span></button>}
+          <button role="menuitem" onClick={pick(() => set({ dialog: 'feedback' }))}><MessageSquarePlus size={17} /><span><b>Send feedback</b></span></button>
+          <button role="menuitem" onClick={pick(toggleTheme)}><Moon size={17} className="only-light" /><Sun size={17} className="only-dark" /><span><b className="only-light">Dark mode</b><b className="only-dark">Light mode</b></span></button>
+          <button role="menuitem" onClick={pick(() => void signOut())}><LogOut size={17} /><span><b>Sign out</b>{email && <small>{email}</small>}</span></button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The other parts of the drone, the ones the drawing does not show. */
+function PartsMenu() {
+  const { open, setOpen, ref } = usePopover();
+  const part = useStore(s => s.part);
+  return (
+    <div className="lu-menu-wrap" ref={ref}>
+      <button className={`lu-btn${open ? ' is-open' : ''}`} aria-expanded={open} onClick={() => setOpen(!open)}><SlidersHorizontal size={14} /> Parts <ChevronDown size={13} /></button>
+      {open && <div className="lu-menu is-down" role="menu">{CHIP_PARTS.map(p => <button key={p} role="menuitem" className={part === p ? 'is-current' : ''} onClick={() => { setOpen(false); go('drone', p as PartId); }}><span><b>{PART_NAME[p]}</b></span></button>)}</div>}
+    </div>
   );
 }
 
 function TopBar() {
-  const snap = useStore(s => s.snap), busy = useStore(s => s.busy), part = useStore(s => s.part), follow = useStore(s => s.follow), view = useStore(s => s.view);
-  const pending = useStore(s => s.proposals.filter(p => p.status === 'awaiting_approval'));
-  const connected = snap.status === 'connected', id = snap.identity;
-  const parts = connected ? CHIP_PARTS : [];
+  const snap = useStore(s => s.snap), busy = useStore(s => s.busy), view = useStore(s => s.view);
+  const connected = snap.status === 'connected', id = snap.identity, section = sectionOf(view);
+  const pages = section ? PAGES[section] : [];
   return (
     <header className="lu-top">
       <div className={`lu-status is-${snap.status}${snap.state?.armed ? ' is-armed' : ''}`}>
         <i />{connected ? <><b>{id?.craftName ?? id?.firmware}</b><span>{id?.firmware} {id?.version}</span></> : snap.status === 'reconnecting' ? <b>Restarting…</b> : snap.status === 'connecting' ? <b>Connecting…</b> : <b>No drone</b>}
       </div>
-      {connected && view === 'drone' && <nav className="lu-chips is-quiet" aria-label="More parts">{parts.map(p => <button key={p} className={part === p ? 'is-on' : ''} onClick={() => select(p as PartId)}>{PART_NAME[p]}</button>)}</nav>}
+      {pages.length > 1 && <nav className="lu-tabs" aria-label="Pages">{pages.map(([v, label]) => <button key={v} data-view={v} className={view === v ? 'is-on' : ''} aria-current={view === v ? 'page' : undefined} onClick={() => go(v)}>{label}</button>)}</nav>}
       <div className="lu-top-end">
-        {pending.length > 0 && <button className="lu-badge" onClick={() => go('drone', pending[0].part as PartId)}>{pending.length} waiting</button>}
-        <button className={`lu-icon${follow ? ' is-on' : ''}`} onClick={() => set({ follow: !follow })} aria-pressed={follow} aria-label="Follow the assistant" title="Follow the assistant"><Eye size={17} /></button>
+        {connected && section === 'bench' && <PartsMenu />}
         {connected && <button className="lu-btn is-stop" onClick={stopAll}><Square size={12} fill="currentColor" /> Stop</button>}
         {snap.status === 'idle' ? <button className="lu-btn is-primary" disabled={!!busy} onClick={connectUsb}><Usb size={15} /> Connect</button> : <button className="lu-btn" onClick={disconnect}><Plug size={14} /> Disconnect</button>}
       </div>
@@ -130,16 +195,7 @@ export function App() {
   if (consent) return <><Consent id={consent} /><Overlays /></>;
   return (
     <div className="lu">
-      <nav className="lu-rail" aria-label="Views">
-        <button className="lu-logo" onClick={() => go('drone')} aria-label="Lucidity"><img src="/favicon.svg" alt="" width="24" height="24" /></button>
-        {VIEWS.map(([id, Icon, label]) => <button key={id} className={view === id ? 'is-on' : ''} onClick={() => go(id)} aria-current={view === id ? 'page' : undefined}><Icon size={19} /><span className="lu-rail-label">{label}</span></button>)}
-        <span className="lu-rail-gap" />
-        {me.guest && <button className="lu-save" onClick={() => set({ dialog: 'save' })} title="Save your bench"><CloudUpload size={18} /><span className="lu-rail-label">Save</span></button>}
-        <FeedbackButton />
-        <AssistantChip />
-        <button onClick={toggleTheme} aria-label="Light or dark"><Sun size={17} className="only-dark" /><Moon size={17} className="only-light" /></button>
-        <button onClick={signOut} aria-label="Sign out" title={me.email}><LogOut size={17} /></button>
-      </nav>
+      <Rail />
       <main className="lu-main">
         <TopBar />
         {me.offline ? <div className="lu-offline" role="status">Offline. The drone tools still work; your changes sync when you are back online.</div>

@@ -36,11 +36,11 @@ await claude.call('wait', { proposal: proposal.proposal, seconds: 30 });
 await page.waitForFunction(() => !document.querySelector('.dg-chip'), undefined, { timeout: 20_000 }).catch(() => {});
 await page.click('.lu-panel button[aria-label="Close"]').catch(() => {});
 
-await page.click('.lu-rail button:has-text("Signals")');
+await page.click('[data-view="signals"]');
 await page.waitForTimeout(2500);
 await shot('signals');
 
-await page.click('.lu-rail button:has-text("Build")');
+await page.click('[data-section="build"]');
 await page.click('text=Start from this >> nth=1');
 await page.waitForSelector('.bd-row');
 await page.waitForTimeout(6000); // Let the toast go.

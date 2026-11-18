@@ -89,7 +89,7 @@ await caption('', '');
 
 // 4. No drone yet? Build one.
 await card('No drone yet?', 'Build one. Every part checked to work together.', 2400);
-await page.click('.lu-rail button:has-text("Build")');
+await page.click('[data-section="build"]');
 await page.click('text=Start from this >> nth=1');
 await page.waitForSelector('.bd-row');
 await pause(2800);

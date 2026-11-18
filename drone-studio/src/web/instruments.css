@@ -145,3 +145,51 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .dg-chip.is-ok text { fill: var(--ds-success); }
 .in-scene .dg-radio .dg-track { stroke-width: 2; stroke: var(--ds-border-strong); fill: var(--lu-face); }
 .in-scene .dg-radio.needs-you .dg-track { stroke: var(--ds-warning); stroke-width: 3; }
+
+/* ---- Navigation: four places, three buttons ---- */
+:root { --lu-rail: 68px; }
+.lu-rail { gap: 8px; padding: 14px 0 12px; }
+.lu-rail > .lu-logo { margin: 0 0 14px; border-radius: 7px; }
+.lu-rail > button, .lu-menu-button { position: relative; display: grid; place-items: center; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 14px; background: none; color: var(--ds-text-subtle); transition: background var(--motion-fast), color var(--motion-fast); }
+.lu-rail > button:hover, .lu-menu-button:hover { background: var(--ds-surface-raised); color: var(--ds-text); }
+.lu-rail > button.is-on, .lu-menu-button.is-on { background: var(--ds-surface); color: var(--ds-text); box-shadow: var(--lu-shadow-soft); }
+.lu-rail > button.is-on svg, .lu-menu-button.is-on svg { color: var(--lu-signal); }
+/* The label appears on hover, beside the icon. */
+.lu-rail > button[data-label]::after, .lu-menu-button[data-label]::after { content: attr(data-label); position: absolute; left: calc(100% + 10px); top: 50%; translate: -4px -50%; padding: 6px 11px; border-radius: 999px; background: var(--ds-primary); color: var(--ds-on-primary); font: 700 12.5px var(--font-sans); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity var(--motion-fast), translate var(--motion-fast); z-index: 300; }
+.lu-rail > button[data-label]:hover::after, .lu-menu-button[data-label]:hover::after, .lu-rail > button[data-label]:focus-visible::after { opacity: 1; translate: 0 -50%; }
+.lu-menu-button[aria-expanded='true']::after { display: none; }
+.lu-count { position: absolute; top: 4px; right: 3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--lu-signal); color: var(--lu-face); font: 800 11px/18px var(--font-sans); font-style: normal; text-align: center; animation: lu-bob 1.6s ease-in-out infinite; }
+.lu-menu-button .in-lamp { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; }
+.lu-menu-button.is-active .in-lamp { animation: lu-blink 0.8s ease-in-out infinite; }
+.lu-dot-signal { position: absolute; bottom: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--lu-signal); }
+.lu-menu-wrap { position: relative; }
+.lu-menu { position: absolute; left: calc(100% + 10px); bottom: 0; z-index: 320; display: grid; gap: 2px; width: 270px; padding: 6px; border: 1px solid var(--ds-border); border-radius: 16px; background: var(--ds-surface); box-shadow: var(--shadow-dialog); animation: lu-in 140ms var(--motion-ease); }
+.lu-menu.is-down { left: auto; right: 0; bottom: auto; top: calc(100% + 8px); width: 220px; max-height: 70vh; overflow: auto; }
+.lu-menu > button, .lu-menu > label { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 10px; border: 0; border-radius: 10px; background: none; color: var(--ds-text); text-align: left; cursor: pointer; }
+.lu-menu > button:hover, .lu-menu > label:hover { background: var(--ds-surface-raised); }
+.lu-menu > button.is-current { background: var(--ds-surface-raised); }
+.lu-menu svg { flex-shrink: 0; color: var(--ds-text-subtle); }
+.lu-menu span { display: grid; flex: 1; min-width: 0; }
+.lu-menu b { font-weight: 700; font-size: 14px; }
+.lu-menu small { color: var(--ds-text-subtle); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lu-menu .is-signal svg, .lu-menu .is-signal b { color: var(--lu-signal); }
+.lu-menu hr { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--ds-border); }
+.lu-menu-switch input { appearance: none; position: relative; width: 36px; height: 22px; flex-shrink: 0; border-radius: 11px; background: var(--ds-border-strong); cursor: pointer; transition: background var(--motion-fast); }
+.lu-menu-switch input::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--lu-face); transition: translate var(--motion-fast); }
+.lu-menu-switch input:checked { background: var(--lu-signal); }
+.lu-menu-switch input:checked::after { translate: 14px 0; }
+.lu-tabs { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--ds-surface-raised); box-shadow: inset 0 1px 3px var(--ds-shadow-color); min-width: 0; overflow-x: auto; }
+.lu-tabs button { height: 30px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--ds-text-muted); font-weight: 700; font-size: 13px; white-space: nowrap; }
+.lu-tabs button.is-on { background: var(--ds-surface); color: var(--ds-text); box-shadow: var(--lu-shadow-soft); }
+@media (max-width: 900px) {
+  .lu-rail > button[data-label]::after, .lu-menu-button[data-label]::after { display: none; }
+  .lu-rail > .lu-logo { display: none; }
+  .lu-menu { left: auto; right: 0; bottom: calc(100% + 10px); }
+  .lu-status span { display: none; }
+}
+@media (max-width: 900px) {
+  .lu-top { flex-wrap: wrap; row-gap: 8px; }
+  .lu-top .lu-tabs { order: 3; width: 100%; }
+  .lu-top-end .lu-btn { font-size: 0; gap: 0; padding: 0 12px; }
+  .lu-top-end .lu-btn svg { width: 16px; height: 16px; }
+}
