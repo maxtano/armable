@@ -2,7 +2,7 @@
 
 <img src="drone-studio/public/favicon.svg" width="56" height="56" alt="" />
 
-# Armable
+# Armable <img src="docs/media/pronunciation.svg" height="29" alt="(Arm-able)" />
 
 **Drone tools for your AI.**
 
