@@ -1,8 +1,9 @@
 # The spending guard: two budgets and a small function.
 #
-#   alert_usd       an email to the billing account's admins
-#   cap_usd         the guard stops the server (its disk and data are kept)
-#   2 x cap_usd     the guard unlinks billing, so nothing more can be charged
+#   alert_usd           emails to the billing account's admins, at half and at the full amount
+#   cap_usd             an email at half; at the full amount the guard stops the server (disk and data are kept)
+#   2 x cap_usd         the guard unlinks billing, so nothing more can be charged
+#   account_alert_usd   an email when the whole billing account, any project, reaches it
 #
 # Google's cost data can lag by hours, so the guard is a ceiling, not a brake. The server's own egress limit
 # (egress_mbit) keeps the worst case small in between.
@@ -25,6 +26,9 @@ resource "google_billing_budget" "alert" {
     }
   }
   threshold_rules {
+    threshold_percent = 0.5
+  }
+  threshold_rules {
     threshold_percent = 1.0
   }
   depends_on = [google_project_service.enabled]
@@ -43,6 +47,9 @@ resource "google_billing_budget" "cap" {
     }
   }
   threshold_rules {
+    threshold_percent = 0.5
+  }
+  threshold_rules {
     threshold_percent = 1.0
   }
   threshold_rules {
@@ -51,6 +58,26 @@ resource "google_billing_budget" "cap" {
   all_updates_rule {
     pubsub_topic   = google_pubsub_topic.budget.id
     schema_version = "1.0"
+  }
+  depends_on = [google_project_service.enabled]
+}
+
+# Everything on the billing account, in every project: the one alert that sees spending outside this project.
+resource "google_billing_budget" "account" {
+  count           = var.account_alert_usd > 0 ? 1 : 0
+  billing_account = var.billing_account
+  display_name    = "Everything on this billing account"
+  amount {
+    specified_amount {
+      currency_code = var.currency
+      units         = tostring(var.account_alert_usd)
+    }
+  }
+  threshold_rules {
+    threshold_percent = 1.0
+  }
+  threshold_rules {
+    threshold_percent = 5.0
   }
   depends_on = [google_project_service.enabled]
 }

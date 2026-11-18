@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import pg from 'pg';
 import { createApp } from './app';
+import { Disk, GuardedStore, guardTracker } from './limits';
 import { MemoryStore, PgStore, type Store } from './store';
 import { PgTracker, type Tracker } from './tracker';
 
@@ -21,6 +22,11 @@ if (process.env.DATABASE_URL) {
   store = new MemoryStore();
   console.warn('[armable] DATABASE_URL is not set. Using memory: everything is lost when this process stops.');
 }
+// Below 2 GB free on the disk that holds the database, stop saving anything new instead of filling it.
+// STORAGE_PATH is any path on that disk; in Docker, / is on the host's disk.
+const disk = new Disk(process.env.STORAGE_PATH ?? '/').start();
+store = new GuardedStore(store, () => disk.low);
+if (tracker) tracker = guardTracker(tracker, () => disk.low);
 // How many proxies sit in front: 1 for a load balancer, 2 for CloudFront plus a load balancer.
 const trustProxy = Number(process.env.TRUST_PROXY ?? 1);
 const google = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET } : undefined;

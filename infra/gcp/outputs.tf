@@ -15,6 +15,6 @@ output "next" {
 
     ${var.cloudflare_only ? "Then SSL/TLS, Overview: Full (strict). And SSL/TLS, Edge Certificates: Always Use HTTPS off (the server redirects itself).\n" : ""}
     The server sets itself up in the next 5 to 15 minutes, then opens at https://${var.domain}
-    Watch it:  gcloud compute ssh ${var.name} --zone ${var.zone} -- sudo tail -f /var/log/armable-startup.log
+    Watch it:  gcloud compute ssh ${var.name} --zone ${var.zone} --tunnel-through-iap -- sudo tail -f /var/log/armable-startup.log
   EOT
 }

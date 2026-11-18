@@ -2,6 +2,7 @@ import type { RemoteRequest } from '../src/device/runtime';
 import type { Change, ChangeResult, Condition, TestResult } from '../src/device/types';
 import type { Mirror } from '../src/map/map';
 import { ConflictError, newId, type Row, type Store } from './store';
+import { LIMITS, megabytes, sizeOf } from './limits';
 import { aircraftId, MemoryTracker, type Tracker } from './tracker';
 
 /** An error a tool can hand straight to an assistant: a code to branch on, words to relay, and what to do next. */
@@ -116,6 +117,9 @@ const TELEMETRY_EVERY_MS = 10_000;
 export class Services {
   private hubs = new Map<string, Hub>();
   private seen = new Map<string, { status: string; aircraft?: string; telemetryAt: number }>();
+  /** How much each account may keep; see limits.ts. */
+  limits = { ...LIMITS };
+  private logged = new Map<string, number>();
   constructor(readonly store: Store, readonly now: () => number = Date.now, readonly tracker: Tracker = new MemoryTracker()) {}
   /** The tracked id of the aircraft this account has connected right now, if any. */
   currentAircraft(account: string): string | undefined {
@@ -150,6 +154,9 @@ export class Services {
 
   async log(account: string, entry: Omit<ActivityEntry, 'at'>) {
     const row = await this.store.append<ActivityEntry>('activity', account, { ...entry, at: this.now() });
+    // Keep the newest entries only. Checked every 50 entries, so it costs nothing per call.
+    const n = (this.logged.get(account) ?? 0) + 1; this.logged.set(account, n);
+    if (n % 50 === 0) for (const old of (await this.store.list('activity', account, this.limits.activityKept + 500)).slice(this.limits.activityKept)) await this.store.delete('activity', account, old.id);
     this.hub(account).notify('activity', { id: row.id, ...row.data });
     return row;
   }
@@ -189,9 +196,44 @@ export class Services {
     if (!row) throw new ToolError('not_found', `There is no document "${id}".`, 'Use find, or get_workspace, to list documents.');
     return row;
   }
+  // ---- Storage: how much each account keeps -------------------------------------------------------------------
+
+  /** Bytes this account's documents take, history included. Counted once, then kept up to date on every write. */
+  async storageUsed(account: string): Promise<number> {
+    const row = await this.store.get<{ bytes: number }>('usage', account, 'bytes');
+    if (row) return row.data.bytes;
+    const bytes = (await this.store.list<Doc>('docs', account, 10_000)).reduce((sum, r) => sum + sizeOf(r.data), 0);
+    await this.store.put('usage', account, 'bytes', { bytes });
+    return bytes;
+  }
+  async storageLimit(account: string) { return (await this.account(account))?.guest ? this.limits.guestBytes : this.limits.accountBytes; }
+  /** Refuse a write that would take the account over its limit. Shrinking is always allowed. */
+  private async makeRoom(account: string, change: number) {
+    if (change <= 0) return;
+    const used = await this.storageUsed(account), limit = await this.storageLimit(account);
+    if (used + change > limit) {
+      const guest = limit === this.limits.guestBytes;
+      throw new ToolError('storage_limit', `There isn’t room to save this: ${megabytes(used)} of ${megabytes(limit)} used.`, guest ? 'Save your bench for more room, or delete documents and backups you no longer need.' : 'Delete documents and backups you no longer need.', { usedBytes: used, limitBytes: limit });
+    }
+  }
+  private async counted(account: string, change: number) {
+    if (!change) return;
+    const used = await this.storageUsed(account);
+    await this.store.put('usage', account, 'bytes', { bytes: Math.max(0, used + change) });
+  }
+  /** Undo history, newest kept, trimmed to the history limit. At least one step stays so undo still works. */
+  private trimHistory(history: Doc['history']) {
+    let total = sizeOf(history);
+    while (history.length > 1 && total > this.limits.historyBytes) total -= sizeOf(history.shift());
+    return history;
+  }
+
   async createDoc(account: string, kind: DocKind, name: string, content: unknown, by: string): Promise<Row<Doc>> {
     const prefix = { storyboard: 'show', tune: 'tune', file: 'file', snapshot: 'snap', build: 'build' }[kind];
-    const row = await this.store.put<Doc>('docs', account, `${prefix}_${newId(6)}`, { kind, name: name.slice(0, 80), content, updatedBy: by, history: [] }, { expectedRev: 0 });
+    const data: Doc = { kind, name: name.slice(0, 80), content, updatedBy: by, history: [] };
+    await this.makeRoom(account, sizeOf(data));
+    const row = await this.store.put<Doc>('docs', account, `${prefix}_${newId(6)}`, data, { expectedRev: 0 });
+    await this.counted(account, sizeOf(data));
     this.hub(account).notify('document', { id: row.id, rev: row.rev, kind, name: row.data.name, by });
     return row;
   }
@@ -199,9 +241,13 @@ export class Services {
   async writeDoc(account: string, id: string, baseRev: number, content: unknown, by: string, rename?: string): Promise<Row<Doc>> {
     const current = await this.doc(account, id);
     if (current.rev !== baseRev) throw new ToolError('stale', `"${current.data.name}" is at revision ${current.rev}, not ${baseRev}.`, 'Read it again and base the edit on the current revision.', { currentRevision: current.rev, lastEditedBy: current.data.updatedBy });
-    const history = current.data.kind === 'snapshot' ? [] : [...current.data.history, { content: current.data.content, by: current.data.updatedBy, at: current.updatedAt }].slice(-20);
+    const history = current.data.kind === 'snapshot' ? [] : this.trimHistory([...current.data.history, { content: current.data.content, by: current.data.updatedBy, at: current.updatedAt }].slice(-20));
+    const data: Doc = { ...current.data, name: rename?.slice(0, 80) ?? current.data.name, content, updatedBy: by, history };
+    const change = sizeOf(data) - sizeOf(current.data);
+    await this.makeRoom(account, change);
     try {
-      const row = await this.store.put<Doc>('docs', account, id, { ...current.data, name: rename?.slice(0, 80) ?? current.data.name, content, updatedBy: by, history }, { expectedRev: baseRev });
+      const row = await this.store.put<Doc>('docs', account, id, data, { expectedRev: baseRev });
+      await this.counted(account, change);
       this.hub(account).notify('document', { id, rev: row.rev, kind: row.data.kind, name: row.data.name, by });
       return row;
     } catch (error) {
@@ -215,11 +261,18 @@ export class Services {
     const last = current.data.history.at(-1);
     if (!last) throw new ToolError('nothing_to_undo', 'There is nothing to undo.');
     if (current.data.updatedBy !== by) throw new ToolError('not_yours', `The last edit was made by ${current.data.updatedBy}, not ${by}.`, 'Only the person who made an edit can undo it.');
-    const row = await this.store.put<Doc>('docs', account, id, { ...current.data, content: last.content, updatedBy: last.by, history: current.data.history.slice(0, -1) }, { expectedRev: current.rev });
+    const data: Doc = { ...current.data, content: last.content, updatedBy: last.by, history: current.data.history.slice(0, -1) };
+    const row = await this.store.put<Doc>('docs', account, id, data, { expectedRev: current.rev });
+    await this.counted(account, sizeOf(data) - sizeOf(current.data));
     this.hub(account).notify('document', { id, rev: row.rev, kind: row.data.kind, name: row.data.name, by });
     return row;
   }
-  async deleteDoc(account: string, id: string) { await this.store.delete('docs', account, id); this.hub(account).notify('document', { id, deleted: true }); }
+  async deleteDoc(account: string, id: string) {
+    const current = await this.store.get<Doc>('docs', account, id);
+    await this.store.delete('docs', account, id);
+    if (current) await this.counted(account, -sizeOf(current.data));
+    this.hub(account).notify('document', { id, deleted: true });
+  }
 
   // ---- Proposals ------------------------------------------------------------------------------------------------
 
