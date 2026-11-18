@@ -6,7 +6,7 @@ import { refreshDocs } from './controller';
 import { useStore } from './store';
 
 const Studio = lazy(() => import('./Studio'));
-const CURRENT = 'lucidity.studio.project.v1';
+const CURRENT = 'armable.studio.project.v1';
 
 /**
  * The storyboard editor keeps its library in a Storage object. This one is backed by the account: reads come

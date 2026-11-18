@@ -23,7 +23,7 @@ export function History() {
   };
   return (
     <section className="lu-page">
-      <header className="lu-page-head"><h1>History</h1><a className="lu-btn" href={`/api/data/${tab}?limit=5000`} download={`lucidity-${tab}.json`}>Download</a></header>
+      <header className="lu-page-head"><h1>History</h1><a className="lu-btn" href={`/api/data/${tab}?limit=5000`} download={`armable-${tab}.json`}>Download</a></header>
       <nav className="lu-chips" aria-label="Tables">{TABS.map(([id, label]) => <button key={id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}<small>{summary?.[id] ?? ''}</small></button>)}</nav>
       <div className="lu-table lu-history" role="table">
         <div className="lu-hrow is-head" role="row">{cols[tab].map(([h]) => <span key={h} role="columnheader">{h}</span>)}</div>

@@ -22,7 +22,7 @@ const ARDU: Record<string, { label: string; motors: Spec }> = {
 };
 const CLASS_COUNT: Record<number, number> = { 1: 4, 2: 6, 3: 8, 4: 8, 5: 6, 7: 3, 12: 12, 14: 10 };
 
-/** A ring of motors with no claimed order or direction, for layouts Lucidity does not know. */
+/** A ring of motors with no claimed order or direction, for layouts Armable does not know. */
 export function unknownFrame(count: number, label = 'Unknown layout'): Airframe {
   const motors: MotorSlot[] = Array.from({ length: count }, (_, i) => {
     const angle = (360 / count) * i + (count % 2 ? 0 : 180 / count);

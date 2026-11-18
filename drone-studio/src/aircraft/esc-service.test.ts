@@ -68,7 +68,7 @@ const services: AircraftService[] = [];
 const directories: string[] = [];
 const checks = { propsRemoved: true, directUsb: true };
 async function fixture(manufacturer = 'ArduPilot', maintenance = false) {
-  const escBackupDirectory = maintenance ? await mkdtemp(join(tmpdir(), 'lucidity-esc-test-')) : undefined;
+  const escBackupDirectory = maintenance ? await mkdtemp(join(tmpdir(), 'armable-esc-test-')) : undefined;
   if (escBackupDirectory) directories.push(escBackupDirectory);
   vi.useFakeTimers(); vi.setSystemTime(1000);
   const port = new Port();

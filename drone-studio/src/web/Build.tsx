@@ -586,7 +586,7 @@ export function SharedBuild({ share }: { share: string }) {
   return (
     <RatingsProvider>
       <div className="bd-public">
-        <header className="bd-public-top"><a className="in-logo" href="/"><img src="/favicon.svg" alt="" width="22" height="22" />Lucidity</a><a className="lu-btn" href="/">What is this?</a></header>
+        <header className="bd-public-top"><a className="in-logo" href="/"><img src="/favicon.svg" alt="" width="22" height="22" />Armable</a><a className="lu-btn" href="/">What is this?</a></header>
         <section className="lu-page bd">
           <header className="lu-page-head"><h1>{data.name}</h1><button className="lu-btn is-primary" disabled={busy} onClick={copy}><Plus size={14} /> Make a copy to change</button></header>
           <nav className="bd-tags">{b.goal.style && <span>{STYLE_LABEL[b.goal.style]}</span>}{b.goal.propIn && <span>{b.goal.propIn}"</span>}{b.goal.video && <span>{VIDEO_NAME[b.goal.video]}</span>}<span>Updated {new Date(data.updatedAt).toLocaleDateString()}</span></nav>
@@ -605,7 +605,7 @@ export function SharedBuild({ share }: { share: string }) {
             ); })}
             <div className="bd-total" role="row"><span /><b>Total {money(a.costUsd)}</b></div>
           </div>
-          <p className="lu-hint">Typical prices, not live. Checked by Lucidity for prop size, mounts, cell counts, motor speed, ESC current, and video and radio systems.</p>
+          <p className="lu-hint">Typical prices, not live. Checked by Armable for prop size, mounts, cell counts, motor speed, ESC current, and video and radio systems.</p>
         </section>
       </div>
     </RatingsProvider>

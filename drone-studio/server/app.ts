@@ -34,7 +34,7 @@ export interface AppOptions {
   /** Emails that may read all feedback at /api/admin/feedback. */
   admins?: string[];
 }
-const COOKIE = 'lucidity_session';
+const COOKIE = 'armable_session';
 const cookie = {
   parse(header: string): Record<string, string> {
     const out: Record<string, string> = {};
@@ -72,7 +72,7 @@ export function createApp(options: AppOptions) {
   // ---- Assistants: OAuth endpoints and the MCP endpoint ------------------------------------------------------------
 
   const mcpUrl = new URL('/mcp', publicUrl);
-  app.use(mcpAuthRouter({ provider, issuerUrl: publicUrl, scopesSupported: [...SCOPES], resourceName: 'Lucidity', resourceServerUrl: mcpUrl,
+  app.use(mcpAuthRouter({ provider, issuerUrl: publicUrl, scopesSupported: [...SCOPES], resourceName: 'Armable', resourceServerUrl: mcpUrl,
     ...(options.limits === false ? { authorizationOptions: { rateLimit: false }, tokenOptions: { rateLimit: false }, clientRegistrationOptions: { rateLimit: false }, revocationOptions: { rateLimit: false } } : {}) }));
   const bearer = requireBearerAuth({ verifier: provider, resourceMetadataUrl: new URL('/.well-known/oauth-protected-resource/mcp', publicUrl).href });
   app.post('/mcp', bearer, express.json({ limit: '1mb' }), async (req, res) => {
@@ -94,7 +94,7 @@ export function createApp(options: AppOptions) {
   const api = express.Router();
   api.use(express.json({ limit: '34mb' }));
   // A custom header cannot be sent by another site's form or script without our permission, so it stands in for a CSRF token.
-  api.use((req, res, next) => { if (req.method !== 'GET' && req.get('x-lucidity') !== '1') { res.status(403).json({ error: { code: 'forbidden', message: 'Missing request header.' } }); return; } next(); });
+  api.use((req, res, next) => { if (req.method !== 'GET' && req.get('x-armable') !== '1') { res.status(403).json({ error: { code: 'forbidden', message: 'Missing request header.' } }); return; } next(); });
   const limiter = options.limits === false ? (_q: Request, _s: Response, n: NextFunction) => n() : rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false });
   const setSession = (res: Response, token: string) => res.setHeader('Set-Cookie', cookie.serialize(COOKIE, token, { httpOnly: true, secure, sameSite: 'lax', path: '/', maxAge: 30 * 86400 }));
   const person = async (req: Request, res: Response, next: NextFunction) => {
@@ -240,7 +240,7 @@ export function createApp(options: AppOptions) {
   api.post('/docs/:id/undo', wrap(async req => { const row = await services.undoDoc(req.account, String(req.params.id), 'you'); return { id: row.id, revision: row.rev }; }));
   api.delete('/docs/:id', wrap(async req => { await services.deleteDoc(req.account, String(req.params.id)); }));
 
-  // Ratings of catalog parts, shared by everyone who uses Lucidity. One per person per part.
+  // Ratings of catalog parts, shared by everyone who uses Armable. One per person per part.
   api.put('/ratings/:part', wrap(async req => {
     const stars = Number(req.body.stars);
     if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new ToolError('invalid', 'Give 1 to 5 stars.');
@@ -304,7 +304,7 @@ export function createApp(options: AppOptions) {
 
   // ---- Sign in with Google -------------------------------------------------------------------------------------------
 
-  const STATE = 'lucidity_google';
+  const STATE = 'armable_google';
   const callback = new URL('/auth/google/callback', publicUrl).href;
   const safeNext = (next: unknown) => typeof next === 'string' && /^\/(?!\/)/.test(next) ? next : '/';
   app.get('/auth/google', (req, res) => {
@@ -343,7 +343,7 @@ export function createApp(options: AppOptions) {
     app.get('/b/:share', async (req, res) => {
       const share = await store.get<{ account: string; doc: string }>('shares', '_public', String(req.params.share)).catch(() => undefined);
       const doc = share && await store.get<{ kind: string; name: string; content: { items?: unknown[] } }>('docs', share.data.account, share.data.doc).catch(() => undefined);
-      const title = doc?.data.kind === 'build' ? `${doc.data.name} · a drone build on Lucidity` : 'Lucidity';
+      const title = doc?.data.kind === 'build' ? `${doc.data.name} · a drone build on Armable` : 'Armable';
       const description = doc?.data.kind === 'build' ? `${doc.data.content.items?.length ?? 0} parts, checked to work together, with prices and where to buy them.` : 'The drone bench your AI can use.';
       const head = `<title>${escape(title)}</title><meta property="og:title" content="${escape(title)}" /><meta property="og:description" content="${escape(description)}" /><meta name="description" content="${escape(description)}" />`;
       res.type('html').send(page().replace(/<title>[^<]*<\/title>/, head));

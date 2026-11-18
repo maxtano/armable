@@ -1,5 +1,5 @@
 output "url" {
-  description = "Where people open Lucidity."
+  description = "Where people open Armable."
   value       = local.public_url
 }
 output "mcp_url" {

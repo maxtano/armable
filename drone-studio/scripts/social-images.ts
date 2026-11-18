@@ -1,5 +1,5 @@
 /**
- * Renders the images shown when a Lucidity link is shared: the site's preview images and GitHub's social preview.
+ * Renders the images shown when an Armable link is shared: the site's preview images and GitHub's social preview.
  * Usage: npx tsx scripts/social-images.ts
  */
 import { readFileSync } from 'node:fs';
@@ -24,7 +24,7 @@ const card = (title: string, sub: string, picture: boolean) => `<!doctype html><
   .pic { height: 100%; display: grid; align-items: center; }
   .pic img { width: 100%; border-radius: 20px; border: 1px solid #cdcac2; box-shadow: 0 24px 60px #3a2f2230; }
 </style></head><body>
-  <div><div class="brand"><img src="data:image/svg+xml;base64,${logo}">Lucidity</div><h1>${title}</h1><p>${sub}</p><div class="coil"></div></div>
+  <div><div class="brand"><img src="data:image/svg+xml;base64,${logo}">Armable</div><h1>${title}</h1><p>${sub}</p><div class="coil"></div></div>
   ${picture ? `<div class="pic"><img src="data:image/jpeg;base64,${shot}"></div>` : ''}
 </body></html>`;
 

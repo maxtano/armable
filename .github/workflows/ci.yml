@@ -11,18 +11,18 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: lucidity
-          POSTGRES_PASSWORD: lucidity
-          POSTGRES_DB: lucidity_test
+          POSTGRES_USER: armable
+          POSTGRES_PASSWORD: armable
+          POSTGRES_DB: armable_test
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U lucidity" --health-interval 5s --health-timeout 5s --health-retries 10
+          --health-cmd "pg_isready -U armable" --health-interval 5s --health-timeout 5s --health-retries 10
     defaults:
       run:
         working-directory: drone-studio
     env:
       CI: 'true'
-      TEST_DATABASE_URL: postgres://lucidity:lucidity@127.0.0.1:5432/lucidity_test
+      TEST_DATABASE_URL: postgres://armable:armable@127.0.0.1:5432/armable_test
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6

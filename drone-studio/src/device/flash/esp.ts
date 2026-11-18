@@ -64,7 +64,7 @@ export class EspLoader {
         const dv = view(f);
         return { value: dv.getUint32(4, true), data: f.subarray(8) };
       }
-      if (Date.now() > end) throw new DeviceError('timeout', 'The radio did not answer.', 'Check it is in its bootloader: hold BOOT while plugging in, or let Lucidity reset it.');
+      if (Date.now() > end) throw new DeviceError('timeout', 'The radio did not answer.', 'Check it is in its bootloader: hold BOOT while plugging in, or let Armable reset it.');
       await new Promise<void>(r => { const t = setTimeout(r, 20); this.wake = () => { clearTimeout(t); r(); }; });
     }
   }

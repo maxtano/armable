@@ -40,4 +40,4 @@ jobs:
           aws ecs update-service --cluster "${{ vars.ECS_CLUSTER }}" --service "${{ vars.ECS_SERVICE }}" --force-new-deployment > /dev/null
           aws ecs wait services-stable --cluster "${{ vars.ECS_CLUSTER }}" --services "${{ vars.ECS_SERVICE }}"
       - name: Check it answers
-        run: curl -fsS "${{ vars.LUCIDITY_URL }}/api/me"
+        run: curl -fsS "${{ vars.ARMABLE_URL }}/api/me"

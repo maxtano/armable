@@ -1,7 +1,7 @@
 import { useId } from 'react';
 
 /** Decorative artwork is deliberately independent of aircraft state. */
-export function LucidityMark({ className = '' }: { className?: string }) {
+export function ArmableMark({ className = '' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 32 32" fill="none" aria-hidden="true">
       <path

@@ -1,9 +1,9 @@
 import type { Mirror } from '../map/map';
 
-/** The browser's link to the Lucidity cloud: a small JSON API and one WebSocket. */
+/** The browser's link to the Armable cloud: a small JSON API and one WebSocket. */
 export class ApiError extends Error { constructor(readonly code: string, message: string, readonly hint?: string, readonly extra: Record<string, unknown> = {}) { super(message); } }
 export async function api<T = any>(method: string, path: string, body?: unknown): Promise<T> {
-  const response = await fetch(`/api${path}`, { method, credentials: 'same-origin', headers: method === 'GET' ? {} : { 'x-lucidity': '1', 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const response = await fetch(`/api${path}`, { method, credentials: 'same-origin', headers: method === 'GET' ? {} : { 'x-armable': '1', 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
   const json = await response.json().catch(() => undefined);
   if (!response.ok) { const e = json?.error ?? {}; throw new ApiError(e.code ?? 'error', e.message ?? 'Something went wrong.', e.hint, e); }
   return json as T;
@@ -33,7 +33,7 @@ export class Live {
 }
 
 /** Things the person did while offline, kept until the server can take them. */
-const OUTBOX = 'lucidity.outbox.v1';
+const OUTBOX = 'armable.outbox.v1';
 export function queue(method: string, path: string, body: unknown) {
   try { const list = JSON.parse(localStorage.getItem(OUTBOX) ?? '[]'); list.push({ method, path, body, at: Date.now() }); localStorage.setItem(OUTBOX, JSON.stringify(list.slice(-500))); } catch { /* storage unavailable */ }
 }

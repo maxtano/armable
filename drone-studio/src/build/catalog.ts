@@ -1,7 +1,7 @@
 /**
  * The parts catalog and the proven builds. Prices here are typical street prices in US dollars, written down by
  * hand: they are a starting point, not live. An assistant that looks a price up records it on the build with the
- * store and link it saw it at, and Lucidity shows that one instead, with its date.
+ * store and link it saw it at, and Armable shows that one instead, with its date.
  */
 
 export type Category = 'frame' | 'motors' | 'stack' | 'props' | 'battery' | 'receiver' | 'vtx' | 'camera' | 'antenna' | 'gps' | 'radio' | 'goggles' | 'charger' | 'other';

@@ -329,7 +329,7 @@ export function alternatives(build: Build, category: string, limit = 6): Fit[] {
 
 // ---- Summaries and comparison ------------------------------------------------------------------------------------
 
-export function provenBuild(id: string): Build { return applyBuildOps(emptyBuild(), [{ op: 'from', build: id }], 'Lucidity', 0); }
+export function provenBuild(id: string): Build { return applyBuildOps(emptyBuild(), [{ op: 'from', build: id }], 'Armable', 0); }
 
 /** What an assistant needs to talk about a build, kept small. */
 export function buildSummary(build: Build) {

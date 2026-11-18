@@ -2,15 +2,15 @@
 
 <img src="drone-studio/public/favicon.svg" width="56" height="56" alt="" />
 
-# Lucidity
+# Armable
 
 **Drone tools for your AI.**
 
-Lucidity gives Claude, ChatGPT and other assistants the tools to read, test and fix your FPV drone.<br />It runs on the subscription you already have.
+Armable gives Claude, ChatGPT and other assistants the tools to read, test and fix your FPV drone.<br />It runs on the subscription you already have.
 
 Free and open source · No sign-up · No install · No API key<br />For FPV quads and drones on Betaflight, INAV, ArduPilot and PX4 · [armable.ai](https://armable.ai)
 
-<img src="docs/media/intro.png" alt="Lucidity: a quad that would not arm, now ready, with its receiver signal restored" width="820" />
+<img src="docs/media/intro.png" alt="Armable: a quad that would not arm, now ready, with its receiver signal restored" width="820" />
 
 </div>
 
@@ -18,28 +18,28 @@ Free and open source · No sign-up · No install · No API key<br />For FPV quad
 
 ## Say what’s wrong. See it fixed.
 
-Your assistant does the thinking. Lucidity does the hardware. It runs in your browser, connects to your drone over USB, and hands your assistant a set of tools: read every setting, run a check, propose a change. The change appears on the part it affects. Nothing is written until you approve it, and every change is read back from the drone to confirm it.
+Your assistant does the thinking. Armable does the hardware. It runs in your browser, connects to your drone over USB, and hands your assistant a set of tools: read every setting, run a check, propose a change. The change appears on the part it affects. Nothing is written until you approve it, and every change is read back from the drone to confirm it.
 
 Above, a new quad won’t arm. It hears nothing from its receiver: the receiver speaks CRSF, the flight controller expects SBUS. One approval, and it arms. The demo drone has the same problem, so you can try it yourself. Fixing one by hand? [Every Betaflight arming flag, explained](https://armable.ai/guides/quad-wont-arm/).
 
 <img src="docs/media/proposal.png" alt="The demo quad will not arm because it hears nothing from its receiver. Claude proposes switching the receiver protocol from SBUS to CRSF, with an Approve button beside it." width="820" />
 
 1. **Plug in.** Chrome or Edge and a USB cable. Or open the demo drone.
-2. **Connect your AI.** Add Lucidity as a connector in Claude, ChatGPT, Claude Code, Cursor or VS Code, with one link. Any other agent can set itself up from a skill file.
+2. **Connect your AI.** Add Armable as a connector in Claude, ChatGPT, Claude Code, Cursor or VS Code, with one link. Any other agent can set itself up from a skill file.
 3. **Approve.** You make the call. The drone changes only when you click.
 
 &nbsp;
 
 ## Your AI, your subscription.
 
-Lucidity has no AI of its own and never asks for an API key. It works through the assistant you already use, on the plan you already pay for, with your history and preferences intact. Lucidity adds the parts an assistant can’t do alone: a USB connection to the drone, a map of everything the aircraft offers, and a screen where you see each step and approve it.
+Armable has no AI of its own and never asks for an API key. It works through the assistant you already use, on the plan you already pay for, with your history and preferences intact. Armable adds the parts an assistant can’t do alone: a USB connection to the drone, a map of everything the aircraft offers, and a screen where you see each step and approve it.
 
 | | |
 | --- | --- |
 | **Claude** | Settings → Connectors → Add custom connector |
 | **ChatGPT** | Settings → Connectors → Create |
-| **Claude Code** | `claude mcp add --transport http lucidity <your address>/mcp` |
-| **Cursor · VS Code** | One click from Lucidity’s menu |
+| **Claude Code** | `claude mcp add --transport http armable <your address>/mcp` |
+| **Cursor · VS Code** | One click from Armable’s menu |
 | **Any agent** | Point it at `<your address>/agent-onboarding/SKILL.md` |
 
 &nbsp;
@@ -54,7 +54,7 @@ Battery, current, attitude, radio, motors and sensors, live. The numbers that ma
 
 ## No drone yet? Build one.
 
-Choose what you want to fly and your budget. Pick each part, or start from a proven build. Lucidity checks that the parts work together and shows the cost, take-off weight, thrust and flight time as you go.
+Choose what you want to fly and your budget. Pick each part, or start from a proven build. Armable checks that the parts work together and shows the cost, take-off weight, thrust and flight time as you go.
 
 <img src="docs/media/build.png" alt="A 5-inch build with dials for cost, take-off weight, thrust to weight and flight time, and a compatibility check." width="820" />
 
@@ -91,7 +91,7 @@ Your assistant can read, test and propose. It can’t approve a change, confirm 
 
 ```sh
 cd drone-studio
-docker compose up --build        # Lucidity and Postgres at http://localhost:8787
+docker compose up --build        # Armable and Postgres at http://localhost:8787
 ```
 
 For development:
@@ -111,7 +111,7 @@ Assistants connect to `<your address>/mcp`, a standard [MCP](https://modelcontex
 | `FEEDBACK_WEBHOOK_URL` | Optional. Posts feedback to a Discord channel as it arrives |
 | `ADMIN_EMAILS` | Optional. Who can read all feedback, with screenshots, at `/api/admin/feedback` |
 
-Anyone can try Lucidity without an account. Guest benches nobody opens for 30 days are deleted. Links that open straight in: `/?demo=betaflight`, `/?demo=ardupilot` and `/build`. A shared build lives at `/b/<id>`.
+Anyone can try Armable without an account. Guest benches nobody opens for 30 days are deleted. Links that open straight in: `/?demo=betaflight`, `/?demo=ardupilot` and `/build`. A shared build lives at `/b/<id>`.
 
 To host it on AWS, [`infra/aws`](infra/aws/README.md) sets up CloudFront, ECS Fargate and RDS Postgres with keyless deploys from GitHub, for about $45 a month.
 

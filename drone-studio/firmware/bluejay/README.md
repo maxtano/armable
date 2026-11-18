@@ -12,7 +12,7 @@ https://github.com/bird-sanctuary/bluejay/archive/refs/tags/v0.21.0.tar.gz
 Copyright 2011–2017 Steffen Skaug, 2020–2022 Mathias Rasmussen,
 2022–2023 Daniel Mosquera and the Bluejay contributors.
 
-Lucidity verifies the exact asset hash, record checksums, target, MCU, layout,
+Armable verifies the exact asset hash, record checksums, target, MCU, layout,
 version and PWM frequency before preparing an installation. It preserves the
 on-device bootloader; bytes at 0x1c00 and above are never written. The shipped
 image is for J-H-40 / EFM8BB2 only. No automatic target fallback is allowed.

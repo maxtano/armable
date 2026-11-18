@@ -199,7 +199,7 @@ export class ArdupilotSim {
         }, this.options.tickMs ?? 100);
         return;
       }
-      case 400: return this.ack(command, 2); // Arming is never offered by Lucidity; refuse it here too.
+      case 400: return this.ack(command, 2); // Arming is never offered by Armable; refuse it here too.
       default: return this.ack(command, 3);
     }
   }

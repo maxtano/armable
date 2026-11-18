@@ -9,7 +9,7 @@ variable "environment" {
   default     = "prod"
 }
 variable "domain_name" {
-  description = "Optional custom domain, e.g. app.lucidity.dev. Leave empty to use the CloudFront address."
+  description = "Optional custom domain, e.g. app.armable.dev. Leave empty to use the CloudFront address."
   type        = string
   default     = ""
 }

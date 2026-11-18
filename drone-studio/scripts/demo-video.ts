@@ -1,9 +1,9 @@
 /**
  * Records a draft of the launch video from a running server (npm run build && npm run serve).
- * One story, told by motion: a chat with the assistant on the left, Lucidity on the right. A new quad won't arm;
+ * One story, told by motion: a chat with the assistant on the left, Armable on the right. A new quad won't arm;
  * the assistant finds why on the drone; one approval; it arms.
  *
- * The chat panel is drawn by this script. The tool calls behind it are real, made through Lucidity's MCP endpoint.
+ * The chat panel is drawn by this script. The tool calls behind it are real, made through Armable's MCP endpoint.
  * Usage: npx tsx scripts/demo-video.ts [base-url] [output.mp4]
  */
 import { execFileSync } from 'node:child_process';
@@ -14,16 +14,16 @@ import { resolve } from 'node:path';
 import { assistant, Browser } from '../server/testkit';
 
 const base = process.argv[2] ?? 'http://localhost:8787';
-const output = resolve(process.argv[3] ?? 'lucidity-demo.mp4');
+const output = resolve(process.argv[3] ?? 'armable-demo.mp4');
 const { chromium } = createRequire(import.meta.url)('playwright');
 const size = { width: 1920, height: 1080 }, CHAT = 620;
 const browser = await chromium.launch();
-const context = await browser.newContext({ viewport: size, recordVideo: { dir: mkdtempSync(resolve(tmpdir(), 'lucidity-video-')), size }, bypassCSP: true });
-await context.addInitScript(() => { try { localStorage.setItem('lucidity.asked.v1', JSON.stringify(['fix', 'build'])); } catch { /* storage unavailable */ } });
+const context = await browser.newContext({ viewport: size, recordVideo: { dir: mkdtempSync(resolve(tmpdir(), 'armable-video-')), size }, bypassCSP: true });
+await context.addInitScript(() => { try { localStorage.setItem('armable.asked.v1', JSON.stringify(['fix', 'build'])); } catch { /* storage unavailable */ } });
 const page = await context.newPage();
 const pause = (ms: number) => page.waitForTimeout(ms);
 
-/** The stage: the chat on the left, Lucidity on the right, a cursor, and a title layer. */
+/** The stage: the chat on the left, Armable on the right, a cursor, and a title layer. */
 async function stage() {
   await page.evaluate((chat: number) => {
     const css = document.createElement('style');
@@ -66,7 +66,7 @@ async function stage() {
     document.body.appendChild(cursor);
   }, CHAT);
 }
-const title = (main: string, sub = '') => page.evaluate(([main, sub]) => {
+const title = (main: string, sub = '') => page.evaluate(([main, sub]: string[]) => {
   document.getElementById('v-title')?.remove();
   const el = document.createElement('div'); el.id = 'v-title';
   el.innerHTML = `<b>${main}</b>${sub ? `<small>${sub}</small>` : ''}`;
@@ -75,21 +75,21 @@ const title = (main: string, sub = '') => page.evaluate(([main, sub]) => {
 const untitle = async () => { await page.evaluate(() => { const el = document.getElementById('v-title'); if (el) el.style.opacity = '0'; }); await pause(500); await page.evaluate(() => document.getElementById('v-title')?.remove()); };
 async function type(text: string) {
   await page.evaluate(() => document.getElementById('v-input')!.classList.add('is-typing'));
-  for (const ch of text) { await page.evaluate(c => { document.getElementById('v-input')!.textContent += c; }, ch); await pause(ch === ' ' ? 45 : 32); }
+  for (const ch of text) { await page.evaluate((c: string) => { document.getElementById('v-input')!.textContent += c; }, ch); await pause(ch === ' ' ? 45 : 32); }
   await pause(450);
   await page.evaluate(() => { const input = document.getElementById('v-input')!; const msg = document.createElement('div'); msg.className = 'v-you'; msg.textContent = input.textContent; document.getElementById('v-log')!.appendChild(msg); input.textContent = ''; input.classList.remove('is-typing'); });
 }
-const say = (html: string, kind = 'v-ai') => page.evaluate(([html, kind]) => { document.querySelector('.v-dots')?.remove(); const el = document.createElement('div'); el.className = kind; el.innerHTML = html; document.getElementById('v-log')!.appendChild(el); }, [html, kind]);
+const say = (html: string, kind = 'v-ai') => page.evaluate(([html, kind]: string[]) => { document.querySelector('.v-dots')?.remove(); const el = document.createElement('div'); el.className = kind; el.innerHTML = html; document.getElementById('v-log')!.appendChild(el); }, [html, kind]);
 const thinking = () => say('<span></span><span></span><span></span>', 'v-ai v-dots');
 const doneTools = () => page.evaluate(() => document.querySelectorAll('.v-tool').forEach(t => t.classList.add('is-done')));
 async function pointAt(selector: string, click = false) {
   const box = await page.locator(selector).first().boundingBox();
   if (!box) return;
-  await page.evaluate(([x, y]) => { const c = document.getElementById('v-cursor')!; c.style.left = `${x}px`; c.style.top = `${y}px`; }, [box.x + box.width / 2, box.y + box.height / 2]);
+  await page.evaluate(([x, y]: number[]) => { const c = document.getElementById('v-cursor')!; c.style.left = `${x}px`; c.style.top = `${y}px`; }, [box.x + box.width / 2, box.y + box.height / 2]);
   await pause(1000);
   if (click) { await page.evaluate(() => { const c = document.getElementById('v-cursor')!; c.classList.remove('is-click'); void c.offsetWidth; c.classList.add('is-click'); }); await page.locator(selector).first().click(); }
 }
-const spot = (selector: string | null) => page.evaluate(sel => { document.querySelectorAll('.v-spot').forEach(e => e.classList.remove('v-spot')); if (sel) document.querySelector(sel)?.classList.add('v-spot'); }, selector);
+const spot = (selector: string | null) => page.evaluate((sel: string | null) => { document.querySelectorAll('.v-spot').forEach(e => e.classList.remove('v-spot')); if (sel) document.querySelector(sel)?.classList.add('v-spot'); }, selector);
 
 // Open on the demo drone, behind the first title.
 await page.goto(`${base}/?demo=betaflight`);
@@ -106,16 +106,16 @@ await type('My new quad won’t arm. Why?');
 await pause(500);
 await thinking();
 
-// The assistant looks, for real, through Lucidity.
+// The assistant looks, for real, through Armable.
 const person = new Browser(base);
 person.cookie = (await context.cookies()).map((c: { name: string; value: string }) => `${c.name}=${c.value}`).join('; ');
 const claude = await assistant(base, (await person.connectAssistant('Claude')).access_token!);
 await pause(900);
-await say('Lucidity · reading the drone', 'v-tool');
+await say('Armable · reading the drone', 'v-tool');
 await claude.call('get_workspace');
 await claude.call('show', { target: 'safety' });
 await pause(1400);
-await say('Lucidity · checking the receiver', 'v-tool');
+await say('Armable · checking the receiver', 'v-tool');
 await claude.call('read', { ids: ['settings.load'] });
 await claude.call('show', { target: 'receiver' });
 await pause(900);
@@ -139,7 +139,7 @@ await waiting;
 await page.waitForSelector('.lu-status.is-connected');
 await page.waitForFunction(() => !document.querySelector('.dg-chip'), undefined, { timeout: 20_000 }).catch(() => {});
 await page.evaluate(() => { const c = document.getElementById('v-cursor')!; c.style.left = '1500px'; c.style.top = '1000px'; });
-await say('Lucidity · confirmed on the drone', 'v-tool is-done');
+await say('Armable · confirmed on the drone', 'v-tool is-done');
 await pause(700);
 await spot('[aria-label^="Radio"]');
 await say('Done. The receiver is talking and <b>nothing blocks arming.</b>');
@@ -147,7 +147,7 @@ await pause(3400);
 await spot(null);
 
 // The end.
-await title('Lucidity', 'Your drone. Your AI. One bench. &nbsp;Free and open source.');
+await title('Armable', 'Your drone. Your AI. One bench. &nbsp;Free and open source.');
 await pause(3600);
 
 await claude.close();

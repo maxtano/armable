@@ -1,5 +1,5 @@
 // ============================================================
-//  LUCIDITY — Blower-outlet FIT GAUGE
+//  ARMABLE — Blower-outlet FIT GAUGE
 //  A strip of short rings, each a different HOLE DIAMETER,
 //  spanning below and above the measured 16 mm spout. Slip each
 //  over the blower outlet:

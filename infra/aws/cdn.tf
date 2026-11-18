@@ -32,7 +32,7 @@ resource "aws_cloudfront_distribution" "main" {
       origin_keepalive_timeout = 60
     }
     custom_header {
-      name  = "X-Lucidity-Origin"
+      name  = "X-Armable-Origin"
       value = random_password.origin_secret.result
     }
   }

@@ -1,5 +1,5 @@
 // ============================================================
-//  LUCIDITY — Wing v2a  (research-optimized Coandă donut, 2-piece)
+//  ARMABLE — Wing v2a  (research-optimized Coandă donut, 2-piece)
 //  ------------------------------------------------------------
 //  SAME optimized body as before (attached Coandă turn ~9x slit,
 //  converging throat, gentle diffuser, open center, smooth ring).

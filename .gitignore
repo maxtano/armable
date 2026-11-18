@@ -28,7 +28,7 @@ artifacts/
 workbench-files/
 /archive/direction-lab/data/
 /archive/direction-lab/preview.png
-/archive/direction-lab/plugins/lucidity-lab/.mcp.json
+/archive/direction-lab/plugins/armable-lab/.mcp.json
 /drone-studio/docs/esc-*.json
 /drone-studio/docs/screenshots/
 /drone-studio/docs/INPUT.md

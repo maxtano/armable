@@ -16,7 +16,7 @@ describe.skipIf(!pool)('migrations on Postgres', () => {
     expect(await migrate(pool!)).toEqual(migrations().map(m => m.version));
     expect(await migrate(pool!)).toEqual([]);
     const tables = (await pool!.query(`select table_name from information_schema.tables where table_schema = current_schema() order by 1`)).rows.map(r => r.table_name);
-    expect(tables).toEqual(expect.arrayContaining([...TRACK_TABLES, 'lucidity_rows', 'schema_migrations', 'tool_usage_daily', 'proposal_outcomes']));
+    expect(tables).toEqual(expect.arrayContaining([...TRACK_TABLES, 'armable_rows', 'schema_migrations', 'tool_usage_daily', 'proposal_outcomes']));
   });
 });
 
@@ -56,7 +56,7 @@ for (const [name, make] of [['memory', () => new MemoryTracker()], ['Postgres', 
 describe.skipIf(!pool)('tracking a whole session on Postgres', () => {
   it('records the motor-direction story in tables: aircraft, connection, telemetry, every tool call, proposal states, the change and the test', async () => {
     await migrate(pool!);
-    await pool!.query(`truncate ${TRACK_TABLES.join(', ')}, lucidity_rows restart identity cascade`);
+    await pool!.query(`truncate ${TRACK_TABLES.join(', ')}, armable_rows restart identity cascade`);
     const tracker = new PgTracker(pool!, e => { throw e; });
     const app = await startApp(await PgStore.open(pool!), undefined, tracker);
     const browser = new Browser(app.base);
@@ -95,7 +95,7 @@ describe.skipIf(!pool)('tracking a whole session on Postgres', () => {
       expect((await browser.get('/api/data/setting_changes')).json[0]).toMatchObject({ setting_id: 'esc.3.direction' });
       const stranger = new Browser(app.base); await stranger.signUp();
       expect((await stranger.get('/api/data/tool_calls')).json).toEqual([]);
-      expect((await browser.get('/api/data/lucidity_rows')).status).toBe(404);
+      expect((await browser.get('/api/data/armable_rows')).status).toBe(404);
       await browser.request('DELETE', '/api/account');
       expect((await q(`select count(*)::int as n from tool_calls`))[0].n).toBe(0);
     } finally { await claude.close(); await tab.close(); await app.close(); }

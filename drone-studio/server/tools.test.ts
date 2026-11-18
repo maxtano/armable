@@ -34,7 +34,7 @@ describe('an assistant working with a connected ArduPilot aircraft', () => {
     services.hub(account.id).focus = { tab: bench.tabId, at: Date.now(), route: 'drone', part: 'motors', selection: { motor: 3 } };
     await until(() => !!services.hub(account.id).mirror?.snapshot.identity?.version.startsWith('4.'));
     const w = await call('get_workspace');
-    expect(w).toMatchObject({ lucidityOpen: true, benchTab: true, aircraft: { connected: true, demo: true, stack: 'ardupilot', firmware: 'ArduCopter 4.5.7', armed: false }, lookingAt: { part: 'motors', selection: { motor: 3 } }, assistantMode: 'propose', pendingProposals: [] });
+    expect(w).toMatchObject({ armableOpen: true, benchTab: true, aircraft: { connected: true, demo: true, stack: 'ardupilot', firmware: 'ArduCopter 4.5.7', armed: false }, lookingAt: { part: 'motors', selection: { motor: 3 } }, assistantMode: 'propose', pendingProposals: [] });
     expect(w.next).toMatch(/settings\.load/);
     expect(JSON.stringify(w).length).toBeLessThan(2000);
   });
@@ -241,7 +241,7 @@ describe('with no aircraft', () => {
     const services = makeServices();
     const account = await makeAccount(services);
     const w = await callTool(services, account.id, 'get_workspace');
-    expect(w).toMatchObject({ lucidityOpen: false, benchTab: false, aircraft: { connected: false } });
+    expect(w).toMatchObject({ armableOpen: false, benchTab: false, aircraft: { connected: false } });
     expect(w.next).toMatch(/not open/);
     const f = await callTool(services, account.id, 'find', { query: 'wont arm' });
     expect(f.hits[0].kind).toBe('playbook');
@@ -315,7 +315,7 @@ describe('account isolation', () => {
     await callTool(services, a.id, 'read', { ids: ['settings.load'] });
     const doc = await callTool(services, a.id, 'edit', { create: { kind: 'file', name: 'secret' }, content: 'a-only' });
     const proposal = await callTool(services, a.id, 'propose_change', { changes: [{ id: 'param.RTL_ALT', value: 2000 }] });
-    expect((await callTool(services, b.id, 'get_workspace'))).toMatchObject({ lucidityOpen: false, aircraft: { connected: false }, documents: [], pendingProposals: [] });
+    expect((await callTool(services, b.id, 'get_workspace'))).toMatchObject({ armableOpen: false, aircraft: { connected: false }, documents: [], pendingProposals: [] });
     expect((await callTool(services, b.id, 'read', { ids: [doc.created.id, proposal.proposal, 'battery.voltage', 'activity'] })).values.map((v: any) => v.value)).toEqual([null, null, null, []]);
     expect((await callTool(services, b.id, 'edit', { document: doc.created.id, baseRevision: 1, content: 'x' })).error.code).toBe('not_found');
     expect((await callTool(services, b.id, 'wait', { proposal: proposal.proposal, seconds: 1 })).error.code).toBe('not_found');

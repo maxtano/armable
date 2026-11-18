@@ -283,7 +283,7 @@ export function parseEscHex(text: string): Uint8Array {
 export async function flashEsc(link: FourWay, current: EscRead, firmware: Uint8Array, progress: (label: string, done?: number, total?: number) => void): Promise<Uint8Array> {
   if (current.info.interfaceMode === ARM_MODE) { await flashAm32(link, current, firmware, progress); return firmware; }
   const info = current.info;
-  if (!info.writable || !current.block) throw new DeviceError('unsupported', 'This ESC cannot be flashed by Lucidity yet.');
+  if (!info.writable || !current.block) throw new DeviceError('unsupported', 'This ESC cannot be flashed by Armable yet.');
   if (firmware.length !== BB2.size) throw new DeviceError('invalid', 'Firmware image has the wrong size.');
   const target = describeEsc(info.index, parseInt(info.signature!, 16), 1, firmware.subarray(BB2.settings, BB2.settings + 0x70), 0);
   if (target.firmware === 'Unknown') throw new DeviceError('invalid', 'This file is not a recognised BLHeli_S or Bluejay image.');

@@ -36,7 +36,7 @@ export async function writeEscChanges(session: EscSession, ctx: RunContext, now:
         try {
           ctx.progress?.(`Writing ESC ${index}`);
           const before = await readEsc(link, index - 1, now);
-          if (!before.info.writable || !before.block) { fail(before.info.error ?? 'Lucidity cannot change settings on this ESC firmware yet.'); await link.reset(index - 1).catch(() => {}); continue; }
+          if (!before.info.writable || !before.block) { fail(before.info.error ?? 'Armable cannot change settings on this ESC firmware yet.'); await link.reset(index - 1).catch(() => {}); continue; }
           const current = Object.fromEntries(escSettings(before.info, before.block).map(s => [s.id, s.value]));
           const stale = list.find(c => c.expected !== undefined && String(current[c.id]) !== String(c.expected).toLowerCase());
           if (stale) { fail(`${stale.id} is now ${current[stale.id]}, not ${stale.expected}. Nothing was written.`); await link.reset(index - 1).catch(() => {}); continue; }

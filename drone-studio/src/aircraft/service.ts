@@ -1845,7 +1845,7 @@ export class AircraftService {
       const protocol = this.missionProtocol(aircraftId, generation);
       const before = await protocol.download(abort.signal, 1);
       if (before.length > 1 || (before.length === 1 && before[0]?.seq !== 0))
-        throw new AircraftServiceError('An existing mission is present or home-only state could not be confirmed. Lucidity will not overwrite it. Back it up and clear it through an established ground station before retrying.', 409);
+        throw new AircraftServiceError('An existing mission is present or home-only state could not be confirmed. Armable will not overwrite it. Back it up and clear it through an established ground station before retrying.', 409);
       const home = before[0] ?? this.freshHomeFromPosition(aircraftId);
       if (!this.validMissionHome(home))
         throw new AircraftServiceError('The aircraft did not return a valid seq-0 home waypoint. Mission upload is blocked.', 409);
@@ -2040,19 +2040,19 @@ export class AircraftService {
     if (value('FS_THR_ENABLE') !== 3) {
       const configured = value('FS_THR_ENABLE');
       const action = configured === 1 ? 'RTL' : configured === 0 ? 'disabled' : 'another action';
-      throw new AircraftServiceError(`RC-loss is configured as FS_THR_ENABLE=${configured} (${action}); this first short hover requires LAND (3). Review it with the pilot; Lucidity will not change it.`, 409);
+      throw new AircraftServiceError(`RC-loss is configured as FS_THR_ENABLE=${configured} (${action}); this first short hover requires LAND (3). Review it with the pilot; Armable will not change it.`, 409);
     }
     if (value('FS_THR_VALUE') < 910 || value('FS_THR_VALUE') > 1100 ||
         value('RC3_MIN') <= value('FS_THR_VALUE') + 10 ||
         value('RC_FS_TIMEOUT') < 0.2 || value('RC_FS_TIMEOUT') > 3 ||
         (value('FS_OPTIONS') & 1) !== 0 || ![1, 3].includes(value('FS_EKF_ACTION')))
       throw new AircraftServiceError('Review FS_THR_VALUE, RC3_MIN, RC_FS_TIMEOUT, FS_OPTIONS and FS_EKF_ACTION: the throttle threshold, RC-loss behavior or EKF LAND action differs from this first-hover setup.', 409);
-    // Lucidity does not yet emit a GCS HEARTBEAT. Reading this value does not
+    // Armable does not yet emit a GCS HEARTBEAT. Reading this value does not
     // prove GCS-loss protection, even if the aircraft has FS_GCS_ENABLE set.
     if (![0, 1, 3, 4, 5, 6, 7].includes(value('FS_GCS_ENABLE')))
       throw new AircraftServiceError('GCS failsafe configuration could not be reviewed.', 409);
     if (value('BATT_LOW_TIMER') <= 0)
-      throw new AircraftServiceError('BATT_LOW_TIMER=0 disables low-voltage errors. Configure and verify a positive delay before this first hover; Lucidity will not change it.', 409);
+      throw new AircraftServiceError('BATT_LOW_TIMER=0 disables low-voltage errors. Configure and verify a positive delay before this first hover; Armable will not change it.', 409);
     if (value('BATT_LOW_TIMER') > 10)
       throw new AircraftServiceError(`BATT_LOW_TIMER=${value('BATT_LOW_TIMER')} seconds is too long for this short show; review a delay of at most 10 seconds with the pilot.`, 409);
     if (value('BATT_MONITOR') <= 0 || value('BATT_CAPACITY') !== 650 ||

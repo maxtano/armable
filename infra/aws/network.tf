@@ -3,7 +3,7 @@
 data "aws_availability_zones" "available" { state = "available" }
 
 locals {
-  name = "lucidity-${var.environment}"
+  name = "armable-${var.environment}"
   azs  = slice(data.aws_availability_zones.available.names, 0, 2)
 }
 

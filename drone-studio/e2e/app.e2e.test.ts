@@ -16,7 +16,7 @@ try { pw = createRequire(import.meta.url)('playwright') as PW; } catch { pw = un
 const ready = !!pw && existsSync('dist/index.html');
 if (!ready && process.env.E2E) throw new Error('E2E=1 but Playwright or the build (dist/) is missing.');
 
-describe.skipIf(!ready)('Lucidity in a browser', () => {
+describe.skipIf(!ready)('Armable in a browser', () => {
   let app: Awaited<ReturnType<typeof startApp>>;
   let browser: any;
   beforeAll(async () => { app = await startApp(undefined, 'dist'); browser = await pw!.chromium.launch(); });
@@ -171,7 +171,7 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     const view = await stranger.newPage();
     await view.goto(link!);
     await view.waitForSelector('.bd-public .bd-row');
-    expect(await view.title()).toMatch(/5" analog freestyle starter · a drone build on Lucidity/);
+    expect(await view.title()).toMatch(/5" analog freestyle starter · a drone build on Armable/);
     expect(await view.locator('.bd-public .bd-row').count()).toBe(9);
     await view.click('button:has-text("Make a copy to change")');
     await view.waitForSelector('.bd-sheet .bd-row');
@@ -195,7 +195,7 @@ describe.skipIf(!ready)('Lucidity in a browser', () => {
     const skill = await (await fetch(prompt.replace('Read and follow ', ''))).text();
     expect(skill).toContain(`${app.base}/mcp`);
     await page.click('[data-connect=claude-code]');
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`claude mcp add --transport http lucidity ${app.base}/mcp`);
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`claude mcp add --transport http armable ${app.base}/mcp`);
     await page.keyboard.press('Escape');
     expect(await page.locator('.lu-connect-menu').count()).toBe(0);
     expect(errors).toEqual([]);

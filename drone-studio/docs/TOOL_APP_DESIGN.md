@@ -1,10 +1,10 @@
-# Lucidity as a tool app — interface design
+# Armable as a tool app — interface design
 
 **Status: plan, November 17, 2026.** The look and behaviour of the product in [TOOL_APP_VISION.md](TOOL_APP_VISION.md). None of it is built. Colours, type, and controls continue to come from the existing [design system](DESIGN_SYSTEM.md); this document changes layout and interaction, not the palette.
 
 ## The idea
 
-**The drone is the interface.** Lucidity opens on a drawing of your aircraft, made from its real configuration and alive with its real readings. You see its state instead of reading about it. You touch a part to change it. The assistant does the talking; the screen does the showing.
+**The drone is the interface.** Armable opens on a drawing of your aircraft, made from its real configuration and alive with its real readings. You see its state instead of reading about it. You touch a part to change it. The assistant does the talking; the screen does the showing.
 
 ## Five rules
 
@@ -27,7 +27,7 @@
                  ▮▮▮▯  15.8 V
 ```
 
-The sketch shows the arrangement only. The real drawing is generated from the aircraft: frame class and type give the motor positions, numbers, and spin directions; port settings give the attached parts. A part Lucidity cannot identify is drawn dashed and labelled unknown. Nothing is invented.
+The sketch shows the arrangement only. The real drawing is generated from the aircraft: frame class and type give the motor positions, numbers, and spin directions; port settings give the attached parts. A part Armable cannot identify is drawn dashed and labelled unknown. Nothing is invented.
 
 | Part | Shows | Tap for |
 | --- | --- | --- |
@@ -94,5 +94,5 @@ Tools today is a searchable catalogue of 18 areas, each described in text with f
 ## Open design questions
 
 1. **How much aircraft variety can one generated drawing cover?** Start with four-motor frames, which is what the current hardware support covers, and design the layout rules so six and eight motors follow.
-2. **How to draw wiring truthfully.** Lucidity knows port assignments from parameters but not physical wire routes. The drawing should show logical connections and say so.
+2. **How to draw wiring truthfully.** Armable knows port assignments from parameters but not physical wire routes. The drawing should show logical connections and say so.
 3. **Density for experts.** Some will want more numbers on screen than the default shows. A density control is likely needed; test with real users before adding it.

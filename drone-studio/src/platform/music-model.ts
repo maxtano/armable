@@ -101,6 +101,6 @@ export const noteName = (midi: number | null) =>
   midi === null ? 'Rest' : `${pitches[midi % 12].toUpperCase()}${Math.floor(midi / 12) - 1}`;
 export function tuneToRtttl(tune: Tune) {
   const t = validateTune(tune);
-  const name = t.name.replace(/[^a-zA-Z0-9 _-]/g, '').slice(0, 10) || 'Lucidity';
+  const name = t.name.replace(/[^a-zA-Z0-9 _-]/g, '').slice(0, 10) || 'Armable';
   return `${name}:d=4,o=5,b=${t.bpm}:${t.notes.map((n) => `${4 / n.beats}${n.midi === null ? 'p' : pitches[n.midi % 12] + (Math.floor(n.midi / 12) - 1)}`).join(',')}`;
 }

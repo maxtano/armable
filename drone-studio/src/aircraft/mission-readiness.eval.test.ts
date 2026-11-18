@@ -112,7 +112,7 @@ async function fixture() {
     listPorts: async () => [{ path: usbPath }],
     createPort: () => port as unknown as AircraftSerialPort,
     now: () => clock,
-    missionBackupDirectory: await mkdtemp(join(tmpdir(), 'lucidity-readiness-eval-')),
+    missionBackupDirectory: await mkdtemp(join(tmpdir(), 'armable-readiness-eval-')),
   });
   services.push(service);
   await service.connect(usbPath);

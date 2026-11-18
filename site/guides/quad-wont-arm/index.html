@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quad won’t arm? Every Betaflight arming flag explained, and how to fix it | Lucidity</title>
+  <title>Quad won’t arm? Every Betaflight arming flag explained, and how to fix it | Armable</title>
   <meta name="description" content="Why your FPV quad won’t arm in Betaflight: RXLOSS, THROTTLE, ANGLE, NOT_DISARMED, RPMFILTER and every other arming disable flag in plain words, with the fix for each. Plus ArduPilot PreArm checks." />
   <link rel="canonical" href="https://armable.ai/guides/quad-wont-arm/" />
   <meta name="robots" content="index, follow" />
@@ -12,7 +12,7 @@
   <link rel="preload" href="../../fonts/manrope-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="../../style.css" />
   <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="Lucidity" />
+  <meta property="og:site_name" content="Armable" />
   <meta property="og:title" content="Quad won’t arm? Every Betaflight arming flag, explained" />
   <meta property="og:description" content="RXLOSS, THROTTLE, ANGLE, NOT_DISARMED and the rest, in plain words, with the fix for each." />
   <meta property="og:url" content="https://armable.ai/guides/quad-wont-arm/" />
@@ -30,8 +30,8 @@
         "headline": "Quad won’t arm? Every Betaflight arming flag explained, and how to fix it",
         "description": "Why an FPV quad won’t arm in Betaflight, flag by flag, with the fix for each, plus ArduPilot PreArm checks.",
         "image": "https://armable.ai/media/og-wont-arm.png",
-        "author": { "@type": "Organization", "name": "Lucidity", "url": "https://armable.ai/" },
-        "publisher": { "@type": "Organization", "name": "Lucidity", "logo": { "@type": "ImageObject", "url": "https://armable.ai/favicon.svg" } },
+        "author": { "@type": "Organization", "name": "Armable", "url": "https://armable.ai/" },
+        "publisher": { "@type": "Organization", "name": "Armable", "logo": { "@type": "ImageObject", "url": "https://armable.ai/favicon.svg" } },
         "datePublished": "2026-11-18",
         "dateModified": "2026-11-18",
         "mainEntityOfPage": "https://armable.ai/guides/quad-wont-arm/"
@@ -39,7 +39,7 @@
       {
         "@type": "BreadcrumbList",
         "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Lucidity", "item": "https://armable.ai/" },
+          { "@type": "ListItem", "position": 1, "name": "Armable", "item": "https://armable.ai/" },
           { "@type": "ListItem", "position": 2, "name": "Quad won’t arm", "item": "https://armable.ai/guides/quad-wont-arm/" }
         ]
       },
@@ -57,15 +57,15 @@
   }
   </script>
 </head>
-<body data-app="__LUCIDITY_URL__">
+<body data-app="__ARMABLE_URL__">
   <div class="wrap narrow">
     <header class="top">
-      <a class="logo" href="../../"><img src="../../favicon.svg" alt="" width="28" height="28" />Lucidity</a>
-      <a class="btn needs-app" href="__LUCIDITY_URL__/?demo=betaflight">Try the demo</a>
+      <a class="logo" href="../../"><img src="../../favicon.svg" alt="" width="28" height="28" />Armable</a>
+      <a class="btn needs-app" href="__ARMABLE_URL__/?demo=betaflight">Try the demo</a>
     </header>
 
     <article class="guide">
-      <p class="crumbs"><a href="../../">Lucidity</a> › Guides</p>
+      <p class="crumbs"><a href="../../">Armable</a> › Guides</p>
       <h1 style="margin-top: 14px">Quad won’t arm? Here’s why.</h1>
       <p class="lede">Betaflight always knows why it won’t arm. It just tells you in a code. This page translates every code, with the fix.</p>
 
@@ -129,19 +129,19 @@ save</pre></li>
       <p>ArduPilot tells you in words. Messages starting <code>PreArm:</code> appear in Mission Planner’s Messages tab and on the HUD. The common ones on a new build are radio not calibrated, compass not calibrated, accelerometers inconsistent, battery below the failsafe voltage, and no GPS lock in a mode that needs one. Fix what the message names, then try again. PX4 shows the same kind of preflight failure in QGroundControl.</p>
 
       <h2>Or let your AI find it</h2>
-      <p><a href="../../">Lucidity</a> gives Claude, ChatGPT and other assistants the tools to read your flight controller over USB, in the browser. Tell it “my quad won’t arm”. It reads the arming flags and your settings, finds the cause, and proposes the fix on the part it affects. Nothing changes until you approve it. It runs on the AI subscription you already have, with no API key.</p>
-      <img class="shot" style="margin-top: 22px" src="../../media/proposal.jpg" width="1600" height="1000" loading="lazy" alt="Lucidity finds a quad won’t arm because the receiver protocol is SBUS while the ExpressLRS receiver speaks CRSF, and proposes the fix with an Approve button." />
+      <p><a href="../../">Armable</a> gives Claude, ChatGPT and other assistants the tools to read your flight controller over USB, in the browser. Tell it “my quad won’t arm”. It reads the arming flags and your settings, finds the cause, and proposes the fix on the part it affects. Nothing changes until you approve it. It runs on the AI subscription you already have, with no API key.</p>
+      <img class="shot" style="margin-top: 22px" src="../../media/proposal.jpg" width="1600" height="1000" loading="lazy" alt="Armable finds a quad won’t arm because the receiver protocol is SBUS while the ExpressLRS receiver speaks CRSF, and proposes the fix with an Approve button." />
     </article>
 
     <div class="cta">
       <h2>Try it on a quad that won’t arm.</h2>
       <p>The demo drone has exactly this problem. Free and open source.</p>
-      <a class="btn needs-app" href="__LUCIDITY_URL__/?demo=betaflight">Open the demo drone</a>
-      <a class="btn no-app" href="https://github.com/maxtano/lucidity">Get Lucidity on GitHub</a>
+      <a class="btn needs-app" href="__ARMABLE_URL__/?demo=betaflight">Open the demo drone</a>
+      <a class="btn no-app" href="https://github.com/maxtano/lucidity">Get Armable on GitHub</a>
     </div>
 
     <footer>
-      <a href="../../">Lucidity</a>
+      <a href="../../">Armable</a>
       <a href="https://github.com/maxtano/lucidity">GitHub</a>
       <span>Free and open source · Apache 2.0</span>
     </footer>

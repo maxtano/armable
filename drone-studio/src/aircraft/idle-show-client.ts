@@ -23,7 +23,7 @@ export class IdleShowClient {
   }
   private async post(action: 'start' | 'renew' | 'stop', body: unknown): Promise<AircraftSnapshot> {
     const response = await this.fetcher(`/api/aircraft/idle-show/${action}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Lucidity-Aircraft': '1' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Armable-Aircraft': '1' },
       body: JSON.stringify(body), signal: AbortSignal.timeout(1800), keepalive: action === 'stop',
     });
     const result = await response.json();

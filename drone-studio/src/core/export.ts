@@ -7,7 +7,7 @@ import { STORYBOARD_BENCH_PULSE } from './bench-storyboard';
 export function projectBundle(project: Project, report: ValidationReport | null) {
   const hasBenchCues = project.cues.some((cue) => cue.benchCue != null);
   return {
-    format: 'lucidity.design',
+    format: 'armable.design',
     formatVersion: hasBenchCues ? 4 : 3,
     engineVersion: '0.4.0',
     exportedAt: new Date().toISOString(),
@@ -57,7 +57,7 @@ export function parseProjectFile(text: string): Project {
   const raw: unknown = JSON.parse(text);
   if (raw && typeof raw === 'object' && 'format' in raw) {
     const bundle = raw as Record<string, unknown>;
-    if (bundle.format !== 'lucidity.design' || ![1, 2, 3, 4].includes(Number(bundle.formatVersion)))
+    if (bundle.format !== 'armable.design' || ![1, 2, 3, 4].includes(Number(bundle.formatVersion)))
       throw new Error('Unsupported design format.');
     return projectSchema.parse(bundle.project);
   }
@@ -73,7 +73,7 @@ export function trajectoryCsv(project: Project): string {
     );
   const evaluator = new ShowEvaluator(project);
   const lines = [
-    '# Lucidity simulation samples only; not a flight mission. 2 Hz maximum interval; local ENU meters; no geographic origin or takeoff/landing.',
+    '# Armable simulation samples only; not a flight mission. 2 Hz maximum interval; local ENU meters; no geographic origin or takeoff/landing.',
     'time_s,drone_id,east_m,north_m,up_m,red,green,blue',
   ];
   for (let f = 0; f < frames; f++) {

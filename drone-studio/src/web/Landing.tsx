@@ -77,11 +77,11 @@ export function Landing({ onSignedIn, google }: { onSignedIn(): void; google?: b
       await api('POST', mode === 'signup' ? '/signup' : '/login', { email, password });
       // An assistant app sent them here to sign in first: carry on with that request.
       if (next?.startsWith('/authorize')) location.href = next; else onSignedIn();
-    } catch (e) { setError(e instanceof ApiError ? e.message : 'Could not reach Lucidity.'); setBusy(false); }
+    } catch (e) { setError(e instanceof ApiError ? e.message : 'Could not reach Armable.'); setBusy(false); }
   };
   return (
     <div className="in">
-      <header className="in-top"><span className="in-logo"><img src="/favicon.svg" alt="" width="22" height="22" />Lucidity</span><a href="#start" className="lu-btn">Sign in</a></header>
+      <header className="in-top"><span className="in-logo"><img src="/favicon.svg" alt="" width="22" height="22" />Armable</span><a href="#start" className="lu-btn">Sign in</a></header>
       <section className="in-hero">
         <div className="in-copy">
           <Coil width={150} height={38} />

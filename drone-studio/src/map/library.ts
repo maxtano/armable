@@ -2,7 +2,7 @@ import type { Stack } from '../device/types';
 
 /**
  * Authored knowledge: what an expert would check for a symptom, and where to read more.
- * Reviewed like code. References are links and Lucidity's own notes; nothing is copied from the sources.
+ * Reviewed like code. References are links and Armable's own notes; nothing is copied from the sources.
  */
 export interface PlaybookStep { do: string; use?: { tool: 'read' | 'run_test' | 'propose_change' | 'find'; arguments: Record<string, unknown> }; why?: string }
 export interface Playbook { id: string; symptom: string; words: string[]; stacks?: Stack[]; steps: PlaybookStep[]; caution?: string }

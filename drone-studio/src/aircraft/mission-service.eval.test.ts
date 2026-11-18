@@ -146,7 +146,7 @@ class MissionPort extends EventEmitter {
 
 async function fixture(flightJournalPath?: string) {
   const port = new MissionPort();
-  const missionBackupDirectory = await mkdtemp(join(tmpdir(), 'lucidity-mission-eval-'));
+  const missionBackupDirectory = await mkdtemp(join(tmpdir(), 'armable-mission-eval-'));
   const service = new AircraftService({
     listPorts: async () => [{ path }],
     createPort: (_options: AircraftPortOptions) => port as unknown as AircraftSerialPort,
@@ -233,7 +233,7 @@ describe('physical launch field check with injected USB packets', () => {
   });
 
   it('treats an interrupted on-disk flight journal as unknown and sends no new aircraft requests', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'lucidity-flight-restart-eval-'));
+    const directory = await mkdtemp(join(tmpdir(), 'armable-flight-restart-eval-'));
     const flightJournalPath = join(directory, 'active.json');
     await writeFile(flightJournalPath, JSON.stringify({ runId: 'interrupted' }));
     const port = new MissionPort();
@@ -257,7 +257,7 @@ describe('physical launch field check with injected USB packets', () => {
   });
 
   it('requires the interrupted run’s stable FC UID before explicit props-off recovery', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'lucidity-flight-uid-eval-'));
+    const directory = await mkdtemp(join(tmpdir(), 'armable-flight-uid-eval-'));
     const flightJournalPath = join(directory, 'active.json');
     await writeFile(flightJournalPath, JSON.stringify({
       aircraftId: 'old-link:1:1', runId: 'interrupted', startedAt: Date.now(),
@@ -288,7 +288,7 @@ describe('physical launch field check with injected USB packets', () => {
   });
 
   it('surfaces unknown immediately when adapter construction fails after the journal is durable', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'lucidity-flight-construction-eval-'));
+    const directory = await mkdtemp(join(tmpdir(), 'armable-flight-construction-eval-'));
     const flightJournalPath = join(directory, 'active.json');
     const f = await launchFixture({}, flightJournalPath);
     try {

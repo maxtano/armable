@@ -1,20 +1,20 @@
 # Connector listing
 
-Materials for listing Lucidity in assistant connector directories. Submission is done by the project owner in each directory's own process; this file holds what they ask for. Check each directory's current requirements before submitting; they change.
+Materials for listing Armable in assistant connector directories. Submission is done by the project owner in each directory's own process; this file holds what they ask for. Check each directory's current requirements before submitting; they change.
 
 ## Name and one line
 
-**Lucidity** — Read, test and change your drone's setup from your assistant. You approve every change.
+**Armable** — Read, test and change your drone's setup from your assistant. You approve every change.
 
 ## Description (short)
 
-Lucidity connects your assistant to the drone plugged into your computer. It can read live readings and every setting, run checks, analyse flight logs and propose changes. Nothing reaches the aircraft until you approve it in Lucidity, and the change is read back from the aircraft before your assistant reports it.
+Armable connects your assistant to the drone plugged into your computer. It can read live readings and every setting, run checks, analyse flight logs and propose changes. Nothing reaches the aircraft until you approve it in Armable, and the change is read back from the aircraft before your assistant reports it.
 
 ## Description (long)
 
-Lucidity is a drone workbench in the browser. Plug a Betaflight, INAV, ArduPilot or PX4 flight controller in over USB, and your assistant gets eleven tools and one searchable map of everything that aircraft offers: readings, tests, settings, guides and playbooks for common problems such as a motor spinning the wrong way or a drone that will not arm.
+Armable is a drone workbench in the browser. Plug a Betaflight, INAV, ArduPilot or PX4 flight controller in over USB, and your assistant gets eleven tools and one searchable map of everything that aircraft offers: readings, tests, settings, guides and playbooks for common problems such as a motor spinning the wrong way or a drone that will not arm.
 
-Your assistant can read and test freely. It can propose changes, which appear on the part they affect in Lucidity, with the before and after. You approve with one click, after confirming anything physical such as "props removed". Lucidity writes the change, reads it back from the aircraft, and only then tells your assistant it is done. Motor spins and firmware flashing are always started by you. Lucidity never arms or flies an aircraft.
+Your assistant can read and test freely. It can propose changes, which appear on the part they affect in Armable, with the before and after. You approve with one click, after confirming anything physical such as "props removed". Armable writes the change, reads it back from the aircraft, and only then tells your assistant it is done. Motor spins and firmware flashing are always started by you. Armable never arms or flies an aircraft.
 
 ## Server
 

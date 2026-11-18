@@ -100,7 +100,7 @@ describe('connecting an assistant', () => {
     const next = await (await refresh(grant.refresh_token!)).json();
     expect(next.access_token).toBeTruthy();
     expect((await refresh(grant.refresh_token!)).status).toBe(400);
-    expect((await claude.call('get_workspace')).lucidityOpen).toBe(false);
+    expect((await claude.call('get_workspace')).armableOpen).toBe(false);
     await browser.request('DELETE', `/api/assistants/${grant.clientId}`);
     await expect(claude.call('get_workspace')).rejects.toThrow();
     expect((await refresh(next.refresh_token)).status).toBe(400);
@@ -167,13 +167,13 @@ describe('an assistant over MCP, a person in a tab, a simulated drone on the ben
     const { app, claude, tab, grant } = await world('ardupilot');
     await claude.call('read', { ids: ['settings.load'] });
     const p = await claude.call('propose_change', { changes: [{ id: 'param.RTL_ALT', value: 2000 }] });
-    const bearer = { Authorization: `Bearer ${grant.access_token}`, 'x-lucidity': '1', 'content-type': 'application/json' };
+    const bearer = { Authorization: `Bearer ${grant.access_token}`, 'x-armable': '1', 'content-type': 'application/json' };
     for (const [path, body] of [[`/api/proposals/${p.proposal}/decision`, { approve: true }], [`/api/proposals/${p.proposal}/result`, { ok: true, summary: 'done' }], ['/api/mode', { mode: 'propose' }]] as const)
       expect((await fetch(app.base + path, { method: path === '/api/mode' ? 'PUT' : 'POST', headers: bearer, body: JSON.stringify(body) })).status).toBe(401);
     // The token is not a session cookie either.
-    expect((await fetch(`${app.base}/api/proposals/${p.proposal}/decision`, { method: 'POST', headers: { cookie: `lucidity_session=${grant.access_token}`, 'x-lucidity': '1', 'content-type': 'application/json' }, body: '{"approve":true}' })).status).toBe(401);
+    expect((await fetch(`${app.base}/api/proposals/${p.proposal}/decision`, { method: 'POST', headers: { cookie: `armable_session=${grant.access_token}`, 'x-armable': '1', 'content-type': 'application/json' }, body: '{"approve":true}' })).status).toBe(401);
     const { WebSocket } = await import('ws');
-    const refused = await new Promise<string>(resolve => { const ws = new WebSocket(app.base.replace('http', 'ws') + '/live', { headers: { Authorization: `Bearer ${grant.access_token}`, cookie: `lucidity_session=${grant.access_token}` } }); ws.once('open', () => resolve('open')); ws.once('error', () => resolve('refused')); });
+    const refused = await new Promise<string>(resolve => { const ws = new WebSocket(app.base.replace('http', 'ws') + '/live', { headers: { Authorization: `Bearer ${grant.access_token}`, cookie: `armable_session=${grant.access_token}` } }); ws.once('open', () => resolve('open')); ws.once('error', () => resolve('refused')); });
     expect(refused).toBe('refused');
     expect((await claude.call('wait', { proposal: p.proposal, seconds: 1 })).status).toBe('awaiting_approval');
     expect(tab.sim.params.get('RTL_ALT').value).toBe(1500);
@@ -212,7 +212,7 @@ describe('an assistant over MCP, a person in a tab, a simulated drone on the ben
     await until(() => tab.events.some(e => e.event === 'show' && e.data.target === 'ref.ap.motors' && e.data.by === 'Claude'));
     await tab.close();
     await until(async () => (await claude.call('show', { target: 'battery' })).shown === false);
-    expect((await claude.call('get_workspace'))).toMatchObject({ lucidityOpen: false, aircraft: { connected: false } });
+    expect((await claude.call('get_workspace'))).toMatchObject({ armableOpen: false, aircraft: { connected: false } });
   });
 
   it('obeys the Off switch immediately', async () => {
@@ -243,7 +243,7 @@ describe('two people', () => {
     const bobsGrant = await bob.connectAssistant('Claude');
     const bobsClaude = await assistant(app.base, bobsGrant.access_token!);
     closers.push(() => bobsClaude.close());
-    expect(await bobsClaude.call('get_workspace')).toMatchObject({ lucidityOpen: false, aircraft: { connected: false }, documents: [] });
+    expect(await bobsClaude.call('get_workspace')).toMatchObject({ armableOpen: false, aircraft: { connected: false }, documents: [] });
     expect((await bobsClaude.call('read', { ids: [doc.id, 'battery.voltage'] })).values.every((v: any) => v.value === null)).toBe(true);
     expect((await bobsClaude.call('wait', { proposal: proposal.proposal, seconds: 1 })).error.code).toBe('not_found');
     expect((await alice.get(`/api/docs/${doc.id}`)).json.content).toBe('private');

@@ -73,7 +73,7 @@ export class Runtime {
   private emit(event: RuntimeEvent) { for (const l of [...this.listeners]) l(event); }
   private setStatus(status: RuntimeStatus) { if (status !== this.status) { this.status = status; this.emit({ type: 'status' }); } }
   private need(): Driver {
-    if (!this.driver || this.status !== 'connected') throw new DeviceError('disconnected', this.status === 'reconnecting' ? 'The flight controller is restarting.' : 'No aircraft is connected.', 'Open Lucidity and connect the drone.');
+    if (!this.driver || this.status !== 'connected') throw new DeviceError('disconnected', this.status === 'reconnecting' ? 'The flight controller is restarting.' : 'No aircraft is connected.', 'Open Armable and connect the drone.');
     return this.driver;
   }
 
@@ -148,7 +148,7 @@ export class Runtime {
     return grant;
   }
   private consume(grant: Grant | undefined, operation: string): Grant {
-    if (!grant || !this.grants.has(grant)) throw new DeviceError('not_approved', 'This needs approval from the person at the aircraft.', 'Use propose_change or run_test and wait for approval in Lucidity.');
+    if (!grant || !this.grants.has(grant)) throw new DeviceError('not_approved', 'This needs approval from the person at the aircraft.', 'Use propose_change or run_test and wait for approval in Armable.');
     if (grant.operation !== operation) throw new DeviceError('not_approved', 'The approval was given for a different operation.');
     this.grants.delete(grant);
     return grant;

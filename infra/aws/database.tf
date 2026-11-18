@@ -19,8 +19,8 @@ resource "aws_db_instance" "main" {
   max_allocated_storage        = var.db_allocated_storage * 10
   storage_type                 = "gp3"
   storage_encrypted            = true
-  db_name                      = "lucidity"
-  username                     = "lucidity"
+  db_name                      = "armable"
+  username                     = "armable"
   password                     = random_password.db.result
   db_subnet_group_name         = aws_db_subnet_group.main.name
   vpc_security_group_ids       = [aws_security_group.db.id]

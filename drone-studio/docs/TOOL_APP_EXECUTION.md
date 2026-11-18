@@ -1,4 +1,4 @@
-# Lucidity as a tool app — execution plan
+# Armable as a tool app — execution plan
 
 **Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** How to get from the current code to the product in [TOOL_APP_VISION.md](TOOL_APP_VISION.md), with the interface in [TOOL_APP_DESIGN.md](TOOL_APP_DESIGN.md) and the design in [TOOL_APP_ARCHITECTURE.md](TOOL_APP_ARCHITECTURE.md). No phase has started.
 

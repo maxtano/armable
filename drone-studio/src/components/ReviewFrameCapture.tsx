@@ -252,8 +252,8 @@ export function ReviewFrameCapture({
   const metadata = frame?.metadata;
   const version = metadata?.version === 'base' ? 'Before' : 'Draft';
   const filename = metadata
-    ? `lucidity-audience-${metadata.version}-${metadata.sampledTime.toFixed(3)}s-${metadata.createdAt.replace(/\D/g, '')}`
-    : 'lucidity-audience-frame';
+    ? `armable-audience-${metadata.version}-${metadata.sampledTime.toFixed(3)}s-${metadata.createdAt.replace(/\D/g, '')}`
+    : 'armable-audience-frame';
   const cancelLabel =
     pending === 'capture'
       ? 'Cancel frame capture'

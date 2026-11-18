@@ -51,7 +51,7 @@ export const ARDUPILOT_META: Record<string, Meta> = {
   MOT_SPIN_MIN: { title: 'Minimum spin', description: 'Lowest motor output in flight.', min: 0, max: 0.3, step: 0.01 },
   MOT_BAT_VOLT_MAX: { title: 'Battery voltage, full', unit: 'V', min: 0, max: 60, step: 0.1 },
   MOT_BAT_VOLT_MIN: { title: 'Battery voltage, empty', unit: 'V', min: 0, max: 60, step: 0.1 },
-  SERVO_BLH_AUTO: { title: 'ESC passthrough', description: 'Lets Lucidity reach the ESCs through the flight controller.', options: { 0: 'Off', 1: 'On' }, rebootRequired: true },
+  SERVO_BLH_AUTO: { title: 'ESC passthrough', description: 'Lets Armable reach the ESCs through the flight controller.', options: { 0: 'Off', 1: 'On' }, rebootRequired: true },
   SERVO_BLH_PORT: { title: 'ESC passthrough port', description: 'Which port carries ESC passthrough. 0 is USB.', rebootRequired: true },
   SERVO_DSHOT_ESC: { title: 'DShot ESC type', options: { 0: 'None', 1: 'BLHeli32 / BLHeli_S', 2: 'BLHeli_S / Bluejay extended', 3: 'AM32' } },
   BATT_MONITOR: { title: 'Battery monitor', description: 'How battery voltage and current are measured.', rebootRequired: true, options: { 0: 'Off', 3: 'Voltage only', 4: 'Voltage and current', 9: 'ESC telemetry' } },
@@ -98,7 +98,7 @@ export const ARDUPILOT_FEATURED: Record<string, string[]> = {
   tuning: ['ATC_RAT_RLL_P', 'ATC_RAT_RLL_I', 'ATC_RAT_RLL_D', 'ATC_RAT_PIT_P', 'ATC_RAT_PIT_I', 'ATC_RAT_PIT_D', 'ATC_RAT_YAW_P', 'INS_GYRO_FILTER'],
   safety: ['FS_THR_ENABLE', 'BATT_FS_LOW_ACT', 'FS_GCS_ENABLE', 'FENCE_ENABLE', 'RTL_ALT'],
 };
-/** ArduPilot's published metadata (apm.pdef.json), reduced to what Lucidity shows. */
+/** ArduPilot's published metadata (apm.pdef.json), reduced to what Armable shows. */
 export function fromPdef(json: unknown): Record<string, Meta> {
   const out: Record<string, Meta> = {};
   const walk = (node: unknown) => {

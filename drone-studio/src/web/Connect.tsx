@@ -55,13 +55,13 @@ export function Consent({ id }: { id: string }) {
   if (info === undefined) { setInfo(null); api('GET', `/oauth/${id}`).then(setInfo, () => setInfo({ client: '', scopes: [], redirectHost: '' })); }
   const decide = async (allow: boolean) => { setBusy(true); try { location.href = (await api('POST', `/oauth/${id}`, { allow })).redirect; } catch { setBusy(false); toast('This request has expired. Start again from your assistant.', 'bad'); } };
   if (!info) return <div className="lu-consent" />;
-  if (!info.client) return <div className="lu-consent"><div className="lu-consent-card"><h1>Request expired</h1><p>Start again from your assistant.</p><a className="lu-btn" href="/">Open Lucidity</a></div></div>;
+  if (!info.client) return <div className="lu-consent"><div className="lu-consent-card"><h1>Request expired</h1><p>Start again from your assistant.</p><a className="lu-btn" href="/">Open Armable</a></div></div>;
   return (
     <div className="lu-consent">
       <div className="lu-consent-card">
         <h1>Connect {info.client}?</h1>
         <ul>{info.scopes.map(s => { const [Icon, text] = SCOPE[s] ?? [Eye, s]; return <li key={s}><Icon size={18} />{text}</li>; })}</ul>
-        <p className="lu-hint">You approve every change to your drone, here in Lucidity. It returns you to {info.redirectHost}.</p>
+        <p className="lu-hint">You approve every change to your drone, here in Armable. It returns you to {info.redirectHost}.</p>
         <div className="lu-row"><button className="lu-btn is-primary" disabled={busy} onClick={() => decide(true)}>Allow</button><button className="lu-btn" disabled={busy} onClick={() => decide(false)}>Decline</button></div>
       </div>
     </div>

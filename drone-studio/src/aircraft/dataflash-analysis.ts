@@ -226,7 +226,7 @@ function relativeMetric(observations: Observation[], origin: number): NumericSum
 export function analyzeDataFlash(input: Uint8Array | ArrayBuffer): FlightLogAnalysis {
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
   if (bytes.length < FMT_LENGTH) throw new DataFlashAnalysisError('This file is too short for an ArduPilot DataFlash log.');
-  if (bytes.length > MAX_LOG_BYTES) throw new DataFlashAnalysisError('This log exceeds Lucidity’s 64 MiB analysis limit. Keep the original .BIN file.');
+  if (bytes.length > MAX_LOG_BYTES) throw new DataFlashAnalysisError('This log exceeds Armable’s 64 MiB analysis limit. Keep the original .BIN file.');
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const formats = new Map<number, Definition>();
   const groups: FlightLogAnalysis['groups'] = { ATT: 0, RATE: 0, VIBE: 0, CTUN: 0, BAT: 0, MODE: 0 };

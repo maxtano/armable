@@ -17,7 +17,7 @@ import {
 function storage(initial?: string) {
   const values = new Map<string, string>();
   if (initial !== undefined) values.set(STORYBOARDS_STORAGE_KEY, initial);
-  values.set('lucidity.studio.project.v1', 'existing current-project autosave');
+  values.set('armable.studio.project.v1', 'existing current-project autosave');
   return {
     values,
     getItem: vi.fn((key: string) => values.get(key) ?? null),
@@ -46,7 +46,7 @@ describe('storyboard library', () => {
     expect(loadStoryboards(store)).toEqual([]);
     expect(store.getItem).toHaveBeenCalledWith(STORYBOARDS_STORAGE_KEY);
     expect(store.setItem).not.toHaveBeenCalled();
-    expect(store.values.get('lucidity.studio.project.v1')).toBe(
+    expect(store.values.get('armable.studio.project.v1')).toBe(
       'existing current-project autosave'
     );
   });
@@ -67,7 +67,7 @@ describe('storyboard library', () => {
       { project: second, updatedAt: 200 },
     ]);
     expect(loadStoryboards(store)).toEqual(saved);
-    expect(store.values.get('lucidity.studio.project.v1')).toBe(
+    expect(store.values.get('armable.studio.project.v1')).toBe(
       'existing current-project autosave'
     );
     expect(store.setItem.mock.calls.every(([key]) => key === STORYBOARDS_STORAGE_KEY)).toBe(true);
@@ -168,7 +168,7 @@ describe('deleted storyboards', () => {
     expect(loadDeletedStoryboards(store)).toEqual([
       { project: first, updatedAt: 100, deletedAt: 300 },
     ]);
-    expect(store.values.get('lucidity.studio.project.v1')).toBe('existing current-project autosave');
+    expect(store.values.get('armable.studio.project.v1')).toBe('existing current-project autosave');
   });
 
   it('restores the exact original project and timestamp without sharing nested references', () => {
@@ -298,7 +298,7 @@ describe('new storyboard', () => {
 });
 
 describe('initial storyboard recovery', () => {
-  const legacyKey = 'lucidity.studio.project.v1';
+  const legacyKey = 'armable.studio.project.v1';
   const fallback = () => createStoryboard('Fallback', 'fallback');
 
   it('recovers a newer library revision after an interrupted legacy write and preserves it on autosave', () => {

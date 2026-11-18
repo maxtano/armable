@@ -12,7 +12,7 @@ const DIGEST_BYTES = 32;
 const MAX_METADATA_BYTES = 16 * 1024;
 export const MAX_FRAME_ARTIFACT_BYTES =
   HEADER_BYTES + MAX_METADATA_BYTES + MAX_CAPTURE_PNG_BYTES + DIGEST_BYTES;
-const MIME = 'application/vnd.lucidity.audience-frame';
+const MIME = 'application/vnd.armable.audience-frame';
 const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
 const crcTable = Uint32Array.from({ length: 256 }, (_, index) => {
   let value = index;
@@ -384,7 +384,7 @@ export async function parseFrameArtifact(
     bytes.length < HEADER_BYTES + 1 + 45 + DIGEST_BYTES ||
     MAGIC.some((byte, index) => bytes[index] !== byte)
   )
-    throw new Error('This file is not a Lucidity audience frame bundle.');
+    throw new Error('This file is not an Armable audience frame bundle.');
   const header = new DataView(bytes.buffer);
   if (header.getUint32(8, false) !== 1) throw new Error('Unsupported frame bundle version.');
   const metadataLength = header.getUint32(12, false),

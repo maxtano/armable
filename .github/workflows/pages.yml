@@ -1,5 +1,5 @@
-name: Publish the Lucidity intro page to GitHub Pages
-# The app itself needs its server, so Pages only hosts a static intro page. Set the repository variable LUCIDITY_URL
+name: Publish the Armable intro page to GitHub Pages
+# The app itself needs its server, so Pages only hosts a static intro page. Set the repository variable ARMABLE_URL
 # to the hosted app's address (for example https://app.armable.ai) and the page links to it.
 on:
   push:
@@ -19,18 +19,18 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Assemble the site
         env:
-          LUCIDITY_URL: ${{ vars.LUCIDITY_URL }}
+          ARMABLE_URL: ${{ vars.ARMABLE_URL }}
         run: |
           cp -r site _site
           cp drone-studio/public/favicon.svg _site/
           touch _site/.nojekyll
           python3 - <<'PY'
           import os, re, pathlib
-          url = os.environ.get('LUCIDITY_URL', '').strip().rstrip('/')
+          url = os.environ.get('ARMABLE_URL', '').strip().rstrip('/')
           if url and not re.fullmatch(r'https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?', url):
-              raise SystemExit(f'LUCIDITY_URL must be a plain https address, got: {url!r}')
+              raise SystemExit(f'ARMABLE_URL must be a plain https address, got: {url!r}')
           for page in pathlib.Path('_site').rglob('*.html'):
-              page.write_text(page.read_text().replace('__LUCIDITY_URL__', url))
+              page.write_text(page.read_text().replace('__ARMABLE_URL__', url))
           PY
       - uses: actions/upload-pages-artifact@v4
         with:

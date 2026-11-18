@@ -1,6 +1,6 @@
 # Read-only ESC inspection
 
-Lucidity provides **Tools → ESC configuration** and **Music → Identify ESC firmware**. The operator confirms props removed and direct USB; the tool refreshes FC parameters, reads ESC identities and settings, restarts each selected ESC and exits passthrough. It requires a new disarmed MAVLink heartbeat before returning the link to use. No firmware or settings are written.
+Armable provides **Tools → ESC configuration** and **Music → Identify ESC firmware**. The operator confirms props removed and direct USB; the tool refreshes FC parameters, reads ESC identities and settings, restarts each selected ESC and exits passthrough. It requires a new disarmed MAVLink heartbeat before returning the link to use. No firmware or settings are written.
 
 The local endpoint is `POST /api/aircraft/esc/read` with `aircraftId`, `propsRemoved: true`, and `directUsb: true`, protected by the same localhost, same-origin and JSON-header checks as other aircraft operations. Results are available in `/api/aircraft/status` under `esc`, tagged with aircraft connection identity, USB path/serial and timestamps. The assistant's `inspect_escs` reads this report; `prepare_esc_read` opens the guarded reader. Download readback retains raw settings bytes as hex, including unsupported layouts for diagnosis. This is not a full firmware backup.
 

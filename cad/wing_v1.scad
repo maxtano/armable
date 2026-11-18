@@ -1,5 +1,5 @@
 // ============================================================
-//  LUCIDITY — Wing v1  (single-part Coandă test ring, long neck)
+//  ARMABLE — Wing v1  (single-part Coandă test ring, long neck)
 //  ------------------------------------------------------------
 //  Top of the NECK slips over the blower's 16 mm round outlet
 //  (tape it on). Air travels ~3in down the neck, spreads in the

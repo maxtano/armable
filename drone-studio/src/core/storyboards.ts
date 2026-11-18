@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { projectSchema, type Project } from './model';
 
 /** This library is separate from the existing current-project autosave. */
-export const STORYBOARDS_STORAGE_KEY = 'lucidity.studio.storyboards.v1';
+export const STORYBOARDS_STORAGE_KEY = 'armable.studio.storyboards.v1';
 
 export type StoredStoryboard = { project: Project; updatedAt: number; deletedAt?: number };
 

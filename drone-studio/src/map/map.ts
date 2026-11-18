@@ -80,7 +80,7 @@ export const READINGS: ReadingDef[] = [
 const UNAVAILABLE: { words: string[]; stacks: Stack[] | 'all'; title: string; reason: string }[] = [
   { words: ['sd', 'card', 'sdcard'], stacks: ['betaflight', 'inav'], title: 'Logs on an SD card', reason: 'Logs on an SD card cannot be read over USB. Copy the .bbl file off the card and open it in Flights.' },
   { words: ['esc', 'escs', 'passthrough', 'direction'], stacks: ['px4'], title: 'ESC settings', reason: 'ESC passthrough is not available on PX4.' },
-  { words: ['arm', 'takeoff', 'launch', 'fly', 'mission', 'land'], stacks: 'all', title: 'Arming and flight', reason: 'Lucidity never arms, launches or flies an aircraft for an assistant. The pilot does that.' },
+  { words: ['arm', 'takeoff', 'launch', 'fly', 'mission', 'land'], stacks: 'all', title: 'Arming and flight', reason: 'Armable never arms, launches or flies an aircraft for an assistant. The pilot does that.' },
   { words: ['blheli32', 'blheli_32'], stacks: 'all', title: 'BLHeli_32 ESCs', reason: 'BLHeli_32 is closed firmware and is not supported. BLHeli_S, Bluejay and AM32 are.' },
   { words: ['stm32', 'spi'], stacks: 'all', title: 'STM32 and SPI receivers', reason: 'Only ESP-based ExpressLRS receivers can be flashed here. SPI receivers update with the flight controller firmware.' },
 ];
@@ -102,7 +102,7 @@ export function settingHit(s: Setting): Hit {
 }
 export function testHit(t: TestSpec): Hit {
   const args = t.args?.filter(a => a.type !== 'file');
-  return { kind: 'test', id: t.id, title: t.name, part: t.part, level: t.level, summary: `${t.proves}${t.level === 2 ? ' Needs approval in Lucidity.' : t.level === 3 ? ' The person starts it in Lucidity.' : ''}`,
+  return { kind: 'test', id: t.id, title: t.name, part: t.part, level: t.level, summary: `${t.proves}${t.level === 2 ? ' Needs approval in Armable.' : t.level === 3 ? ' The person starts it in Armable.' : ''}`,
     allowed: args?.length ? args.map(a => `${a.name}${a.required ? '' : '?'}: ${a.min}–${a.max}${a.unit ?? ''}`).join(', ') : undefined,
     use: { tool: 'run_test', arguments: { id: t.id, ...(args?.some(a => a.required) ? { args: Object.fromEntries(args.filter(a => a.required).map(a => [a.name, a.min])) } : {}) } } };
 }
@@ -165,7 +165,7 @@ export function find(mirror: Mirror | undefined, query: string, options: FindOpt
     .map((u): Hit => ({ kind: 'unavailable', id: `unavailable.${u.title.toLowerCase().replace(/\W+/g, '-')}`, title: u.title, summary: u.reason }));
   const total = hits.length;
   hits = [...hits.slice(0, limit - Math.min(blocked.length, 1)), ...blocked.slice(0, 1)];
-  const note = !mirror || mirror.snapshot.status !== 'connected' ? 'No aircraft is connected, so only playbooks and references are listed. Readings, tests and settings appear once the person opens Lucidity and connects the drone.'
+  const note = !mirror || mirror.snapshot.status !== 'connected' ? 'No aircraft is connected, so only playbooks and references are listed. Readings, tests and settings appear once the person opens Armable and connects the drone.'
     : mirror.snapshot.settingsLoaded !== 'complete' && !hits.some(h => h.kind === 'setting') ? 'Settings have not been read from the aircraft yet. Call read with ids ["settings.load"] to read them, then search again.' : undefined;
   return { hits, total, note };
 }

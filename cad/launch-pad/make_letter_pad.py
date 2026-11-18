@@ -48,7 +48,7 @@ def surface(labels, selected):
 
 
 def write_stl(path, triangles):
-    data = bytearray(b'Lucidity launch pad; STL units millimetres'.ljust(80, b'\0'))
+    data = bytearray(b'Armable launch pad; STL units millimetres'.ljust(80, b'\0'))
     data.extend(struct.pack('<I', len(triangles)))
     for triangle in triangles:
         normal = np.cross(triangle[1] - triangle[0], triangle[2] - triangle[0])
@@ -61,8 +61,8 @@ def write_stl(path, triangles):
 def model_xml(parts):
     ET.register_namespace('', CORE)
     root = ET.Element(f'{{{CORE}}}model', {'unit': 'millimeter', '{http://www.w3.org/XML/1998/namespace}lang': 'en-US'})
-    for name, text in [('Title', 'Lucidity launch pad - 6 inches, 4 mm, flush L'),
-                       ('Designer', 'Lucidity'),
+    for name, text in [('Title', 'Armable launch pad - 6 inches, 4 mm, flush L'),
+                       ('Designer', 'Armable'),
                        ('Description', 'Two aligned parts. Assign contrasting PLA filaments to Pad and L. No printer settings or toolpaths included.')]:
         ET.SubElement(root, 'metadata', {'name': name}).text = text
     resources = ET.SubElement(root, 'resources')

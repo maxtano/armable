@@ -4,7 +4,7 @@ export type { ViewerBookmark } from './viewer';
 
 export const MAX_VIEWER_BOOKMARKS = 12;
 export const MAX_VIEWER_BOOKMARK_BYTES = 64_000;
-const prefix = 'lucidity.viewer.bookmarks.v1:';
+const prefix = 'armable.viewer.bookmarks.v1:';
 const encoder = new TextEncoder();
 
 const finite = z.number().finite();
@@ -43,7 +43,7 @@ const bookmarksSchema = z
   });
 const envelopeSchema = z
   .object({
-    format: z.literal('lucidity.viewer-bookmarks'),
+    format: z.literal('armable.viewer-bookmarks'),
     version: z.literal(1),
     projectId: z.string().min(1).max(100),
     bookmarks: bookmarksSchema,
@@ -147,7 +147,7 @@ export function saveViewerBookmarks(
     throw new Error(`Viewer bookmarks cannot be saved. ${validationMessage(error)}`);
   }
   const text = JSON.stringify({
-    format: 'lucidity.viewer-bookmarks',
+    format: 'armable.viewer-bookmarks',
     version: 1,
     projectId,
     bookmarks: parsed.map((bookmark) => ({

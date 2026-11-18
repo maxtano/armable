@@ -1,6 +1,6 @@
-# Lucidity design system
+# Armable design system
 
-Lucidity looks like a well-made instrument: retro-future, after Dieter Rams. Less, but better. A warm grey casing, charcoal controls, one signal orange for things that start something physical, copper where current flows (motor windings, coils, dial caps), round dials with plain ticks, and indicator lamps for state. One typeface, Manrope; headings are heavier, never a different face. Light is the default; dark is the same instrument at night. Appearance changes must not change project data, aircraft state, or command behavior.
+Armable looks like a well-made instrument: retro-future, after Dieter Rams. Less, but better. A warm grey casing, charcoal controls, one signal orange for things that start something physical, copper where current flows (motor windings, coils, dial caps), round dials with plain ticks, and indicator lamps for state. One typeface, Manrope; headings are heavier, never a different face. Light is the default; dark is the same instrument at night. Appearance changes must not change project data, aircraft state, or command behavior.
 
 | Element | Where it lives |
 | --- | --- |

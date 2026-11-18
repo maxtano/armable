@@ -84,10 +84,10 @@ export class Hub {
   /** Ask the bench tab to do something on the aircraft. Only observe-level requests exist in this vocabulary. */
   call(request: RemoteRequest | { op: 'capture'; view: string }, timeoutMs = 30_000): Promise<unknown> {
     const tab = request.op === 'capture' ? [...this.tabs.values()].sort((a, b) => b.active - a.active)[0] : this.benchTab();
-    if (!tab) return Promise.reject(new ToolError('no_bench', request.op === 'capture' ? 'Lucidity is not open in any browser tab.' : 'Lucidity is not open with a drone connected.', 'Ask the person to open Lucidity and connect the drone, then try again.'));
+    if (!tab) return Promise.reject(new ToolError('no_bench', request.op === 'capture' ? 'Armable is not open in any browser tab.' : 'Armable is not open with a drone connected.', 'Ask the person to open Armable and connect the drone, then try again.'));
     const id = newId(6);
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => { this.calls.delete(id); reject(new ToolError('timeout', 'The Lucidity tab did not answer in time.', 'The tab may be in the background or the drone unplugged. Ask the person to bring Lucidity to the front.')); }, timeoutMs);
+      const timer = setTimeout(() => { this.calls.delete(id); reject(new ToolError('timeout', 'The Armable tab did not answer in time.', 'The tab may be in the background or the drone unplugged. Ask the person to bring Armable to the front.')); }, timeoutMs);
       this.calls.set(id, { resolve, reject, timer });
       tab.send({ type: 'rpc', id, request });
     });

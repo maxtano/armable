@@ -1,6 +1,6 @@
 # The app: one container image in ECR, run on ECS Fargate behind an Application Load Balancer.
 #
-# Exactly one task runs. Lucidity keeps live state in memory (which browser tab holds the drone, calls waiting
+# Exactly one task runs. Armable keeps live state in memory (which browser tab holds the drone, calls waiting
 # on that tab), so a second task would split assistants from the tab they need. Deploys therefore stop the old
 # task before starting the new one, with a short gap.
 
@@ -155,7 +155,7 @@ resource "aws_lb_listener_rule" "from_cloudfront" {
   priority     = 1
   condition {
     http_header {
-      http_header_name = "X-Lucidity-Origin"
+      http_header_name = "X-Armable-Origin"
       values           = [random_password.origin_secret.result]
     }
   }

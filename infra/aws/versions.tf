@@ -6,7 +6,7 @@ terraform {
   }
   # State lives in S3 (see bootstrap/). Fill in the bucket with: terraform init -backend-config=backend.hcl
   backend "s3" {
-    key          = "lucidity/terraform.tfstate"
+    key          = "armable/terraform.tfstate"
     use_lockfile = true
     encrypt      = true
   }
@@ -14,11 +14,11 @@ terraform {
 
 provider "aws" {
   region = var.region
-  default_tags { tags = { Project = "lucidity", Environment = var.environment, ManagedBy = "terraform" } }
+  default_tags { tags = { Project = "armable", Environment = var.environment, ManagedBy = "terraform" } }
 }
 # CloudFront certificates must live in us-east-1.
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
-  default_tags { tags = { Project = "lucidity", Environment = var.environment, ManagedBy = "terraform" } }
+  default_tags { tags = { Project = "armable", Environment = var.environment, ManagedBy = "terraform" } }
 }

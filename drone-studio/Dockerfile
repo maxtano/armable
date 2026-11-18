@@ -1,4 +1,4 @@
-# Lucidity: the hosted app and its tool server in one image.
+# Armable: the hosted app and its tool server in one image.
 FROM node:24-slim
 WORKDIR /app
 COPY package.json package-lock.json ./

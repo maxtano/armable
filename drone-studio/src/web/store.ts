@@ -73,7 +73,7 @@ export function useStore<T>(select: (s: State) => T): T {
     return value;
   });
 }
-const ASKED = 'lucidity.asked.v1';
+const ASKED = 'armable.asked.v1';
 /** Ask “did this help?” after this moment, unless it was asked before in this browser. */
 export function askHelpful(moment: 'fix' | 'build') {
   try { const asked: string[] = JSON.parse(localStorage.getItem(ASKED) ?? '[]'); if (asked.includes(moment)) return; localStorage.setItem(ASKED, JSON.stringify([...asked, moment])); } catch { return; }

@@ -7,13 +7,13 @@ describe('agent onboarding', () => {
   beforeAll(async () => { app = await startApp(); });
   afterAll(async () => { await app.close(); });
 
-  it('serves a skill an agent can follow, written for this Lucidity', async () => {
+  it('serves a skill an agent can follow, written for this Armable', async () => {
     const response = await fetch(`${app.base}/agent-onboarding/SKILL.md`);
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toMatch(/text\/markdown/);
     const text = await response.text();
-    expect(text).toMatch(/^---\nname: lucidity\ndescription: /);
-    expect(text).toContain(`claude mcp add --transport http lucidity ${app.base}/mcp`);
+    expect(text).toMatch(/^---\nname: armable\ndescription: /);
+    expect(text).toContain(`claude mcp add --transport http armable ${app.base}/mcp`);
     expect(text).toContain('get_workspace');
     expect(text).toContain('Never say a change is done until `wait` returns it done');
   });

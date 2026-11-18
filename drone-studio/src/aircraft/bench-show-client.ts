@@ -29,7 +29,7 @@ export class BenchShowClient {
     const deadline = setTimeout(() => controller.abort(), 1500);
     try {
       const response = await this.fetcher(`/api/aircraft/bench-show/${action}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Lucidity-Aircraft': '1' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Armable-Aircraft': '1' },
         body: JSON.stringify(body), signal: controller.signal, keepalive: action === 'stop',
       });
       const result = await response.json();

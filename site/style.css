@@ -1,4 +1,4 @@
-/* Lucidity's public pages, in the app's look: warm grey casing, charcoal, one signal orange, copper. */
+/* Armable's public pages, in the app's look: warm grey casing, charcoal, one signal orange, copper. */
 @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 200 800; font-display: swap; src: url(fonts/manrope-normal-latin.woff2) format('woff2'); }
 :root {
   --bg: #e9e7e2; --surface: #f6f5f1; --raised: #e0ded8; --ink: #1c1c1a; --muted: #45443f; --subtle: #57554f;

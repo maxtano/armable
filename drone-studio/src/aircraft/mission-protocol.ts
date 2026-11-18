@@ -97,7 +97,7 @@ export class MissionProtocol {
     if (!Number.isInteger(count) || count! < 0 || count! > MAX_MISSION_ITEMS)
       throw new MissionProtocolError('No valid mission count arrived; existing mission is unknown.');
     if (count! > maxCount)
-      throw new MissionProtocolError(`An existing mission has ${count} items. Lucidity will not overwrite it.`);
+      throw new MissionProtocolError(`An existing mission has ${count} items. Armable will not overwrite it.`);
     const items: MissionItem[] = [];
     for (let seq = 0; seq < count!; seq++) {
       let item: MissionItem | undefined;

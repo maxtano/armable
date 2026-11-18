@@ -61,7 +61,7 @@ export class MspParser {
   reset() { this.buffer = new Uint8Array(0); }
 }
 
-/** Command numbers used by Lucidity. */
+/** Command numbers used by Armable. */
 export const MSP = {
   API_VERSION: 1, FC_VARIANT: 2, FC_VERSION: 3, BOARD_INFO: 4, BUILD_INFO: 5, NAME: 10,
   BATTERY_CONFIG: 32, FEATURE_CONFIG: 36, MIXER_CONFIG: 42, RX_CONFIG: 44, REBOOT: 68,

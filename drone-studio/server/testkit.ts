@@ -83,7 +83,7 @@ export class Browser {
   cookie = '';
   constructor(readonly base: string) {}
   async request(method: string, path: string, body?: unknown, extra: Record<string, string> = {}) {
-    const response = await fetch(this.base + path, { method, redirect: 'manual', headers: { ...(this.cookie ? { cookie: this.cookie } : {}), ...(method === 'GET' ? {} : { 'x-lucidity': '1', 'content-type': 'application/json' }), ...extra }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const response = await fetch(this.base + path, { method, redirect: 'manual', headers: { ...(this.cookie ? { cookie: this.cookie } : {}), ...(method === 'GET' ? {} : { 'x-armable': '1', 'content-type': 'application/json' }), ...extra }, body: body === undefined ? undefined : JSON.stringify(body) });
     const set = response.headers.get('set-cookie');
     if (set) this.cookie = set.split(';')[0].endsWith('=') ? '' : set.split(';')[0];
     const text = await response.text();
@@ -126,7 +126,7 @@ export async function assistant(base: string, token: string, name = 'Claude') {
     close: () => client.close(),
   };
 }
-/** A Lucidity browser tab with a simulated drone plugged in, talking to the server over a real WebSocket. */
+/** An Armable browser tab with a simulated drone plugged in, talking to the server over a real WebSocket. */
 export async function openTab(browser: Browser, stack: 'ardupilot' | 'betaflight' = 'ardupilot', simOptions: Record<string, unknown> = {}) {
   const ws = new WebSocket(browser.base.replace('http', 'ws') + '/live', { headers: { cookie: browser.cookie, origin: browser.base } });
   await new Promise<void>((resolve, reject) => { ws.once('open', () => resolve()); ws.once('error', reject); });
@@ -164,7 +164,7 @@ export async function openTab(browser: Browser, stack: 'ardupilot' | 'betaflight
 // ---- Postgres for tests ----------------------------------------------------------------------------------------------
 
 import pg from 'pg';
-export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgres://lucidity:lucidity@127.0.0.1:5432/lucidity_test';
+export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgres://armable:armable@127.0.0.1:5432/armable_test';
 /**
  * A pool whose tables live in their own schema, emptied first, so test files can run in parallel on one database.
  * Returns undefined when Postgres is not reachable (and throws in CI, where it must be).

@@ -75,7 +75,7 @@ describe('owned audience frame capture metadata', () => {
       original = structuredClone(args);
     const metadata = buildCaptureMetadata(args);
     expect(metadata).toEqual({
-      format: 'lucidity.audience-frame',
+      format: 'armable.audience-frame',
       schemaVersion: 1,
       project: { id: 'capture-fixture', name: 'Audience study', revision: 17 },
       version: 'draft',

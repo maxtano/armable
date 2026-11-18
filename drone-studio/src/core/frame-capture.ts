@@ -9,7 +9,7 @@ export const MAX_CAPTURE_PNG_BYTES = 32 * 1024 * 1024;
 export const DEFAULT_FRAME_CAPTURE_TIMEOUT_MS = 10_000;
 
 export type CaptureMetadata = {
-  format: 'lucidity.audience-frame';
+  format: 'armable.audience-frame';
   schemaVersion: 1;
   project: { id: string; name: string; revision: number };
   version: 'base' | 'draft';
@@ -90,7 +90,7 @@ const inputSchema = z.object({
 
 const metadataSchema = z
   .object({
-    format: z.literal('lucidity.audience-frame'),
+    format: z.literal('armable.audience-frame'),
     schemaVersion: z.literal(1),
     project: projectCaptureSchema.pick({ id: true, name: true, revision: true }).strict(),
     version: inputSchema.shape.version,
@@ -158,7 +158,7 @@ export function buildCaptureMetadata(input: CaptureMetadataInput): CaptureMetada
   const frame = frameAt(input.project, data.sampledTime);
   const scene = project.cues[frame.index];
   return parseCaptureMetadata({
-    format: 'lucidity.audience-frame',
+    format: 'armable.audience-frame',
     schemaVersion: 1,
     project: { id: project.id, name: project.name, revision: project.revision },
     version: data.version,

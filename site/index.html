@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lucidity – Drone tools for Claude and ChatGPT | Betaflight, ArduPilot, PX4</title>
+  <title>Armable – Drone tools for Claude and ChatGPT | Betaflight, ArduPilot, PX4</title>
   <meta name="description" content="Plug in your FPV drone, ask Claude or ChatGPT what’s wrong, and approve the fix. Free, open-source drone setup tools for Betaflight, INAV, ArduPilot and PX4. Runs in your browser, on the AI subscription you already have." />
   <link rel="canonical" href="https://armable.ai/" />
   <meta name="robots" content="index, follow" />
@@ -12,23 +12,23 @@
   <link rel="preload" href="fonts/manrope-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="style.css" />
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Lucidity" />
-  <meta property="og:title" content="Lucidity – Drone tools for your AI" />
+  <meta property="og:site_name" content="Armable" />
+  <meta property="og:title" content="Armable – Drone tools for your AI" />
   <meta property="og:description" content="Plug in your drone. Ask Claude or ChatGPT what’s wrong. Approve the fix. Free and open source." />
   <meta property="og:url" content="https://armable.ai/" />
   <meta property="og:image" content="https://armable.ai/media/og.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Lucidity: drone tools for your AI" />
+  <meta property="og:image:alt" content="Armable: drone tools for your AI" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Lucidity – Drone tools for your AI" />
+  <meta name="twitter:title" content="Armable – Drone tools for your AI" />
   <meta name="twitter:description" content="Plug in your drone. Ask Claude or ChatGPT what’s wrong. Approve the fix." />
   <meta name="twitter:image" content="https://armable.ai/media/og.png" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "Lucidity",
+    "name": "Armable",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "Web browser (Chrome, Edge)",
     "description": "Drone tools for Claude, ChatGPT and other AI assistants. Read, test and fix Betaflight, INAV, ArduPilot and PX4 drones over USB, approving every change.",
@@ -45,27 +45,27 @@
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-      { "@type": "Question", "name": "Do I need an API key to use Lucidity with Claude or ChatGPT?", "acceptedAnswer": { "@type": "Answer", "text": "No. Lucidity has no AI of its own. You add it to Claude or ChatGPT as a connector and it runs on the subscription you already have." } },
-      { "@type": "Question", "name": "Which drones and firmware does Lucidity work with?", "acceptedAnswer": { "@type": "Answer", "text": "FPV quads and other drones running Betaflight, INAV, ArduPilot or PX4, over USB in Chrome or Edge. ESCs running BLHeli_S, Bluejay or AM32, and ExpressLRS receivers." } },
-      { "@type": "Question", "name": "Can the AI change my drone without asking?", "acceptedAnswer": { "@type": "Answer", "text": "No. The assistant can read, test and propose. Every change waits for you to approve it in Lucidity, and is read back from the drone to confirm it. It can never arm the drone or spin motors on its own." } },
-      { "@type": "Question", "name": "Is Lucidity free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Lucidity is free and open source under the Apache 2.0 licence." } },
+      { "@type": "Question", "name": "Do I need an API key to use Armable with Claude or ChatGPT?", "acceptedAnswer": { "@type": "Answer", "text": "No. Armable has no AI of its own. You add it to Claude or ChatGPT as a connector and it runs on the subscription you already have." } },
+      { "@type": "Question", "name": "Which drones and firmware does Armable work with?", "acceptedAnswer": { "@type": "Answer", "text": "FPV quads and other drones running Betaflight, INAV, ArduPilot or PX4, over USB in Chrome or Edge. ESCs running BLHeli_S, Bluejay or AM32, and ExpressLRS receivers." } },
+      { "@type": "Question", "name": "Can the AI change my drone without asking?", "acceptedAnswer": { "@type": "Answer", "text": "No. The assistant can read, test and propose. Every change waits for you to approve it in Armable, and is read back from the drone to confirm it. It can never arm the drone or spin motors on its own." } },
+      { "@type": "Question", "name": "Is Armable free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Armable is free and open source under the Apache 2.0 licence." } },
       { "@type": "Question", "name": "Do I need a drone to try it?", "acceptedAnswer": { "@type": "Answer", "text": "No. A demo drone is built in, and it has a real problem to fix: it will not arm. There is also a drone builder that checks parts work together, with prices and store links." } }
     ]
   }
   </script>
 </head>
-<!-- The deploy workflow replaces __LUCIDITY_URL__ with the hosted app's address (the LUCIDITY_URL repository variable), or with nothing. -->
-<body data-app="__LUCIDITY_URL__">
+<!-- The deploy workflow replaces __ARMABLE_URL__ with the hosted app's address (the ARMABLE_URL repository variable), or with nothing. -->
+<body data-app="__ARMABLE_URL__">
   <div class="wrap">
     <header class="top">
-      <a class="logo" href="./"><img src="favicon.svg" alt="" width="28" height="28" />Lucidity</a>
+      <a class="logo" href="./"><img src="favicon.svg" alt="" width="28" height="28" />Armable</a>
       <nav class="links" aria-label="Site">
         <a href="#how">How it works</a>
         <a href="#build">Build a drone</a>
         <a href="guides/quad-wont-arm/">Quad won’t arm?</a>
         <a href="https://github.com/maxtano/lucidity">GitHub</a>
       </nav>
-      <a class="btn needs-app" href="__LUCIDITY_URL__">Open Lucidity</a>
+      <a class="btn needs-app" href="__ARMABLE_URL__">Open Armable</a>
     </header>
 
     <section class="hero">
@@ -73,21 +73,21 @@
         <h1>Drone tools for <em>your AI.</em></h1>
         <p class="lede">Plug in your FPV drone. Ask Claude or ChatGPT what’s wrong. Approve the fix. It runs on the subscription you already have.</p>
         <div class="actions">
-          <a class="btn signal needs-app" href="__LUCIDITY_URL__/?demo=betaflight">Try the demo drone</a>
+          <a class="btn signal needs-app" href="__ARMABLE_URL__/?demo=betaflight">Try the demo drone</a>
           <a class="btn primary no-app" href="https://github.com/maxtano/lucidity#run-it">Run it yourself</a>
           <a class="btn" href="https://github.com/maxtano/lucidity">View on GitHub</a>
         </div>
         <span class="fine">Free and open source · No sign-up · No install · No API key<br />Betaflight · INAV · ArduPilot · PX4</span>
       </div>
-      <img class="shot" src="media/proposal.jpg" width="1600" height="1000" alt="A quad that won’t arm in Lucidity: it hears nothing from its receiver, and Claude proposes switching the receiver protocol from SBUS to CRSF, with an Approve button." />
+      <img class="shot" src="media/proposal.jpg" width="1600" height="1000" alt="A quad that won’t arm in Armable: it hears nothing from its receiver, and Claude proposes switching the receiver protocol from SBUS to CRSF, with an Approve button." />
     </section>
 
     <section id="how" aria-labelledby="how-title">
       <h2 id="how-title">Say what’s wrong. See it fixed.</h2>
-      <p class="lede">Your assistant does the thinking. Lucidity does the hardware, and you make every call.</p>
+      <p class="lede">Your assistant does the thinking. Armable does the hardware, and you make every call.</p>
       <div class="grid3">
         <article class="card"><span class="num">1</span><h3>Plug in</h3><p>Connect your flight controller over USB in Chrome or Edge. Nothing to install. No drone? Open the demo.</p></article>
-        <article class="card"><span class="num">2</span><h3>Ask your AI</h3><p>Add Lucidity to Claude, ChatGPT, Claude Code, Cursor or VS Code as a connector, with one link. Then say “my quad won’t arm”.</p></article>
+        <article class="card"><span class="num">2</span><h3>Ask your AI</h3><p>Add Armable to Claude, ChatGPT, Claude Code, Cursor or VS Code as a connector, with one link. Then say “my quad won’t arm”.</p></article>
         <article class="card"><span class="num">3</span><h3>Approve</h3><p>The fix appears on the part it affects. Nothing changes until you click, and every change is read back to confirm it.</p></article>
       </div>
     </section>
@@ -104,7 +104,7 @@
     <section id="build" class="feature flip" aria-labelledby="build-title">
       <div>
         <h2 id="build-title">No drone yet? Build one.</h2>
-        <p>Choose what you want to fly and your budget. Pick every part, or start from a proven build. Lucidity checks that the frame, motors, ESC, props, battery, receiver and video system work together, and shows the cost, take-off weight, thrust-to-weight and flight time as you go.</p>
+        <p>Choose what you want to fly and your budget. Pick every part, or start from a proven build. Armable checks that the frame, motors, ESC, props, battery, receiver and video system work together, and shows the cost, take-off weight, thrust-to-weight and flight time as you go.</p>
         <p>Every part links to the stores that sell it. Share a build with one link.</p>
       </div>
       <img class="shot" src="media/build.jpg" width="1600" height="1000" loading="lazy" alt="Building a 5-inch FPV drone: dials for cost, take-off weight, thrust to weight and flight time, and a compatibility check." />
@@ -128,7 +128,7 @@
     <section aria-labelledby="faq-title">
       <h2 id="faq-title">Questions</h2>
       <div style="margin-top: 24px">
-        <details open><summary>Do I need an API key?</summary><p>No. Lucidity has no AI of its own. You add it to Claude or ChatGPT as a connector, and it runs on the subscription you already have, with your history and preferences intact.</p></details>
+        <details open><summary>Do I need an API key?</summary><p>No. Armable has no AI of its own. You add it to Claude or ChatGPT as a connector, and it runs on the subscription you already have, with your history and preferences intact.</p></details>
         <details><summary>Which drones does it work with?</summary><p>Anything running Betaflight, INAV, ArduPilot or PX4, connected over USB in Chrome or Edge. ESCs on BLHeli_S, Bluejay or AM32, and ExpressLRS receivers.</p></details>
         <details><summary>Can the AI change my drone without asking?</summary><p>No. It can read, test and propose. Every change waits for your approval, and is read back from the drone to confirm it. It can never arm the drone, spin motors or flash firmware on its own.</p></details>
         <details><summary>Do I need a drone to try it?</summary><p>No. The demo drone has a real problem to solve: it won’t arm. Ask your AI why.</p></details>
@@ -139,12 +139,12 @@
     <div class="cta">
       <h2>Your drone. Your AI. One bench.</h2>
       <p>Free, open source, and running in your browser.</p>
-      <a class="btn needs-app" href="__LUCIDITY_URL__/?demo=betaflight">Try the demo drone</a>
+      <a class="btn needs-app" href="__ARMABLE_URL__/?demo=betaflight">Try the demo drone</a>
       <a class="btn no-app" href="https://github.com/maxtano/lucidity">Get it on GitHub</a>
     </div>
 
     <footer>
-      <span>Lucidity · Apache 2.0</span>
+      <span>Armable · Apache 2.0</span>
       <a href="guides/quad-wont-arm/">Quad won’t arm?</a>
       <a href="https://github.com/maxtano/lucidity">GitHub</a>
       <a href="https://github.com/maxtano/lucidity/blob/main/SECURITY.md">Security</a>

@@ -27,16 +27,16 @@ function memoryStorage() {
 describe('explicit local viewer bookmarks', () => {
   it('uses an isolated versioned project slot and never touches show/checkpoint storage', () => {
     const storage = memoryStorage();
-    storage.values.set('lucidity.studio.project.v1', 'authored show');
-    storage.values.set('lucidity.agent.checkpoint.v1:project', 'unapplied proposal');
+    storage.values.set('armable.studio.project.v1', 'authored show');
+    storage.values.set('armable.agent.checkpoint.v1:project', 'unapplied proposal');
     expect(loadViewerBookmarks(storage, 'project')).toEqual([]);
     saveViewerBookmarks(storage, 'project', [bookmark()]);
     expect(loadViewerBookmarks(storage, 'project')).toEqual([bookmark()]);
-    expect(storage.values.get('lucidity.studio.project.v1')).toBe('authored show');
-    expect(storage.values.get('lucidity.agent.checkpoint.v1:project')).toBe('unapplied proposal');
-    const saved = JSON.parse(storage.values.get('lucidity.viewer.bookmarks.v1:project')!);
+    expect(storage.values.get('armable.studio.project.v1')).toBe('authored show');
+    expect(storage.values.get('armable.agent.checkpoint.v1:project')).toBe('unapplied proposal');
+    const saved = JSON.parse(storage.values.get('armable.viewer.bookmarks.v1:project')!);
     expect(saved).toMatchObject({
-      format: 'lucidity.viewer-bookmarks',
+      format: 'armable.viewer-bookmarks',
       version: 1,
       projectId: 'project',
     });
@@ -151,7 +151,7 @@ describe('explicit local viewer bookmarks', () => {
   it('rejects malformed/incompatible/cross-project saved envelopes without silently repairing or overwriting them', () => {
     const storage = memoryStorage();
     saveViewerBookmarks(storage, 'project', [bookmark()]);
-    const key = 'lucidity.viewer.bookmarks.v1:project';
+    const key = 'armable.viewer.bookmarks.v1:project';
     const valid = JSON.parse(storage.values.get(key)!);
     const invalid = [
       '{malformed',
@@ -195,7 +195,7 @@ describe('explicit local viewer bookmarks', () => {
 
   it('caps incoming data by UTF-8 bytes before parsing', () => {
     const storage = memoryStorage();
-    const key = 'lucidity.viewer.bookmarks.v1:project';
+    const key = 'armable.viewer.bookmarks.v1:project';
     for (const text of [
       'x'.repeat(MAX_VIEWER_BOOKMARK_BYTES + 1),
       '夜'.repeat(Math.floor(MAX_VIEWER_BOOKMARK_BYTES / 3) + 1),

@@ -1,4 +1,4 @@
-# Lucidity as a tool app — architecture
+# Armable as a tool app — architecture
 
 **Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** Design for the direction in [TOOL_APP_VISION.md](TOOL_APP_VISION.md) and the interface in [TOOL_APP_DESIGN.md](TOOL_APP_DESIGN.md). Sections marked *exists* describe code in the repository today; everything else is proposed. Build order is in [TOOL_APP_EXECUTION.md](TOOL_APP_EXECUTION.md).
 
@@ -10,14 +10,14 @@ This table describes the old local workspace, which is now in `archive/local-wor
 | --- | --- | --- |
 | Backend | Two Vite plugins (`src/aircraft/middleware.ts`, `src/platform/middleware.ts`) around one `AircraftService`; about 55 `/api/aircraft/*` and `/api/workbench/*` routes | The backend only exists while `vite dev` runs on the user's machine. |
 | Hardware code | Node: `serialport` in one file (`service.ts`), `node-mavlink` imported in 29 places, Node streams, events, and `Buffer` throughout | It cannot run in a browser as written. |
-| Show state | Browser `localStorage` (`lucidity.studio.project.v1`, `lucidity.studio.storyboards.v1`); undo history in React memory | No server can see or edit the open storyboard. |
+| Show state | Browser `localStorage` (`armable.studio.project.v1`, `armable.studio.storyboards.v1`); undo history in React memory | No server can see or edit the open storyboard. |
 | Other user data | Tunes, parameter backups, check-up reports, viewer bookmarks: all `localStorage` | Same problem; also lost if browser storage is cleared. |
 | UI updates | `useAircraft` polls `/api/aircraft/status` every second | A change by anyone else takes up to a second to show. |
 | Edit engine | `src/core/commands.ts`: atomic, validated, revision-checked operation batches; pure TypeScript | Already the right shape for tools, and already runs anywhere. |
 | Agent code | `src/agent/`: a model loop (`harness.ts`), an OpenAI adapter (`openai.ts`), 15 show tools over a private draft (`tools.ts`), evaluation oracles | The tools and oracles are valuable. The loop and adapter are what this plan removes. |
 | Safety checks | Route schemas require fields such as `confirmed: true` and `propsRemoved: true` | Fine for a UI checkbox. Meaningless if a model fills them in. |
 | Accounts | None. Single user, loopback only. | Everything about identity and isolation is new. |
-| MCP | A working four-tool server against a simulated drone in `direction-lab/plugins/lucidity-lab` | Proves the idea with Codex on a ChatGPT login. Not connected to the real app. |
+| MCP | A working four-tool server against a simulated drone in `direction-lab/plugins/armable-lab` | Proves the idea with Codex on a ChatGPT login. Not connected to the real app. |
 
 Roughly 64,000 lines and 1,480 tests exist. The plan keeps most of it. Three things move: the hardware code goes into the browser, documents go to a cloud store, and operations get published through one registry.
 
@@ -26,9 +26,9 @@ Roughly 64,000 lines and 1,480 tests exist. The plan keeps most of it. Three thi
 ```text
    Claude (web, desktop, mobile)        ChatGPT
             │                              │
-            └──── remote MCP over HTTPS, signed in with the user's Lucidity account ────┐
+            └──── remote MCP over HTTPS, signed in with the user's Armable account ────┐
                                                                                         ▼
- ┌───────────────────────────── Lucidity cloud (one service) ─────────────────────────────┐
+ ┌───────────────────────────── Armable cloud (one service) ─────────────────────────────┐
  │  sign-in          MCP endpoint            UI API            live channel (WebSocket)    │
  │     │                  │                    │                        │                  │
  │     ▼                  ▼                    ▼                        │                  │
@@ -40,7 +40,7 @@ Roughly 64,000 lines and 1,480 tests exist. The plan keeps most of it. Three thi
  │                     (database, per account)   (forwards to the bench tab)               │
  └─────────────────────────────────────────────────────────────┬───────────────────────────┘
                                                                ▼
- ┌─────────────────────── Lucidity in the user's browser ───────────────────────┐
+ ┌─────────────────────── Armable in the user's browser ───────────────────────┐
  │  UI (React, exists)  ◀── live updates ──  publishes focus                     │
  │  device runtime in a worker: aircraft service, protocols, mirrored state      │
  │                         │ Web Serial                                           │
@@ -86,7 +86,7 @@ From that single definition the registry generates the MCP tool, the route or me
 `AircraftService` and the protocol code are ported to run in a Web Worker inside the tab, talking to the drone through Web Serial.
 
 - **Transport:** the single `serialport` use becomes a small transport interface with two implementations: Web Serial for the product, and the existing mock for tests. Tests keep running in Node against the mock.
-- **MAVLink:** `node-mavlink` depends on Node streams and `Buffer`. Phase 0 decides between shimming those in the browser and replacing the library with a small codec for the message set Lucidity uses. The existing decoder tests define what "working" means either way.
+- **MAVLink:** `node-mavlink` depends on Node streams and `Buffer`. Phase 0 decides between shimming those in the browser and replacing the library with a small codec for the message set Armable uses. The existing decoder tests define what "working" means either way.
 - **Why a worker:** serial reads and protocol timing must not stall when the UI is busy rendering a 3D stage.
 - **Mirrored state:** the runtime sends a compact snapshot to the cloud whenever it changes: aircraft identity, link freshness, armed state, the parameter cache, the last ESC read, running jobs. Level 0 device tools are answered from this mirror, with its age, so a read does not wait on a round trip to the tab.
 - **What stays in the tab:** continuous telemetry and raw flight-log bytes. Log analysis runs in the tab; only the bounded report travels. A raw log reaches the cloud only if the user saves it.
@@ -135,8 +135,8 @@ This is a stronger boundary than the earlier local design had. There, any progra
 
 ### 7. Sign-in and the MCP endpoint
 
-- **People** sign in through a managed identity provider (email link, Google, Apple). Lucidity stores no passwords.
-- **Assistants** connect to one HTTPS address using the MCP streamable-HTTP transport. The first connection sends the user through a standard OAuth sign-in and consent screen ("Allow Claude to use Lucidity: observe, edit designs, propose device changes"). The assistant receives a token for that account with those scopes.
+- **People** sign in through a managed identity provider (email link, Google, Apple). Armable stores no passwords.
+- **Assistants** connect to one HTTPS address using the MCP streamable-HTTP transport. The first connection sends the user through a standard OAuth sign-in and consent screen ("Allow Claude to use Armable: observe, edit designs, propose device changes"). The assistant receives a token for that account with those scopes.
 - **Scopes** map to levels: `observe`, `design`, `propose`. There is no scope for approving, energising, or flying.
 - **Revocation:** the assistant chip in the UI lists each connected assistant and can disconnect it, which revokes its token.
 
@@ -164,7 +164,7 @@ type Entry =
 - **Ids are stable and readable.** `param.ATC_RAT_RLL_P`, `esc.3.direction`, `log.latest.vibration`. A wrong id returns the nearest valid ones.
 - **Per aircraft.** An entry appears only if the connected hardware and firmware support it. An unsupported entry that someone asks for by name is returned as unavailable, with the reason.
 - **Search is local and instant.** A prebuilt index over ids, names, synonyms, and symptoms. No model, no network call; a few milliseconds.
-- **Playbooks and references are authored data,** kept in the repository and reviewed like code. Playbooks also drive the UI's guided checks. References hold links, titles, timestamps, and Lucidity's own notes, tagged by firmware version. Lucidity stores no third-party video or transcript.
+- **Playbooks and references are authored data,** kept in the repository and reviewed like code. Playbooks also drive the UI's guided checks. References hold links, titles, timestamps, and Armable's own notes, tagged by firmware version. Armable stores no third-party video or transcript.
 - **Parameter documentation** is imported from the firmware project's published metadata, matched to the aircraft's version. This fills a gap [WORKSPACE.md](../../archive/local-workspace/docs/WORKSPACE.md) already lists.
 
 The diagram is SVG, generated from the same model: frame class and type give motor positions and spin directions; port settings give the attached parts. Each part is one element bound to its readings and settings by the same ids the assistant uses. When the assistant reads `esc.3.direction`, the part with that id shows the reading ring. That link is the whole mechanism behind "watch the assistant work".

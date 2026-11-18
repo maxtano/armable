@@ -77,7 +77,7 @@ export function encodeAm32Field(key: string, value: string | number): { offset: 
 }
 /** Patch the settings block and read it back. Everything but the patched bytes is written back as it was read. */
 export async function patchAm32(link: FourWay, read: EscRead, patches: { offset: number; byte: number }[]): Promise<Uint8Array> {
-  if (!read.info.writable || !read.block || read.address === undefined) throw new DeviceError('unsupported', 'This ESC cannot be changed by Lucidity yet.');
+  if (!read.info.writable || !read.block || read.address === undefined) throw new DeviceError('unsupported', 'This ESC cannot be changed by Armable yet.');
   const before = await link.read(read.address, AM32.layoutSize);
   if (!equal(before, read.block)) throw new DeviceError('stale', 'The ESC settings changed since they were read. Read the ESCs again.');
   const next = Uint8Array.from(before);
@@ -105,7 +105,7 @@ export function parseAm32Hex(text: string): Uint8Array {
   return image.subarray(0, Math.ceil(top / 256) * 256);
 }
 export async function flashAm32(link: FourWay, read: EscRead, image: Uint8Array, progress: (label: string, done?: number, total?: number) => void): Promise<void> {
-  if (!read.info.writable || !read.block || read.address === undefined) throw new DeviceError('unsupported', 'This ESC cannot be flashed by Lucidity yet.');
+  if (!read.info.writable || !read.block || read.address === undefined) throw new DeviceError('unsupported', 'This ESC cannot be flashed by Armable yet.');
   const settings = Uint8Array.from(read.block);
   const marker = new Uint8Array(17);
   marker.set([settings[1], settings[2]], 1);

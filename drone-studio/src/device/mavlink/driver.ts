@@ -28,7 +28,7 @@ const FIRMWARE: Partial<Record<Vehicle, string>> = { plane: 'ArduPlane', rover: 
 const LOG_WINDOW = 90 * 64, LOG_MAX = 64 * 1024 * 1024;
 
 export function requireGrant(ctx: RunContext, operation: string, needs: readonly Condition[]) {
-  if (!ctx.grant) throw new DeviceError('not_approved', 'This needs approval from the person at the aircraft.', 'Use propose_change or run_test and wait for approval in Lucidity.');
+  if (!ctx.grant) throw new DeviceError('not_approved', 'This needs approval from the person at the aircraft.', 'Use propose_change or run_test and wait for approval in Armable.');
   if (ctx.grant.operation !== operation) throw new DeviceError('not_approved', 'The approval was given for a different operation.');
   const missing = needs.filter(n => !ctx.grant!.conditions.includes(n));
   if (missing.length) throw new DeviceError('not_approved', `Not confirmed at the aircraft: ${missing.join(', ')}.`);

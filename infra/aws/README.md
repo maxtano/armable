@@ -1,4 +1,4 @@
-# Lucidity on AWS
+# Armable on AWS
 
 ```mermaid
 flowchart LR
@@ -42,7 +42,7 @@ gh variable set AWS_DEPLOY_ROLE_ARN --body "$(terraform output -raw deploy_role_
 gh variable set ECR_REPOSITORY_URL  --body "$(terraform output -raw ecr_repository_url)"
 gh variable set ECS_CLUSTER         --body "$(terraform output -raw ecs_cluster)"
 gh variable set ECS_SERVICE         --body "$(terraform output -raw ecs_service)"
-gh variable set LUCIDITY_URL        --body "$(terraform output -raw url)"
+gh variable set ARMABLE_URL        --body "$(terraform output -raw url)"
 ```
 
 Commit the `.terraform.lock.hcl` files that `terraform init` creates, so everyone uses the same provider versions.
@@ -59,7 +59,7 @@ Commit the `.terraform.lock.hcl` files that `terraform init` creates, so everyon
 
 ## Why one task
 
-Lucidity keeps live state in memory: which browser tab has the drone, and requests waiting on that tab. Two tasks would split an assistant from the tab it needs. So the service runs exactly one task, and a deploy has a gap of about a minute. Running more than one needs shared live state (for example Postgres `LISTEN/NOTIFY` or Redis); that is not built.
+Armable keeps live state in memory: which browser tab has the drone, and requests waiting on that tab. Two tasks would split an assistant from the tab it needs. So the service runs exactly one task, and a deploy has a gap of about a minute. Running more than one needs shared live state (for example Postgres `LISTEN/NOTIFY` or Redis); that is not built.
 
 ## Without a domain
 

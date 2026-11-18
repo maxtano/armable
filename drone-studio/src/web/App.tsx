@@ -32,7 +32,7 @@ const PAGES: Record<Section, [View, string][]> = {
 };
 const sectionOf = (view: View): Section | undefined => view === 'build' ? 'build' : view === 'show' || view === 'sound' ? 'create' : view === 'connect' ? undefined : 'bench';
 const theme = () => document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-function toggleTheme() { const next = theme() === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = next; try { localStorage.setItem('lucidity.appearance.v1', next); } catch { /* private mode */ } }
+function toggleTheme() { const next = theme() === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = next; try { localStorage.setItem('armable.appearance.v1', next); } catch { /* private mode */ } }
 
 /** A small popover that closes when you click elsewhere or press Escape. */
 function usePopover() {
@@ -52,7 +52,7 @@ function Rail() {
   const current = sectionOf(view);
   return (
     <nav className="lu-rail" aria-label="Sections">
-      <img className="lu-logo" src="/favicon.svg" alt="Lucidity" width="26" height="26" />
+      <img className="lu-logo" src="/favicon.svg" alt="Armable" width="26" height="26" />
       {SECTIONS.map(([id, Icon, label, home]) => (
         <button key={id} data-section={id} data-label={label} aria-label={label} className={current === id ? 'is-on' : ''} aria-current={current === id ? 'page' : undefined}
           onClick={() => id === 'bench' && pending.length ? go('drone', pending[0].part as PartId) : go(current === id ? view : home)}>
@@ -199,7 +199,7 @@ export function App() {
       <main className="lu-main">
         <TopBar />
         {me.offline ? <div className="lu-offline" role="status">Offline. The drone tools still work; your changes sync when you are back online.</div>
-          : !live && <div className="lu-offline" role="status">Reconnecting to Lucidity…</div>}
+          : !live && <div className="lu-offline" role="status">Reconnecting to Armable…</div>}
         <div className="lu-view">
           {view === 'drone' && <DroneView />}
           {view === 'build' && <Build />}

@@ -1,5 +1,5 @@
 // ============================================================
-//  LUCIDITY — Wing v3  (correctly-sized THIN-SLIT Coandă ring)
+//  ARMABLE — Wing v3  (correctly-sized THIN-SLIT Coandă ring)
 //  ------------------------------------------------------------
 //  THE FIX vs v2a: slit velocity is v = Q / A_slit, so a bigger
 //  slit means a SLOWER jet. v2a's 201 mm^2 slit gave only ~30 m/s

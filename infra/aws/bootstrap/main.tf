@@ -11,7 +11,7 @@ provider "aws" { region = var.region }
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "state" {
-  bucket = "lucidity-terraform-state-${data.aws_caller_identity.current.account_id}"
+  bucket = "armable-terraform-state-${data.aws_caller_identity.current.account_id}"
   lifecycle { prevent_destroy = true }
 }
 resource "aws_s3_bucket_versioning" "state" {

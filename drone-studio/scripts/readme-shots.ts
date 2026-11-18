@@ -17,7 +17,7 @@ await page.goto(base);
 await page.waitForTimeout(9000); // The intro animation rests on its last frame, the fixed motor.
 await shot('intro');
 
-await context.addInitScript(() => { try { localStorage.setItem('lucidity.asked.v1', JSON.stringify(['fix', 'build'])); } catch { /* storage unavailable */ } });
+await context.addInitScript(() => { try { localStorage.setItem('armable.asked.v1', JSON.stringify(['fix', 'build'])); } catch { /* storage unavailable */ } });
 await page.goto(`${base}/?demo=betaflight`);
 await page.waitForSelector('.lu-status.is-connected');
 await page.waitForSelector('.dg-chip');

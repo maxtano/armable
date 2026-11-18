@@ -1,4 +1,4 @@
-/* Lucidity hosted app. Colours come from design-system/tokens.css; this file adds layout, the diagram and motion. */
+/* Armable hosted app. Colours come from design-system/tokens.css; this file adds layout, the diagram and motion. */
 :root { --lu-rail: 72px; --lu-panel: 384px; --pitch: 0.5; }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }

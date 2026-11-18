@@ -97,7 +97,7 @@ export interface EscInfo {
   index: number;
   firmware: 'BLHeli_S' | 'Bluejay' | 'AM32' | 'Unknown';
   version?: string; layout?: string; mcu?: string; signature?: string; interfaceMode?: number;
-  /** True when Lucidity knows this layout well enough to change its settings. */
+  /** True when Armable knows this layout well enough to change its settings. */
   writable: boolean;
   error?: string;
   at: number;

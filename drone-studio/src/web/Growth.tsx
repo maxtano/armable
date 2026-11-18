@@ -6,11 +6,11 @@ import { connectDemo, go, refreshMe, start } from './controller';
 import { get, set, toast, useStore } from './store';
 
 /**
- * Everything that makes Lucidity easy to try and easy to talk back to: links that open straight into the demo,
+ * Everything that makes Armable easy to try and easy to talk back to: links that open straight into the demo,
  * a guest bench that can be saved later, a feedback button, and one short question at the right moment.
  */
 
-/** Open Lucidity, following a link such as /?demo=betaflight or /build. Those links skip sign-up entirely. */
+/** Open Armable, following a link such as /?demo=betaflight or /build. Those links skip sign-up entirely. */
 export async function boot() {
   const params = new URLSearchParams(location.search), path = location.pathname;
   const demo = params.get('demo'), build = path === '/build' || path === '/build/';

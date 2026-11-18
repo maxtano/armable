@@ -1,5 +1,5 @@
 // ============================================================
-//  LUCIDITY — Core + Lift-Stand Test Kit  (v3: sealed wing interface)
+//  ARMABLE — Core + Lift-Stand Test Kit  (v3: sealed wing interface)
 //  Cantilever-over-the-bench-edge layout. Air blows DOWN,
 //  lift pushes UP, load cell reads the weight drop.
 //  Set `part`, press F6, then File > Export > Export as STL.

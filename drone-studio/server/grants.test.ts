@@ -90,7 +90,7 @@ describe('standing permissions', () => {
     const tab = await openTab(browser, 'ardupilot'); closers.push(() => tab.close());
     const grant = await browser.connectAssistant('Claude');
     const claude = await assistant(app.base, grant.access_token!); closers.push(() => claude.close());
-    const bearer = { Authorization: `Bearer ${grant.access_token}`, 'x-lucidity': '1', 'content-type': 'application/json' };
+    const bearer = { Authorization: `Bearer ${grant.access_token}`, 'x-armable': '1', 'content-type': 'application/json' };
     expect((await fetch(`${app.base}/api/grants`, { method: 'POST', headers: bearer, body: JSON.stringify({ parts: ['tuning'], minutes: 60, maxChanges: 50 }) })).status).toBe(401);
     await claude.call('read', { ids: ['settings.load'] });
     // The person allows tuning changes over the real wire; the assistant's change then runs through the tab.

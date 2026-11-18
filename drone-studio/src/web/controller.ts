@@ -31,7 +31,7 @@ const partOfId = (id: string | undefined): string | undefined => {
 const PARTS = ['fc', 'motors', 'battery', 'receiver', 'gps', 'link', 'tuning', 'safety', 'osd', 'vtx', 'lights', 'ports', 'compass', 'logging'];
 const VIEWS: View[] = ['drone', 'build', 'signals', 'flights', 'show', 'sound', 'settings', 'history', 'connect'];
 
-const ME = 'lucidity.me.v1';
+const ME = 'armable.me.v1';
 /** Who is signed in. Offline, the last answer is used so the bench still opens. */
 export async function refreshMe() {
   try {

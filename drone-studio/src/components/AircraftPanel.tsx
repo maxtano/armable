@@ -508,7 +508,7 @@ function BenchAircraftPanel({ project, saved = true, onClose }: { project: Proje
       await readResponse(
         await fetch(`/api/aircraft/${action}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Lucidity-Aircraft': '1' },
+          headers: { 'Content-Type': 'application/json', 'X-Armable-Aircraft': '1' },
           body: JSON.stringify(
             action === 'connect'
               ? { path, baudRate: 115200 }
@@ -564,7 +564,7 @@ function BenchAircraftPanel({ project, saved = true, onClose }: { project: Proje
       // End our lease immediately. Explicit Stop can also cancel a run started in another view.
       const result = await showClient.current?.stop();
       const stopped = result ?? (snapshot?.benchShow && await readResponse<AircraftSnapshot>(await fetch('/api/aircraft/bench-show/stop', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Lucidity-Aircraft': '1' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Armable-Aircraft': '1' },
         body: JSON.stringify({ runId: snapshot.benchShow.runId }), signal: AbortSignal.timeout(2000),
       })));
       if (mounted.current && stopped) setObservation((previous) => previous && previous.snapshot.now > stopped.now ? previous : { snapshot: stopped, receivedAt: Date.now() });

@@ -258,7 +258,7 @@ export class MotorTestController {
       !owner || owner.aircraftId !== aircraftId ||
       owner.linkKey !== this.linkKey(snapshot, aircraftId) ||
       owner.systemId !== aircraft.systemId || owner.componentId !== aircraft.componentId
-    ) throw new MotorTestError('No Lucidity motor test belongs to this aircraft link.');
+    ) throw new MotorTestError('No Armable motor test belongs to this aircraft link.');
     const frame = motorTestFrame(
       owner.systemId, owner.componentId, owner.motor, this.dependencies.nextSequence(), true
     );

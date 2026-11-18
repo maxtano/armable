@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { Category, Specs } from '../build/catalog';
 
 /**
- * A drawing of a part, made from what Lucidity knows about it: a 7" frame has long arms, a 1404 motor is small,
+ * A drawing of a part, made from what Armable knows about it: a 7" frame has long arms, a 1404 motor is small,
  * a 5-blade prop has five blades, a 6S pack says 6S. Colours come from the theme; the accent follows the brand.
  */
 export interface Drawable { id?: string; category: Category; brand?: string; name: string; specs?: Specs }

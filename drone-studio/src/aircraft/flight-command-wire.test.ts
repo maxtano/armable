@@ -9,7 +9,7 @@ const commands: FlightCommand[] = [
   { command: 176, targetSystem: 1, targetComponent: 1, params: [1, 9, 0, 0, 0, 0, 0] },
 ];
 
-it('serializes only the four fixed reviewed mission commands from Lucidity ground identity', () => {
+it('serializes only the four fixed reviewed mission commands from Armable ground identity', () => {
   const protocol = new MavLinkProtocolV2();
   for (const [index, command] of commands.entries()) {
     const frame = flightCommandFrame(command, index);

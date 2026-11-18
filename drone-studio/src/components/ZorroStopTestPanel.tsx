@@ -94,7 +94,7 @@ export function ZorroStopTestPanel({ project, snapshot, aircraft, now, serviceUn
     setPending('setup'); setError('');
     try {
       const response = await fetch('/api/aircraft/parameters/read', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Lucidity-Aircraft': '1' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Armable-Aircraft': '1' },
         body: JSON.stringify({ aircraftId: aircraft.id, names: ['RC6_OPTION', 'DISARM_DELAY', 'MOT_SPIN_ARM', 'ARMING_SKIPCHK'] }),
       });
       const result = await response.json() as ParameterSnapshot & { error?: string };
@@ -118,7 +118,7 @@ export function ZorroStopTestPanel({ project, snapshot, aircraft, now, serviceUn
       let result = await client.current?.stop();
       if (!result && run) {
         const response = await fetch('/api/aircraft/idle-show/stop', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Lucidity-Aircraft': '1' },
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Armable-Aircraft': '1' },
           body: JSON.stringify({ runId: run.runId }), signal: AbortSignal.timeout(2000),
         });
         const body = await response.json();
@@ -178,6 +178,6 @@ export function ZorroStopTestPanel({ project, snapshot, aircraft, now, serviceUn
       {['Stopped as expected', 'Did not stop', 'Unsure'].map(label =>
         <button type="button" key={label} aria-pressed={observation === label} onClick={() => setObservation(label)}>{label}</button>)}
     </div>}
-    <details><summary>How this run works</summary><p>Lucidity requests a normal arm, holds no throttle, and requests disarm after 20 seconds. Your configured radio motor-stop switch acts directly on ArduPilot. Motor rotation is not measured here. If stopping is unconfirmed, use the radio stop and disconnect the battery.</p></details>
+    <details><summary>How this run works</summary><p>Armable requests a normal arm, holds no throttle, and requests disarm after 20 seconds. Your configured radio motor-stop switch acts directly on ArduPilot. Motor rotation is not measured here. If stopping is unconfirmed, use the radio stop and disconnect the battery.</p></details>
   </section>;
 }

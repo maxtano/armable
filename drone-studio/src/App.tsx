@@ -86,7 +86,7 @@ import {
   type StoredStoryboard,
 } from './core/storyboards';
 
-const STORAGE_KEY = 'lucidity.studio.project.v1';
+const STORAGE_KEY = 'armable.studio.project.v1';
 function initialProject(storage: Storage): Project {
   return resolveInitialStoryboard(storage, STORAGE_KEY, defaultProject);
 }
@@ -821,11 +821,11 @@ export default function App({
                   onPlatformHome();
                 } else showHome();
               }}
-              aria-label="Lucidity home"
+              aria-label="Armable home"
             >
               <span className="brand-symbol">✳</span>
               <span>
-                lucidity<span className="brand-period">.</span>
+                armable<span className="brand-period">.</span>
               </span>
             </a>
             <span className="header-slash">/</span>
@@ -1569,7 +1569,7 @@ export default function App({
         {modal === 'export' && (
           <Modal title="Ready for the next chapter." onClose={() => setModal(null)}>
             <p className="modal-intro">
-              {isZorroStopStoryboard(project) ? 'Save an editable copy of this props-off storyboard. Run it in Lucidity; the export is not an aircraft mission.' : hasMotorCues ? 'Save an editable copy with its motor cues. To run this storyboard here, use Run storyboard; no export is needed.' : 'Take your design with you, or hand it to an operator to develop into a flight-ready show.'}
+              {isZorroStopStoryboard(project) ? 'Save an editable copy of this props-off storyboard. Run it in Armable; the export is not an aircraft mission.' : hasMotorCues ? 'Save an editable copy with its motor cues. To run this storyboard here, use Run storyboard; no export is needed.' : 'Take your design with you, or hand it to an operator to develop into a flight-ready show.'}
             </p>
             <div className="export-project-summary">
               <span className="project-icon">
@@ -1612,7 +1612,7 @@ export default function App({
             <div className="export-note">
               <ShieldCheck size={16} />
               <p>
-                {isZorroStopStoryboard(project) ? 'Import this bundle into Lucidity to edit or rerun the props-off idle show. It is not a flight mission.' : hasMotorCues ? 'Import this bundle back into Lucidity to edit or run it. Motor cues are for props-off rehearsal only; this is not a flight mission.' : 'Simulation and creative handoff only. Audio is supplied separately; an operator must compile and validate the aircraft missions.'}
+                {isZorroStopStoryboard(project) ? 'Import this bundle into Armable to edit or rerun the props-off idle show. It is not a flight mission.' : hasMotorCues ? 'Import this bundle back into Armable to edit or run it. Motor cues are for props-off rehearsal only; this is not a flight mission.' : 'Simulation and creative handoff only. Audio is supplied separately; an operator must compile and validate the aircraft missions.'}
               </p>
             </div>
           </Modal>

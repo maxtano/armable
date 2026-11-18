@@ -9,7 +9,7 @@ const MAX_RESULT = 24_000;
 
 /** Build an MCP server bound to one signed-in assistant. One is created per request; it holds no state. */
 export function buildMcp(services: Services, identity: { account: string; who: string; scopes?: string[]; clientId?: string }): McpServer {
-  const server = new McpServer({ name: 'lucidity', title: 'Lucidity', version: VERSION }, { instructions: INSTRUCTIONS });
+  const server = new McpServer({ name: 'armable', title: 'Armable', version: VERSION }, { instructions: INSTRUCTIONS });
   const ctx: ToolContext = { ...identity, services, now: Date.now };
   for (const tool of TOOLS) {
     server.registerTool(tool.name, {
@@ -30,7 +30,7 @@ export function buildMcp(services: Services, identity: { account: string; who: s
         return { content: [{ type: 'text' as const, text }], structuredContent: text.length > MAX_RESULT ? undefined : result };
       } catch (error) {
         if (!(error instanceof ToolError)) { console.error(`[mcp] ${tool.name} failed`, error); }
-        const body = error instanceof ToolError ? { code: error.code, message: error.message, hint: error.hint, ...error.extra } : { code: 'internal', message: 'Lucidity hit an unexpected error.', hint: 'Try again. If it keeps happening, tell the person.' };
+        const body = error instanceof ToolError ? { code: error.code, message: error.message, hint: error.hint, ...error.extra } : { code: 'internal', message: 'Armable hit an unexpected error.', hint: 'Try again. If it keeps happening, tell the person.' };
         track(false, { error: body }, body.code);
         return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: body }) }] };
       }

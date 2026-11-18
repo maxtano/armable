@@ -124,7 +124,7 @@ export class BetaflightDriver extends DriverBase implements Driver {
     const api = await this.request(MSP.API_VERSION, undefined, 2500).catch(() => { throw new DeviceError('timeout', 'No flight controller answered. Check the cable and that this port is the flight controller.'); });
     const variant = ascii(await this.request(MSP.FC_VARIANT));
     const version = await this.request(MSP.FC_VERSION);
-    if (variant !== 'BTFL' && variant !== 'INAV') throw new DeviceError('unsupported', `Unsupported firmware "${variant}".`, 'Lucidity supports Betaflight, INAV, ArduPilot and PX4.');
+    if (variant !== 'BTFL' && variant !== 'INAV') throw new DeviceError('unsupported', `Unsupported firmware "${variant}".`, 'Armable supports Betaflight, INAV, ArduPilot and PX4.');
     this.identity = { stack: variant === 'INAV' ? 'inav' : 'betaflight', firmware: variant === 'INAV' ? 'INAV' : 'Betaflight', vehicle: 'quad',
       version: `${version[0]}.${version[1]}.${version[2]}`, apiVersion: `${api[1]}.${api[2]}` };
     const board = await this.request(MSP.BOARD_INFO).catch(() => undefined);
@@ -547,7 +547,7 @@ export class BetaflightDriver extends DriverBase implements Driver {
         const file = await ctx.prompt?.({ kind: 'file', label: 'Choose a Betaflight backup (diff all)', accept: '.txt' });
         if (!(file instanceof Uint8Array)) throw new DeviceError('invalid', 'No backup file was chosen.');
         const { lines, rejected } = restoreLines(new TextDecoder().decode(file));
-        if (!lines.length) throw new DeviceError('invalid', 'That file has no settings Lucidity recognises.');
+        if (!lines.length) throw new DeviceError('invalid', 'That file has no settings Armable recognises.');
         if (rejected.length) throw new DeviceError('invalid', `The file contains ${rejected.length} line${rejected.length > 1 ? 's' : ''} that are not settings. Nothing was written.`, `First: "${rejected[0].slice(0, 60)}"`);
         await this.enterCli();
         const errors: string[] = [];

@@ -380,7 +380,7 @@ export function FlightMissionPanel({ project, saved = true, onClose }: {
     try {
       return await readJson<T>(await fetch(`/api/aircraft/${route}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Lucidity-Aircraft': '1' },
+        headers: { 'Content-Type': 'application/json', 'X-Armable-Aircraft': '1' },
         body: JSON.stringify(body),
         signal: controller.signal,
       }));
@@ -446,7 +446,7 @@ export function FlightMissionPanel({ project, saved = true, onClose }: {
     setUploadUncertain(true);
     try {
       await readJson(await fetch('/api/aircraft/mission/cancel', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Lucidity-Aircraft': '1' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Armable-Aircraft': '1' },
         body: JSON.stringify({ planId: plan.planId }),
       }));
     } catch (error) {
@@ -647,7 +647,7 @@ export function FlightMissionPanel({ project, saved = true, onClose }: {
         <section className="flight-mission-card" aria-labelledby="flight-upload-heading">
           <header><span>04 / MISSION STORAGE</span><h3 id="flight-upload-heading">Upload, then check at the field</h3></header>
           <h4 className="flight-mission-phase">Props off · upload</h4>
-          <p>While disarmed, upload the reviewed mission once. Lucidity checks existing storage first and refuses to replace an authored mission.</p>
+          <p>While disarmed, upload the reviewed mission once. Armable checks existing storage first and refuses to replace an authored mission.</p>
           <label className="flight-mission-confirm"><input type="checkbox" checked={propsRemoved} onChange={(event) => { setPropsRemoved(event.target.checked); setUploadConfirmed(false); setLaunchCheck(null); }} /> Every propeller is physically removed for this upload.</label>
           <label className="flight-mission-confirm"><input type="checkbox" checked={uploadConfirmed} disabled={!planMatches || !live || !propsRemoved || Boolean(uploadResponse)} onChange={(event) => setUploadConfirmed(event.target.checked)} /> I reviewed the mission and confirm this props-off upload.</label>
           <button type="button" disabled={!canUpload} onClick={() => void upload()}><Radio size={15} /> {pending === 'upload' ? 'Uploading and verifying…' : 'Upload & verify with props off'}</button>
@@ -677,8 +677,8 @@ export function FlightMissionPanel({ project, saved = true, onClose }: {
         {runStatus && runState !== 'idle' && <p className={runState === 'unknown' || runState === 'rejected' ? 'flight-mission-warning' : 'flight-mission-muted'} role="status">
           {runStatus.reason || (runState === 'landed' ? 'Landed. Review the flight before another run.' : 'Monitoring aircraft state.')}
         </p>}
-        {runInProgress ? <p className="flight-mission-muted">The pilot stays at the Zorro. If Lucidity loses contact, treat flight state as unknown and take control using the tested mode switch. A lost ground link does not stop the aircraft automatically.</p> : <>
-          <p className="flight-mission-muted">For each flight, confirm the aircraft and field. Lucidity reads back the mission and checks live readiness before Run.</p>
+        {runInProgress ? <p className="flight-mission-muted">The pilot stays at the Zorro. If Armable loses contact, treat flight state as unknown and take control using the tested mode switch. A lost ground link does not stop the aircraft automatically.</p> : <>
+          <p className="flight-mission-muted">For each flight, confirm the aircraft and field. Armable reads back the mission and checks live readiness before Run.</p>
           <div className="flight-mission-field-checks">
             <label><input type="checkbox" checked={fieldChecks.propsInstalled} disabled={Boolean(pending)} onChange={(event) => { setFieldChecks((checks) => ({ ...checks, propsInstalled: event.target.checked })); setLaunchCheck(null); }} /> Correct propellers installed and secure</label>
             <label><input type="checkbox" checked={fieldChecks.areaClear} disabled={Boolean(pending)} onChange={(event) => { setFieldChecks((checks) => ({ ...checks, areaClear: event.target.checked })); setLaunchCheck(null); }} /> Clear outdoor area; drone on level ground</label>
@@ -696,7 +696,7 @@ export function FlightMissionPanel({ project, saved = true, onClose }: {
         {launchUncertain && <p className="flight-mission-warning" role="alert">Command result is uncertain. Do not retry automatically. Use the pilot’s Zorro and ground station to confirm the aircraft state.</p>}
         {launchUncertain && <button type="button" className="flight-mission-reconcile" disabled={Boolean(pending)} onClick={() => void reconcileFlight()}>{pending === 'refresh-status' ? 'Checking status…' : 'Refresh status (read-only)'}</button>}
         {runStatusError && <p className="flight-mission-warning" role="alert">Cannot confirm flight state: {runStatusError}</p>}
-        {runState === 'takeover' && <p className="flight-mission-muted">Pilot control takes priority. Lucidity will not resume AUTO automatically.</p>}
+        {runState === 'takeover' && <p className="flight-mission-muted">Pilot control takes priority. Armable will not resume AUTO automatically.</p>}
         {runState === 'landed' && <p className="flight-mission-muted">Landed. Review telemetry and the log before another run.</p>}
         {recoveryRequired && <div className="flight-mission-recovery" role="group" aria-label="Interrupted flight recovery">
           <strong>Recover interrupted run {recoveryAircraft ? `· system ${recoveryAircraft.systemId}, component ${recoveryAircraft.componentId}` : ''}</strong>
@@ -716,7 +716,7 @@ export function FlightMissionPanel({ project, saved = true, onClose }: {
             <label><input type="checkbox" checked={recoveryPropsRemoved} disabled={Boolean(pending)} onChange={(event) => setRecoveryPropsRemoved(event.target.checked)} /> Every propeller is physically removed</label>
             <label><input type="checkbox" checked={recoveryGroundConfirmed} disabled={Boolean(pending)} onChange={(event) => setRecoveryGroundConfirmed(event.target.checked)} /> I confirmed this is the same aircraft, on the ground, disarmed, with motors stopped</label>
           </div>
-          {!flightMissionRecoveryAvailable(runStatus, snapshot, recoveryAircraft, now, recoverySelection?.id) && <p className="flight-mission-muted">Select the reconnected aircraft and wait for fresh disarmed, landed, near-ground telemetry. Lucidity checks its identity against the interrupted-run record.</p>}
+          {!flightMissionRecoveryAvailable(runStatus, snapshot, recoveryAircraft, now, recoverySelection?.id) && <p className="flight-mission-muted">Select the reconnected aircraft and wait for fresh disarmed, landed, near-ground telemetry. Armable checks its identity against the interrupted-run record.</p>}
           <button type="button" className="flight-mission-reconcile" disabled={!canReconcileInterrupted} onClick={() => void reconcileInterruptedRun()}>{pending === 'reconcile' ? 'Recovering…' : 'Confirm props-off recovery'}</button>
         </div>}
         {recoveryMessage && <p className="flight-mission-ok" role="status">{recoveryMessage}</p>}
