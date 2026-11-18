@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars (kept out of git) and fill in. deploy.sh writes it for you.
+project_id      = "your-project-id"
+billing_account = "012345-6789AB-CDEF01"
+
+# Optional
+# domain      = "app.armable.ai"
+# cap_usd     = 5
+# alert_usd   = 1
+# egress_mbit = 20

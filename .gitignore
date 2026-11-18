@@ -38,3 +38,10 @@ workbench-files/
 
 # Imported model and derivatives: source/license must be established before sharing
 /cad/sma-standoff-mount/
+
+# Google Cloud: settings and Terraform working files for your own deployment
+infra/gcp/terraform.tfvars
+infra/gcp/.terraform/
+infra/gcp/.terraform.lock.hcl.bak
+infra/gcp/.build/
+infra/gcp/*.tfstate*

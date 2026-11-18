@@ -1,81 +1,86 @@
-# Armable on Google Cloud, free
+# Armable on Google Cloud, free and capped
 
-One small server on Google Cloud's always-free tier runs the app, its database, and Caddy for HTTPS. The website stays on GitHub Pages. About 20 minutes, once.
+Everything here is Terraform. One small server on Google Cloud's always-free tier runs the app, its database, and Caddy for HTTPS, behind Cloudflare. The website stays on GitHub Pages.
 
 | Address | What | Where |
 | --- | --- | --- |
 | `armable.ai` | The website | GitHub Pages |
-| `app.armable.ai` | The app, and the address assistants connect to | This server |
+| `app.armable.ai` | The app, and the address assistants connect to | This server, behind Cloudflare |
 
-## 1. Google Cloud
+## What it creates
 
-1. Open [console.cloud.google.com](https://console.cloud.google.com) and create a project, for example `armable`. Note its **project ID**.
-2. **Billing → Link a billing account.** Google asks for a card even for the free tier. Then **Billing → Budgets & alerts → Create budget**: $1, with email alerts, so you hear about any charge at once.
-3. Open **Cloud Shell**: the `>_` button at the top right. In it, run:
+| | |
+| --- | --- |
+| **Server** | One e2-micro (free tier), 30 GB standard disk, Debian 12, fixed address. It sets itself up on boot: swap, Docker, the app, Postgres, Caddy. Updates every 10 minutes from the image GitHub builds; backs up the database nightly. |
+| **Locked down** | No Google service account, so even a broken-into server can’t create anything or touch billing. Web ports open to Cloudflare only. SSH through Google sign-in only. Outgoing traffic limited to 20 Mbit/s. |
+| **Spending guard** | An email at **$1**. At the **$5 cap** a small function stops the server (its disk and data are kept). At **$10** it unlinks billing, so nothing more can be charged. |
+| **State** | Terraform’s state in a private bucket in your project. Your project ID and billing account stay in `terraform.tfvars`, which is never committed. |
 
-   ```sh
-   gcloud config set project YOUR_PROJECT_ID
-   curl -fsSL https://raw.githubusercontent.com/maxtano/armable/main/infra/gcp/cloud-shell.sh | bash
-   ```
+Google’s cost data can lag by hours, so the guard is a ceiling, not a brake. The speed limit keeps the worst case in between to well under a dollar an hour.
 
-   It creates a fixed address, opens the web ports, and starts the server. At the end it prints the server's **IP address**.
+## Set it up
 
-## 2. Cloudflare DNS
+**1. Your Google account.** Turn on 2-Step Verification or a passkey at [myaccount.google.com/security](https://myaccount.google.com/security). Someone in your account is the one risk no setting here can cap.
 
-In Cloudflare, open **armable.ai → DNS → Records** and add the app:
+**2. A project with billing.** At [console.cloud.google.com](https://console.cloud.google.com), create a project, for example `armable`, then **Billing → Link a billing account**.
 
-| Type | Name | Content | Proxy |
-| --- | --- | --- | --- |
-| A | `app` | the IP address from step 1 | DNS only (grey cloud) |
+**3. Run it.** Open **Cloud Shell** (the `>_` button at the top right) and paste:
 
-And the website, if you have not yet:
+```sh
+gcloud config set project YOUR_PROJECT_ID
+git clone https://github.com/maxtano/armable && cd armable/infra/gcp && ./deploy.sh
+```
 
-| Type | Name | Content | Proxy |
-| --- | --- | --- | --- |
-| A | `@` | `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153` (one record each) | DNS only |
-| AAAA | `@` | `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153` (one record each) | DNS only |
-| CNAME | `www` | `maxtano.github.io` | DNS only |
+It shows what it will create; type `yes`. At the end it prints the server’s address and the next step. It takes about five minutes, mostly the spending guard’s first build.
 
-Keep them **DNS only**: the server gets its own certificate, and that needs to reach it directly.
+**4. Cloudflare.** For `armable.ai`:
 
-## 3. GitHub
+- **DNS → Records → Add record:** type `A`, name `app`, IPv4 the address from step 3, **Proxied** (orange cloud).
+- **SSL/TLS → Overview:** **Full (strict)**.
+- **SSL/TLS → Edge Certificates:** **Always Use HTTPS off.** The server redirects to HTTPS itself, and leaving this on blocks it from getting its first certificate.
 
-1. **Settings → Pages → Custom domain:** `armable.ai`, then **Enforce HTTPS** once the check passes.
-2. **Settings → Secrets and variables → Actions → Variables → New variable:** `ARMABLE_URL` = `https://app.armable.ai`. This turns on the website's “Try the demo drone” buttons.
-3. **Make the app image public.** After the first push to `main`, the **Build the app image** workflow publishes it. Open your profile → **Packages → armable → Package settings → Change visibility → Public**. Until then the server builds the image itself, which works but takes 15 minutes or more on the small machine.
+And the website’s records, if you haven’t added them: four `A` records for `@` (`185.199.108.153`, `.109.153`, `.110.153`, `.111.153`), four `AAAA` records for `@` (`2606:50c0:8000::153` to `8003::153`), and a `CNAME` for `www` to `maxtano.github.io`, all **DNS only**.
 
-## 4. Check it
+**5. GitHub,** in the repository’s settings:
 
-- Open **https://app.armable.ai**. The first visit can take up to 15 minutes after step 1 while the server installs itself and gets its certificate.
-- In Claude: **Settings → Connectors → Add custom connector**, address `https://app.armable.ai/mcp`. In ChatGPT: **Settings → Connectors → Create**, same address.
-- Open the demo drone and ask: *“My new quad won’t arm. Why?”*
+- **Pages → Custom domain:** `armable.ai`, then **Enforce HTTPS**.
+- **Secrets and variables → Actions → Variables:** `ARMABLE_URL` = `https://app.armable.ai`. This switches on the website’s demo buttons.
+- **The app image:** your profile → **Packages → armable → Package settings → Change visibility → Public**, so the server can pull it. Until then it builds the app itself, which is slow but works.
 
-## Running it
+**6. Try it.** Within 15 minutes, **https://app.armable.ai** opens. In Claude: **Settings → Connectors → Add custom connector** → `https://app.armable.ai/mcp`. ChatGPT takes the same address. Open the demo drone and ask *“My new quad won’t arm. Why?”*
 
-Everything below runs from Cloud Shell.
+## Change it
+
+Edit `terraform.tfvars` in Cloud Shell, for example `cap_usd = 10`, and run `./deploy.sh` again. Every setting is in [`variables.tf`](variables.tf).
+
+## Run it
+
+From Cloud Shell:
 
 | To | Run |
 | --- | --- |
 | Watch it start | `gcloud compute ssh armable --zone us-central1-a -- sudo tail -f /var/log/armable-startup.log` |
 | See the app’s log | `gcloud compute ssh armable --zone us-central1-a -- sudo docker compose -f /opt/armable/infra/gcp/compose.yaml logs -f app` |
-| Change settings (Google sign-in, feedback alerts, admins) | `gcloud compute ssh armable --zone us-central1-a -- sudo nano /opt/armable-data/.env`, then restart below |
-| Restart | `gcloud compute ssh armable --zone us-central1-a -- sudo /opt/armable/infra/gcp/update.sh` |
-| Restart the whole server | `gcloud compute instances reset armable --zone us-central1-a` |
+| Add Google sign-in, feedback alerts or admins | `gcloud compute ssh armable --zone us-central1-a -- sudo nano /opt/armable-data/.env`, then the next line |
+| Restart the app | `gcloud compute ssh armable --zone us-central1-a -- sudo /opt/armable/infra/gcp/update.sh` |
+| Start it after the guard stopped it | `gcloud compute instances start armable --zone us-central1-a` |
+| Restore billing after the guard unlinked it | **Billing → Account management** in the console, link the project again |
 
-**Updates are automatic.** Every push to `main` builds a new image, and the server picks it up within 10 minutes.
-
-**Backups** run every night at 03:17, keeping the last 7, in `/opt/armable-data/backups`. To restore one:
+**Backups** run nightly, keeping seven, in `/opt/armable-data/backups`. To restore one:
 
 ```sh
 gunzip -c /opt/armable-data/backups/armable-2026-01-01.sql.gz | sudo docker compose -f /opt/armable/infra/gcp/compose.yaml exec -T db psql -U armable armable
 ```
 
-## Costs
+**If the certificate doesn’t arrive** within 30 minutes, check *Always Use HTTPS* is off in Cloudflare. As a fallback, set the `app` record to **DNS only**, put `cloudflare_only = false` in `terraform.tfvars`, and run `./deploy.sh` again.
 
-Free for a small number of users, with three things to watch:
+## What it costs
 
-- **The server and disk** (one e2-micro, 30 GB standard disk) are free only in `us-central1`, `us-east1` or `us-west1`. The script uses `us-central1`.
-- **Network.** The script uses Google’s Standard network tier, which includes a free monthly allowance. Armable sends little data: the drone talks to your browser, not the server.
-- **The fixed IP address.** Google’s free-tier page says the address is free, but Google charges for many public IPv4 addresses since 2024. If your bill shows an “External IPv4” charge, it is a few dollars a month. The $1 budget alert tells you within a day.
+Free for a small number of users:
 
-When it outgrows this, the AWS setup in [`../aws`](../aws/README.md) runs the same app with room to grow.
+- **Server and disk:** free in `us-central1`, `us-east1` and `us-west1`.
+- **Network:** Standard tier, which has a free monthly allowance. Cloudflare serves the cached files, and the drone talks to the browser, not the server.
+- **Guard:** Pub/Sub, a small function, its build and its storage all sit in Google’s free allowances.
+- **The fixed IP address** may show as a few dollars a month under “External IPv4”. Google’s free-tier page says it is free, but Google charges for many public IPv4 addresses. The $1 email tells you within a day.
+
+When it outgrows this, [`../aws`](../aws/README.md) runs the same app with room to grow.

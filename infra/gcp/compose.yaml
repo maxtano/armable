@@ -22,7 +22,7 @@ services:
     environment:
       PUBLIC_URL: https://${DOMAIN:?set in /opt/armable-data/.env}
       DATABASE_URL: postgres://armable:${POSTGRES_PASSWORD}@db:5432/armable
-      TRUST_PROXY: '1'
+      TRUST_PROXY: ${TRUST_PROXY:-1}
       NODE_OPTIONS: --max-old-space-size=384
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
