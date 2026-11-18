@@ -3,13 +3,15 @@ import { PLAYBOOKS } from '../src/map/library';
 import { ToolError, type Services } from './services';
 import { INSTRUCTIONS, TOOLS, gate, type ToolContext } from './tools';
 import { PANEL_MIME, PANEL_ONLY, PANEL_TOOL_META, PANEL_URI, panelHtml, panelState } from './panel';
+import type { CloudDemos } from './demo';
+import { z } from 'zod';
 
 export const VERSION = '0.5.0';
 /** Hard cap on what a tool may return to a model. Anything larger is a bug in the tool, not something to pass on. */
 const MAX_RESULT = 24_000;
 
 /** Where the Armable panel's built files are, and the address people open Armable at. */
-export interface PanelOptions { staticDir?: string; appUrl: string }
+export interface PanelOptions { staticDir?: string; appUrl: string; demos?: CloudDemos }
 
 /** Build an MCP server bound to one signed-in assistant. One is created per request; it holds no state. */
 export function buildMcp(services: Services, identity: { account: string; who: string; scopes?: string[]; clientId?: string }, panel: PanelOptions = { appUrl: '/' }): McpServer {
@@ -23,6 +25,7 @@ export function buildMcp(services: Services, identity: { account: string; who: s
       ...(tool.name === 'get_workspace' ? { _meta: PANEL_TOOL_META } : {}),
     }, async (args: Record<string, unknown>) => {
       const started = Date.now();
+      panel.demos?.touch(identity.account);
       const track = (ok: boolean, output: unknown, errorCode?: string) => void services.tracker.toolCall({
         startedAt: started, account: identity.account, assistant: identity.who, clientId: identity.clientId, tool: tool.name, input: args, ok, errorCode, output, durationMs: Date.now() - started, aircraftId: services.currentAircraft(identity.account),
       });
@@ -47,15 +50,32 @@ export function buildMcp(services: Services, identity: { account: string; who: s
   server.registerResource('Armable', PANEL_URI, { title: 'Armable', description: 'Your drone, live, beside the chat.', mimeType: PANEL_MIME }, async () => ({
     contents: [{ uri: PANEL_URI, mimeType: PANEL_MIME, text: panelHtml(panel.staticDir), _meta: { ui: { preferredDisplayMode: 'fullscreen', prefersBorder: false } } }],
   }));
-  server.registerTool('armable_panel', { title: 'Armable panel', description: 'For the Armable panel only: what it shows.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false }, _meta: PANEL_ONLY }, async () => {
-    try {
-      await gate(ctx, 0);
-      const state = await panelState(services, identity.account, panel.appUrl);
-      return { content: [{ type: 'text' as const, text: 'Armable panel state.' }], structuredContent: state as unknown as Record<string, unknown> };
-    } catch (error) {
-      const body = error instanceof ToolError ? { code: error.code, message: error.message, hint: error.hint } : { code: 'internal', message: 'Armable hit an unexpected error.' };
-      return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: body }) }] };
-    }
+  const panelTool = (name: string, description: string, input: z.ZodRawShape, run: (args: any) => Promise<unknown>) =>
+    server.registerTool(name, { title: 'Armable panel', description, inputSchema: input, annotations: { openWorldHint: false }, _meta: PANEL_ONLY }, async (args: Record<string, unknown>) => {
+      try {
+        await gate(ctx, 0);
+        panel.demos?.touch(identity.account);
+        await run(args);
+        const state = await panelState(services, identity.account, panel.appUrl, panel.demos?.has(identity.account));
+        return { content: [{ type: 'text' as const, text: 'Armable panel state.' }], structuredContent: state as unknown as Record<string, unknown> };
+      } catch (error) {
+        if (!(error instanceof ToolError)) console.error(`[panel] ${name} failed`, error);
+        const body = error instanceof ToolError ? { code: error.code, message: error.message, hint: error.hint } : { code: 'internal', message: 'Armable hit an unexpected error.' };
+        return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: body }) }] };
+      }
+    });
+  panelTool('armable_panel', 'For the Armable panel only: what it shows.', {}, async () => {});
+  // The demo drone on the server, so the demo works inside the chat with no Armable tab.
+  panelTool('armable_demo', 'For the Armable panel only: start or stop the demo drone.', { stop: z.boolean().optional() }, async ({ stop }) => {
+    if (!panel.demos) throw new ToolError('unavailable', 'The demo drone runs in the browser here.', 'Open Armable and choose the demo drone.');
+    if (stop) panel.demos.stop(identity.account); else await panel.demos.start(identity.account);
+  });
+  // A person's click in the panel approves a change to the demo drone, and only the demo drone: CloudDemos.approve
+  // refuses anything else, so a real drone is only ever approved in Armable itself.
+  panelTool('armable_approve', 'For the Armable panel only: the person approves a change to the demo drone.', { proposal: z.string().max(40) }, async ({ proposal }) => {
+    if (!panel.demos) throw new ToolError('not_demo', 'Approve changes in Armable.');
+    const p = await services.proposal(identity.account, proposal);
+    await panel.demos.approve(identity.account, proposal, p.needs);
   });
   // Playbooks double as ready-made prompts, where the assistant app shows them.
   for (const p of PLAYBOOKS.slice(0, 8)) {

@@ -15,6 +15,7 @@ import { PART_BY_ID } from '../src/build/catalog';
 import type { Mirror } from '../src/map/map';
 import type { Condition } from '../src/device/types';
 import { Auth, OAuthProvider, SCOPES } from './auth';
+import { CloudDemos } from './demo';
 import { buildMcp } from './mcp';
 import { Allowance, busy, LIMITS } from './limits';
 import { isLocalPath } from './paths';
@@ -57,6 +58,8 @@ export function createApp(options: AppOptions) {
   const secure = publicUrl.protocol === 'https:';
   const tracker = options.tracker ?? new MemoryTracker();
   const services = new Services(store, Date.now, tracker);
+  // Demo drones that run here, for trying Armable entirely inside a chat (server/demo.ts).
+  const demos = new CloudDemos(services);
   const auth = new Auth(store);
   const app = express();
   app.disable('x-powered-by');
@@ -83,7 +86,7 @@ export function createApp(options: AppOptions) {
     const info = (req as Request & { auth?: { scopes: string[]; clientId?: string; extra?: { account?: string; clientName?: string } } }).auth;
     const account = info?.extra?.account;
     if (!account) { res.status(401).json({ error: 'invalid_token' }); return; }
-    const server = buildMcp(services, { account, who: info!.extra!.clientName ?? 'Assistant', scopes: info!.scopes, clientId: info!.clientId }, { staticDir: options.staticDir, appUrl: publicUrl.href });
+    const server = buildMcp(services, { account, who: info!.extra!.clientName ?? 'Assistant', scopes: info!.scopes, clientId: info!.clientId }, { staticDir: options.staticDir, appUrl: publicUrl.href, demos });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', () => { void transport.close(); void server.close(); });
     try { await server.connect(transport); await transport.handleRequest(req, res, req.body); }
@@ -406,6 +409,8 @@ export function createApp(options: AppOptions) {
       if (m.type === 'mirror' && m.mirror && typeof m.mirror === 'object') {
         const mirror = m.mirror as Mirror;
         tab.bench = mirror.snapshot?.status !== 'idle';
+        // A drone in a browser tab takes over from a demo running on the server.
+        if (tab.bench && demos.has(account)) demos.stop(account);
         if (tab.bench) hub.mirror = { ...mirror, at: Date.now() };
         else if (!hub.benchTab()) hub.mirror = undefined;
         void services.observe(account, mirror).catch(error => { if (!options.quiet) console.error('[track]', error); });
@@ -418,5 +423,5 @@ export function createApp(options: AppOptions) {
   const beat = setInterval(() => { for (const ws of wss.clients) if (ws.readyState === ws.OPEN) ws.ping(); }, 25_000);
   http.on('close', () => clearInterval(beat));
 
-  return { http, services, auth, app, async close() { clearInterval(beat); for (const ws of wss.clients) ws.terminate(); await new Promise<void>(r => http.close(() => r())); } };
+  return { http, services, auth, app, async close() { clearInterval(beat); demos.close(); for (const ws of wss.clients) ws.terminate(); await new Promise<void>(r => http.close(() => r())); } };
 }

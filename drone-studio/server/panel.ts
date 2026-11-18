@@ -45,12 +45,14 @@ export interface PanelState {
   snapshot?: Record<string, unknown>;
   settings: { id: string; value: unknown }[];
   proposals: { id: string; status: string; part?: string; title: string; changes?: { id: string; title?: string; value: unknown }[]; test?: { id: string; name?: string; args?: Record<string, unknown> } }[];
+  /** The drone is the server's demo, which the panel may approve changes to. */
+  cloudDemo: boolean;
   /** Where to send someone to plug in a real drone. */
   appUrl: string;
 }
 
 /** What the panel shows right now. */
-export async function panelState(services: Services, account: string, appUrl: string): Promise<PanelState> {
+export async function panelState(services: Services, account: string, appUrl: string, cloudDemo = false): Promise<PanelState> {
   const hub = services.hub(account), mirror = hub.mirror, bench = !!hub.benchTab() && !!mirror;
   const proposals = (await services.proposals(account)).filter(p => p.status === 'awaiting_approval' || p.status === 'approved');
   const { logs: _logs, tests: _tests, ...snapshot } = (mirror?.snapshot ?? {}) as Record<string, unknown>;
@@ -64,6 +66,7 @@ export async function panelState(services: Services, account: string, appUrl: st
       changes: p.changes?.map(c => ({ id: c.id, title: c.title, value: c.value })),
       test: p.test && { id: p.test.id, name: p.test.name, args: p.test.args },
     })),
+    cloudDemo: cloudDemo && bench,
     appUrl,
   };
 }
