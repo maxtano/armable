@@ -48,7 +48,7 @@ function connected(ctx: ToolContext): Mirror {
   if (mirror.snapshot.status !== 'connected') return fail('no_aircraft', mirror.snapshot.status === 'reconnecting' ? 'The flight controller is restarting.' : 'No drone is connected in Armable.', mirror.snapshot.status === 'reconnecting' ? 'Wait a few seconds and try again.' : 'Ask the person to press Connect in Armable.');
   return mirror;
 }
-async function gate(ctx: ToolContext, level: 0 | 1 | 2) {
+export async function gate(ctx: ToolContext, level: 0 | 1 | 2) {
   const mode = (await ctx.services.account(ctx.account))?.assistantMode ?? 'propose';
   if (mode === 'off') fail('assistants_off', 'Assistants are switched off in Armable.', 'The person can switch them on from the assistant chip in Armable.');
   // Observe: read the drone and edit builds and shows, but change a real drone only once the person allows it.

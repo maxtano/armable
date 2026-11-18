@@ -83,7 +83,7 @@ export function createApp(options: AppOptions) {
     const info = (req as Request & { auth?: { scopes: string[]; clientId?: string; extra?: { account?: string; clientName?: string } } }).auth;
     const account = info?.extra?.account;
     if (!account) { res.status(401).json({ error: 'invalid_token' }); return; }
-    const server = buildMcp(services, { account, who: info!.extra!.clientName ?? 'Assistant', scopes: info!.scopes, clientId: info!.clientId });
+    const server = buildMcp(services, { account, who: info!.extra!.clientName ?? 'Assistant', scopes: info!.scopes, clientId: info!.clientId }, { staticDir: options.staticDir, appUrl: publicUrl.href });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', () => { void transport.close(); void server.close(); });
     try { await server.connect(transport); await transport.handleRequest(req, res, req.body); }

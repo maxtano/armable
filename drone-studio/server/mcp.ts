@@ -1,20 +1,26 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PLAYBOOKS } from '../src/map/library';
 import { ToolError, type Services } from './services';
-import { INSTRUCTIONS, TOOLS, type ToolContext } from './tools';
+import { INSTRUCTIONS, TOOLS, gate, type ToolContext } from './tools';
+import { PANEL_MIME, PANEL_ONLY, PANEL_TOOL_META, PANEL_URI, panelHtml, panelState } from './panel';
 
 export const VERSION = '0.5.0';
 /** Hard cap on what a tool may return to a model. Anything larger is a bug in the tool, not something to pass on. */
 const MAX_RESULT = 24_000;
 
+/** Where the Armable panel's built files are, and the address people open Armable at. */
+export interface PanelOptions { staticDir?: string; appUrl: string }
+
 /** Build an MCP server bound to one signed-in assistant. One is created per request; it holds no state. */
-export function buildMcp(services: Services, identity: { account: string; who: string; scopes?: string[]; clientId?: string }): McpServer {
+export function buildMcp(services: Services, identity: { account: string; who: string; scopes?: string[]; clientId?: string }, panel: PanelOptions = { appUrl: '/' }): McpServer {
   const server = new McpServer({ name: 'armable', title: 'Armable', version: VERSION }, { instructions: INSTRUCTIONS });
   const ctx: ToolContext = { ...identity, services, now: Date.now };
   for (const tool of TOOLS) {
     server.registerTool(tool.name, {
       title: tool.title, description: tool.description, inputSchema: tool.input,
       annotations: { title: tool.title, readOnlyHint: tool.readOnly, destructiveHint: false, idempotentHint: tool.readOnly, openWorldHint: false },
+      // The first call opens the Armable panel beside the chat, in hosts that show MCP Apps.
+      ...(tool.name === 'get_workspace' ? { _meta: PANEL_TOOL_META } : {}),
     }, async (args: Record<string, unknown>) => {
       const started = Date.now();
       const track = (ok: boolean, output: unknown, errorCode?: string) => void services.tracker.toolCall({
@@ -36,6 +42,21 @@ export function buildMcp(services: Services, identity: { account: string; who: s
       }
     });
   }
+  // The panel: Armable's own screen inside the chat, and the one tool it reads from. The tool is the panel's
+  // alone; hosts don't offer it to the model.
+  server.registerResource('Armable', PANEL_URI, { title: 'Armable', description: 'Your drone, live, beside the chat.', mimeType: PANEL_MIME }, async () => ({
+    contents: [{ uri: PANEL_URI, mimeType: PANEL_MIME, text: panelHtml(panel.staticDir), _meta: { ui: { preferredDisplayMode: 'fullscreen', prefersBorder: false } } }],
+  }));
+  server.registerTool('armable_panel', { title: 'Armable panel', description: 'For the Armable panel only: what it shows.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false }, _meta: PANEL_ONLY }, async () => {
+    try {
+      await gate(ctx, 0);
+      const state = await panelState(services, identity.account, panel.appUrl);
+      return { content: [{ type: 'text' as const, text: 'Armable panel state.' }], structuredContent: state as unknown as Record<string, unknown> };
+    } catch (error) {
+      const body = error instanceof ToolError ? { code: error.code, message: error.message, hint: error.hint } : { code: 'internal', message: 'Armable hit an unexpected error.' };
+      return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: body }) }] };
+    }
+  });
   // Playbooks double as ready-made prompts, where the assistant app shows them.
   for (const p of PLAYBOOKS.slice(0, 8)) {
     server.registerPrompt(p.id.replace('play.', '').replace(/-/g, '_'), { title: p.symptom, description: `Work through "${p.symptom}" on the connected drone.` }, () => ({
