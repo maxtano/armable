@@ -15,7 +15,9 @@ export interface PanelOptions { staticDir?: string; appUrl: string; demos?: Clou
 
 /** Build an MCP server bound to one signed-in assistant. One is created per request; it holds no state. */
 export function buildMcp(services: Services, identity: { account: string; who: string; scopes?: string[]; clientId?: string }, panel: PanelOptions = { appUrl: '/' }): McpServer {
-  const server = new McpServer({ name: 'armable', title: 'Armable', version: VERSION }, { instructions: INSTRUCTIONS });
+  // The icon assistant apps can show beside "Armable" in their lists of connectors.
+  const icon = (size: number) => ({ src: new URL(`/icon-${size}.png`, panel.appUrl).href, mimeType: 'image/png', sizes: [`${size}x${size}`] });
+  const server = new McpServer({ name: 'armable', title: 'Armable', version: VERSION, websiteUrl: new URL('/', panel.appUrl).href, icons: [icon(512), icon(192), icon(64)] }, { instructions: INSTRUCTIONS });
   const ctx: ToolContext = { ...identity, services, now: Date.now, appUrl: panel.appUrl };
   for (const tool of TOOLS) {
     server.registerTool(tool.name, {
