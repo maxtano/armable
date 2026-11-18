@@ -243,7 +243,7 @@ describe('with no aircraft', () => {
     const account = await makeAccount(services);
     const w = await callTool(services, account.id, 'get_workspace');
     expect(w).toMatchObject({ armableOpen: false, benchTab: false, aircraft: { connected: false } });
-    expect(w.next).toMatch(/not open/);
+    expect(w.next).toMatch(/No drone yet.*Try the demo drone/);
     const f = await callTool(services, account.id, 'find', { query: 'wont arm' });
     expect(f.hits[0].kind).toBe('playbook');
     expect(f.note).toMatch(/No aircraft is connected/);

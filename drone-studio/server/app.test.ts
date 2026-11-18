@@ -111,9 +111,15 @@ describe('connecting an assistant', () => {
 describe('an assistant over MCP, a person in a tab, a simulated drone on the bench', () => {
   it('lists eleven tools with typed inputs and behaviour hints, plus playbook prompts', async () => {
     const { claude } = await world();
-    const { tools } = await claude.client.listTools();
+    const { tools: all } = await claude.client.listTools();
+    // The Armable panel's own tools are marked for the panel alone; hosts don't offer them to the model.
+    const panelOnly = (t: { _meta?: Record<string, any> }) => JSON.stringify(t._meta?.ui?.visibility) === '["app"]';
+    expect(all.filter(panelOnly).map(t => t.name)).toEqual(['armable_panel', 'armable_demo', 'armable_approve']);
+    const tools = all.filter(t => !panelOnly(t));
     expect(tools.map(t => t.name)).toEqual(['get_workspace', 'find', 'read', 'run_test', 'propose_change', 'wait', 'edit', 'undo', 'show', 'capture_view', 'stop']);
     expect(tools.find(t => t.name === 'read')!.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false });
+    // Anthropic's directory requires a title and a read-only or destructive hint on every tool, panel tools included.
+    for (const t of all) expect([t.name, !!t.title, typeof t.annotations?.readOnlyHint === 'boolean' || typeof t.annotations?.destructiveHint === 'boolean']).toEqual([t.name, true, true]);
     expect(tools.find(t => t.name === 'propose_change')!.inputSchema.required).toEqual(['changes']);
     expect(claude.client.getInstructions()).toContain('"Start Armable", or a first message: call get_workspace');
     expect((await claude.client.listPrompts()).prompts.map(p => p.name)).toContain('motor_wrong_way');

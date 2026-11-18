@@ -78,7 +78,7 @@ function useWatch(active: boolean) {
 
 const STEPS: Record<Ai, [string, string?][]> = {
   claude: [
-    ['In Claude, click the button at the bottom of the box: **Add**.', 'Sign in to Claude first if it asks. Some accounts show Continue first, then Add.'],
+    ['In Claude’s box, click **Continue**, then **Add**.', 'Sign in to Claude first if it asks. Armable is already filled in.'],
     ['Click **Connect** next to Armable.'],
     ['In the small Armable window, click **Allow**.'],
   ],

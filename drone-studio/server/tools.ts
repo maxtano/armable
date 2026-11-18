@@ -15,7 +15,7 @@ import { PART_BY_ID, PROVEN_BY_ID, storeLinks, type Part } from '../src/build/ca
  * Nothing here can approve a proposal, confirm a physical condition, or arm an aircraft: those abilities do not exist
  * in this file.
  */
-export interface ToolContext { account: string; who: string; services: Services; now(): number; /** What this assistant's sign-in allows. Absent in tests means everything. */ scopes?: string[] }
+export interface ToolContext { account: string; who: string; services: Services; now(): number; /** What this assistant's sign-in allows. Absent in tests means everything. */ scopes?: string[]; /** Where people open Armable, for links the assistant gives them. */ appUrl?: string }
 export interface ToolDef {
   name: string; title: string; description: string;
   /** 0 observe, 1 design, 2 propose. */
@@ -48,7 +48,7 @@ function connected(ctx: ToolContext): Mirror {
   if (mirror.snapshot.status !== 'connected') return fail('no_aircraft', mirror.snapshot.status === 'reconnecting' ? 'The flight controller is restarting.' : 'No drone is connected in Armable.', mirror.snapshot.status === 'reconnecting' ? 'Wait a few seconds and try again.' : 'Ask the person to press Connect in Armable.');
   return mirror;
 }
-async function gate(ctx: ToolContext, level: 0 | 1 | 2) {
+export async function gate(ctx: ToolContext, level: 0 | 1 | 2) {
   const mode = (await ctx.services.account(ctx.account))?.assistantMode ?? 'propose';
   if (mode === 'off') fail('assistants_off', 'Assistants are switched off in Armable.', 'The person can switch them on from the assistant chip in Armable.');
   // Observe: read the drone and edit builds and shows, but change a real drone only once the person allows it.
@@ -159,7 +159,7 @@ export const TOOLS: ToolDef[] = [
         pendingProposals: pending.map(p => ({ proposal: p.id, by: p.by, summary: p.kind === 'change' ? p.changes!.map(c => `${c.id} → ${c.value}`).join(', ') : p.test!.id })),
         documents: docs.slice(0, 12).map(r => ({ id: r.id, kind: r.data.kind, name: r.data.name, revision: r.rev })),
         map: mapSummary(mirror),
-        next: !hub.tabs.size ? 'Armable is not open. Ask the person to open it. You can still use find for guides, edit documents, and help them build a drone.' : !bench || s?.status !== 'connected' ? 'No drone is connected. Ask the person to press Connect in Armable, or help them build one.' : s.settingsLoaded !== 'complete' ? 'Settings are not read yet: read ids ["settings.load"] before searching for settings.' : 'Use find to locate readings, tests, settings or a playbook.',
+        next: !bench || s?.status !== 'connected' ? `No drone yet. Armable shows beside the chat where your app supports it: the person clicks Try the demo drone, or Plug in your drone, there. Otherwise send them to ${ctx.appUrl ?? 'Armable'}${ctx.appUrl ? '?demo=betaflight' : ''} for the demo, or ${ctx.appUrl ?? 'Armable'} to plug in theirs (Chrome or Edge). You can also help them build a drone.` : s.settingsLoaded !== 'complete' ? 'Settings are not read yet: read ids ["settings.load"] before searching for settings.' : 'Use find to locate readings, tests, settings or a playbook.',
       };
     },
   },

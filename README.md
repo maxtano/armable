@@ -24,8 +24,8 @@ Above, a new quad won’t arm. It hears nothing from its receiver: the receiver 
 
 <img src="docs/media/proposal.png" alt="The demo quad will not arm because it hears nothing from its receiver. Claude proposes switching the receiver protocol from SBUS to CRSF, with an Approve button beside it." width="820" />
 
-1. **Plug in.** Chrome or Edge and a USB cable. Or open the demo drone.
-2. **Connect your AI.** Add Armable as a connector in Claude, ChatGPT, Claude Code, Cursor or VS Code, with one link. Any other agent can set itself up from a skill file.
+1. **Connect your AI, once.** On [app.armable.ai](https://app.armable.ai), choose Claude or ChatGPT and follow the three clicks.
+2. **Say “Start Armable”** in a new chat. Armable opens beside it: try the demo drone, or plug in yours over USB (Chrome or Edge).
 3. **Approve.** You make the call. The drone changes only when you click.
 
 &nbsp;
@@ -36,8 +36,8 @@ Armable has no AI of its own and never asks for an API key. It works through the
 
 | | |
 | --- | --- |
-| **Claude** | Settings → Connectors → Add custom connector |
-| **ChatGPT** | Settings → Connectors → Create |
+| **Claude** | **Connect your AI → Claude** in Armable opens Claude with Armable filled in |
+| **ChatGPT** | **Connect your AI → ChatGPT**: Developer mode, then Create, with the address copied for you |
 | **Claude Code** | `claude mcp add --transport http armable <your address>/mcp` |
 | **Cursor · VS Code** | One click from Armable’s menu |
 | **Any agent** | Point it at `<your address>/agent-onboarding/SKILL.md` |
