@@ -1,0 +1,6 @@
+# HTTPS for the app. Caddy gets and renews the certificate from Let's Encrypt on its own,
+# once DOMAIN points at this server. WebSockets (the live channel) pass straight through.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:8787
+}

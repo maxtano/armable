@@ -50,7 +50,7 @@ variable "db_deletion_protection" {
 variable "github_repository" {
   description = "owner/name of the GitHub repository allowed to deploy."
   type        = string
-  default     = "maxtano/lucidity"
+  default     = "maxtano/armable"
 }
 variable "github_deploy_branch" {
   description = "Only this branch may deploy."

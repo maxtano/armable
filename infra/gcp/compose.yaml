@@ -1,0 +1,43 @@
+# Armable on one small server: the app, its database, and Caddy for HTTPS.
+# Used by vm-startup.sh with the settings in /opt/armable-data/.env. Sized for Google Cloud's free e2-micro (1 GB).
+name: armable
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    command: ['postgres', '-c', 'shared_buffers=32MB', '-c', 'max_connections=30', '-c', 'work_mem=2MB']
+    environment:
+      POSTGRES_USER: armable
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in /opt/armable-data/.env}
+      POSTGRES_DB: armable
+    volumes: ['/opt/armable-data/postgres:/var/lib/postgresql/data']
+    healthcheck: { test: ['CMD', 'pg_isready', '-U', 'armable'], interval: 10s, retries: 10 }
+    mem_limit: 200m
+
+  app:
+    image: ghcr.io/maxtano/armable:latest
+    build: ../../drone-studio
+    restart: always
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      PUBLIC_URL: https://${DOMAIN:?set in /opt/armable-data/.env}
+      DATABASE_URL: postgres://armable:${POSTGRES_PASSWORD}@db:5432/armable
+      TRUST_PROXY: '1'
+      NODE_OPTIONS: --max-old-space-size=384
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FEEDBACK_WEBHOOK_URL: ${FEEDBACK_WEBHOOK_URL:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+    mem_limit: 600m
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    depends_on: [app]
+    ports: ['80:80', '443:443', '443:443/udp']
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/armable-data/caddy:/data
+    mem_limit: 80m
