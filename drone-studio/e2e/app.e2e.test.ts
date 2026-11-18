@@ -283,13 +283,15 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const resource = await claude.client.readResource({ uri: 'ui://armable/panel.html' });
     const html = (resource.contents[0] as { text: string }).text;
     expect(resource.contents[0].mimeType).toBe('text/html;profile=mcp-app');
-    const context = await browser.newContext();
+    // SHOTS=<folder> also saves the directory listing's carousel: three moments, at twice the size.
+    const context = await browser.newContext(process.env.SHOTS ? { deviceScaleFactor: 2 } : {});
     const page = await context.newPage();
     const errors: string[] = [];
     page.on('pageerror', (e: Error) => errors.push(e.message));
+    const shot = async (name: string) => { if (process.env.SHOTS) await page.locator('#app').screenshot({ path: `${process.env.SHOTS}/${name}.png` }); };
     const host = await hostPanel(page, html, (name, args) => claude.client.callTool({ name, arguments: args as Record<string, unknown> }));
     await host.frame.locator('h1:has-text("Armable is ready")').waitFor();
-    if (process.env.SHOTS) await page.locator('#app').screenshot({ path: `${process.env.SHOTS}/panel-welcome.png` });
+    await shot('1-start-armable');
     // The demo drone, on the server: no Armable tab. The panel tells the assistant, which carries on.
     await host.frame.locator('[data-panel=demo]').click();
     await host.frame.locator('.pn-status.is-on:has-text("Demo drone")').waitFor({ timeout: 15000 });
@@ -298,11 +300,15 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     await claude.call('read', { ids: ['settings.load'] });
     const fix = await claude.call('propose_change', { changes: [{ id: 'bf.serialrx_provider', value: 'CRSF' }] });
     expect(fix.status).toBe('awaiting_approval');
+    await host.frame.locator('[data-panel=approve]').waitFor({ timeout: 10000 });
+    await shot('2-wont-arm-fix');
     // The person approves right in the panel; the assistant sees it done, with the value read back.
     await host.frame.locator('[data-panel=approve]').click();
     const done = await claude.call('wait', { proposal: fix.proposal, timeoutSeconds: 20 });
     expect(done.status).toBe('done');
     await host.frame.locator('.pn-ask').waitFor({ state: 'detached', timeout: 10000 });
+    await page.waitForTimeout(1500);
+    await shot('3-fixed');
     await host.frame.locator('button:has-text("Stop the demo")').click();
     await host.frame.locator('h1:has-text("Armable is ready")').waitFor({ timeout: 10000 });
     // A drone plugged into an Armable tab appears in the panel, live, and is approved in Armable, never here.
@@ -313,7 +319,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     await claude.call('read', { ids: ['settings.load'] });
     expect((await claude.call('propose_change', { changes: [{ id: 'bf.serialrx_provider', value: 'SBUS' }] })).status).toBe('awaiting_approval');
     await host.frame.locator('.pn-ask:has-text("Waiting for you") button:has-text("Approve in Armable")').waitFor({ timeout: 10000 });
-    if (process.env.SHOTS) await page.locator('#app').screenshot({ path: `${process.env.SHOTS}/panel-drone.png` });
+    await shot('4-your-drone');
     expect(errors).toEqual([]);
     await tab.close(); await claude.close(); await context.close();
   });

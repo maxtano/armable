@@ -7,7 +7,7 @@ export async function hostPanel(page: any, html: string, callTool: (name: string
   await page.exposeFunction('hostCallTool', (name: string, args: unknown) => callTool(name, args));
   await page.exposeFunction('hostOpened', (url: string) => { opened.push(url); });
   await page.exposeFunction('hostMessage', (m: unknown) => { messages.push(m); });
-  await page.setContent(`<!doctype html><body style="margin:0"><iframe id="app" style="border:0;width:560px;height:900px"></iframe></body>`);
+  await page.setContent(`<!doctype html><body style="margin:0"><iframe id="app" style="border:0;width:560px;height:760px"></iframe></body>`);
   await page.evaluate(({ html, context }: { html: string; context: Record<string, unknown> }) => {
     const frame = document.getElementById('app') as HTMLIFrameElement;
     window.addEventListener('message', async event => {

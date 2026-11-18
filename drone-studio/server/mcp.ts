@@ -50,8 +50,8 @@ export function buildMcp(services: Services, identity: { account: string; who: s
   server.registerResource('Armable', PANEL_URI, { title: 'Armable', description: 'Your drone, live, beside the chat.', mimeType: PANEL_MIME }, async () => ({
     contents: [{ uri: PANEL_URI, mimeType: PANEL_MIME, text: panelHtml(panel.staticDir), _meta: { ui: { preferredDisplayMode: 'fullscreen', prefersBorder: false } } }],
   }));
-  const panelTool = (name: string, description: string, input: z.ZodRawShape, run: (args: any) => Promise<unknown>) =>
-    server.registerTool(name, { title: 'Armable panel', description, inputSchema: input, annotations: { openWorldHint: false }, _meta: PANEL_ONLY }, async (args: Record<string, unknown>) => {
+  const panelTool = (name: string, title: string, readOnly: boolean, description: string, input: z.ZodRawShape, run: (args: any) => Promise<unknown>) =>
+    server.registerTool(name, { title, description, inputSchema: input, annotations: { title, readOnlyHint: readOnly, destructiveHint: false, idempotentHint: readOnly, openWorldHint: false }, _meta: PANEL_ONLY }, async (args: Record<string, unknown>) => {
       try {
         await gate(ctx, 0);
         panel.demos?.touch(identity.account);
@@ -64,15 +64,15 @@ export function buildMcp(services: Services, identity: { account: string; who: s
         return { isError: true, content: [{ type: 'text' as const, text: JSON.stringify({ error: body }) }] };
       }
     });
-  panelTool('armable_panel', 'For the Armable panel only: what it shows.', {}, async () => {});
+  panelTool('armable_panel', 'Armable panel', true, 'For the Armable panel only: what it shows.', {}, async () => {});
   // The demo drone on the server, so the demo works inside the chat with no Armable tab.
-  panelTool('armable_demo', 'For the Armable panel only: start or stop the demo drone.', { stop: z.boolean().optional() }, async ({ stop }) => {
+  panelTool('armable_demo', 'Start or stop the demo drone', false, 'For the Armable panel only: start or stop the demo drone.', { stop: z.boolean().optional() }, async ({ stop }) => {
     if (!panel.demos) throw new ToolError('unavailable', 'The demo drone runs in the browser here.', 'Open Armable and choose the demo drone.');
     if (stop) panel.demos.stop(identity.account); else await panel.demos.start(identity.account);
   });
   // A person's click in the panel approves a change to the demo drone, and only the demo drone: CloudDemos.approve
   // refuses anything else, so a real drone is only ever approved in Armable itself.
-  panelTool('armable_approve', 'For the Armable panel only: the person approves a change to the demo drone.', { proposal: z.string().max(40) }, async ({ proposal }) => {
+  panelTool('armable_approve', 'Approve a demo drone change', false, 'For the Armable panel only: the person approves a change to the demo drone.', { proposal: z.string().max(40) }, async ({ proposal }) => {
     if (!panel.demos) throw new ToolError('not_demo', 'Approve changes in Armable.');
     const p = await services.proposal(identity.account, proposal);
     await panel.demos.approve(identity.account, proposal, p.needs);
