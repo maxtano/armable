@@ -17,7 +17,7 @@
       @keyframes boot { from { background-position: -60% 0; } to { background-position: 160% 0; } }
       @media (prefers-reduced-motion: reduce) { .boot i { animation: none; background-size: 100% 100%; } }
     </style>
-    <script>try { var t = localStorage.getItem('armable.appearance.v1'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
+    <script src="/theme.js"></script>
   </head>
   <body>
     <div id="root"><div class="boot" role="status" aria-label="Loading Armable"><div>Armable<i></i></div></div></div>

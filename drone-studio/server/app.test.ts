@@ -79,7 +79,7 @@ describe('connecting an assistant', () => {
     const declined = await b.connectAssistant('Nosy', 'observe', false);
     expect(declined.denied).toBe('access_denied');
     const grant = await b.connectAssistant('Claude');
-    expect(grant.details).toEqual({ client: 'Claude', scopes: ['observe', 'design', 'propose'], redirectHost: 'localhost:9' });
+    expect(grant.details).toEqual({ client: 'Claude', clientId: grant.clientId, scopes: ['observe', 'design', 'propose'], redirectHost: 'localhost:9' });
     expect(grant.access_token).toBeTruthy();
     expect((await b.get('/api/me')).json.assistants).toMatchObject([{ name: 'Claude', scopes: ['observe', 'design', 'propose'] }]);
     const reuse = await fetch(`${app.base}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code: grant.code!, code_verifier: grant.verifier!, client_id: grant.clientId, redirect_uri: grant.redirect! }) });
@@ -115,7 +115,7 @@ describe('an assistant over MCP, a person in a tab, a simulated drone on the ben
     expect(tools.map(t => t.name)).toEqual(['get_workspace', 'find', 'read', 'run_test', 'propose_change', 'wait', 'edit', 'undo', 'show', 'capture_view', 'stop']);
     expect(tools.find(t => t.name === 'read')!.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false });
     expect(tools.find(t => t.name === 'propose_change')!.inputSchema.required).toEqual(['changes']);
-    expect(claude.client.getInstructions()).toContain('Start with get_workspace');
+    expect(claude.client.getInstructions()).toContain('"Start Armable", or a first message: call get_workspace');
     expect((await claude.client.listPrompts()).prompts.map(p => p.name)).toContain('motor_wrong_way');
     expect(JSON.stringify(tools).length).toBeLessThan(12000);
   });
@@ -430,6 +430,17 @@ describe('feedback and shared builds', () => {
   });
 });
 
+
+describe('the Allow screen', () => {
+  it('tells anyone the name an assistant registered with, and nothing about unknown ones', async () => {
+    const app = await startApp(); closers.push(() => app.close());
+    const person = new Browser(app.base);
+    await person.signUp();
+    const grant = await person.connectAssistant('Claude');
+    expect((await new Browser(app.base).get(`/api/oauth-client/${grant.clientId}`)).json).toEqual({ name: 'Claude' });
+    expect((await new Browser(app.base).get('/api/oauth-client/nope')).status).toBe(404);
+  });
+});
 
 describe('security', () => {
   it('turns away large anonymous requests before reading them, but not signed-in ones', async () => {

@@ -23,6 +23,10 @@ const base64 = (text: string) => btoa(String.fromCharCode(...new TextEncoder().e
 export const claudeInstallLink = (mcpUrl: string) => `https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Armable&connectorUrl=${encodeURIComponent(mcpUrl)}`;
 export const cursorLink = (mcpUrl: string) => `cursor://anysphere.cursor-deeplink/mcp/install?name=${NAME}&config=${encodeURIComponent(base64(JSON.stringify({ url: mcpUrl })))}`;
 export const vscodeLink = (mcpUrl: string) => `vscode:mcp/install?${encodeURIComponent(JSON.stringify({ name: NAME, type: 'http', url: mcpUrl }))}`;
+/** A new chat with a message typed in, ready to send: Claude on the web, the Claude app (documented), ChatGPT. */
+export const claudeChatLink = (message: string) => `https://claude.ai/new?q=${encodeURIComponent(message)}`;
+export const claudeAppChatLink = (message: string) => `claude://claude.ai/new?q=${encodeURIComponent(message)}`;
+export const chatgptChatLink = (message: string) => `https://chatgpt.com/?q=${encodeURIComponent(message)}`;
 export const claudeCodeCommand = (mcpUrl: string) => `claude mcp add --transport http ${NAME} ${mcpUrl}`;
 export const agentPrompt = (skillUrl: string) => `Read and follow ${skillUrl}`;
 
@@ -31,9 +35,9 @@ const SIGN_IN = 'Sign in to Armable when it asks, and press Allow.';
 export function connectOptions(mcpUrl: string, skillUrl: string): ConnectOption[] {
   return [
     { id: 'claude', name: 'Claude', href: claudeInstallLink(mcpUrl), beside: true, copy: mcpUrl,
-      steps: ['Claude opens on the left with Armable filled in. Click Add.', SIGN_IN, 'Start a new chat in Claude and say “Check my drone”.'] },
+      steps: ['Claude opens on the left with Armable filled in. Click Add.', SIGN_IN, 'Start a new chat in Claude and say “Start Armable”.'] },
     { id: 'chatgpt', name: 'ChatGPT', href: 'https://chatgpt.com/#settings/Connectors', beside: true, copy: mcpUrl,
-      steps: ['ChatGPT opens on the left. Under Apps & Connectors, Advanced, turn on Developer mode (once; needs Plus or Pro).', 'Choose Create. Name it Armable, paste the address (already copied), and pick OAuth.', SIGN_IN, 'In a new chat, add Armable from the + menu and say “Check my drone”.'] },
+      steps: ['ChatGPT opens on the left. Under Apps & Connectors, Advanced, turn on Developer mode (once; needs Plus or Pro).', 'Choose Create. Name it Armable, paste the address (already copied), and pick OAuth.', SIGN_IN, 'In a new chat, add Armable from the + menu and say “Start Armable”.'] },
     { id: 'claude-code', name: 'Claude Code', copy: claudeCodeCommand(mcpUrl),
       steps: ['Command copied. Paste it in a terminal.', 'In Claude Code, run /mcp and choose armable.', SIGN_IN] },
     { id: 'cursor', name: 'Cursor', href: cursorLink(mcpUrl), copy: mcpUrl,
@@ -45,10 +49,16 @@ export function connectOptions(mcpUrl: string, skillUrl: string): ConnectOption[
   ];
 }
 
-/** Open a window on the left half of the screen, so the assistant sits beside Armable. Falls back to a tab. */
-export function openBeside(url: string) {
+/**
+ * Open a window on one half of the screen: the assistant on the left, Armable on the right. Returns null when the
+ * browser blocks it. The caller keeps the window so it can send it to a new chat once connected, which needs the
+ * window to stay linked to this tab; only Claude's and ChatGPT's own sites are ever opened this way.
+ */
+export function openBeside(url: string, side: 'left' | 'right' = 'left'): Window | null {
   const s = screen as Screen & { availLeft?: number; availTop?: number };
   const width = Math.max(420, Math.round(s.availWidth / 2)), height = s.availHeight;
-  const win = window.open(url, 'armable-assistant', `popup,width=${width},height=${height},left=${s.availLeft ?? 0},top=${s.availTop ?? 0}`);
-  if (win) { win.opener = null; win.focus(); } else window.open(url, '_blank', 'noopener,noreferrer');
+  const left = (s.availLeft ?? 0) + (side === 'right' ? s.availWidth - width : 0);
+  const win = window.open(url, side === 'left' ? 'armable-assistant' : 'armable-bench', `popup,width=${width},height=${height},left=${left},top=${s.availTop ?? 0}`);
+  win?.focus();
+  return win;
 }

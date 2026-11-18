@@ -7,7 +7,7 @@ import { publishFocus, refreshDocs } from './controller';
 import { Coil, Dial, Lamp } from './Instruments';
 import { PartArt, type Drawable } from './PartArt';
 import { askHelpful, set, toast, useStore } from './store';
-import './build.css';
+// build.css is loaded with the app (main.tsx): a few of its styles are used outside the build planner.
 
 /**
  * Build a drone. The controls here and an assistant's tools edit the same build through the same operations,

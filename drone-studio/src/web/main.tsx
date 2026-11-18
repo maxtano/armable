@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '../design-system/tokens.css';
 import './web.css';
 import './instruments.css';
+import './build.css';
 import { App } from './App';
 
 try { const saved = localStorage.getItem('armable.appearance.v1'); if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved; } catch { /* private mode */ }

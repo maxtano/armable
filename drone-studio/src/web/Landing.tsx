@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Cable, MessageSquare, MousePointerClick } from 'lucide-react';
+import { Cable, Eye, MessageSquare, MousePointerClick } from 'lucide-react';
 import { api, ApiError } from './cloud';
+import { AiButtons, ClaudeSetup, FIRST_MESSAGE } from './ClaudeSetup';
 import { ConnectMenu } from './ConnectMenu';
 import { Stator } from './Diagram';
 import { Coil } from './Instruments';
@@ -70,6 +71,8 @@ export function Landing({ onSignedIn, google }: { onSignedIn(): void; google?: b
   const params = new URLSearchParams(location.search);
   const [mode, setMode] = useState<'signup' | 'login'>('login'), [email, setEmail] = useState(''), [password, setPassword] = useState(''), [error, setError] = useState(params.get('signin') ?? ''), [busy, setBusy] = useState(false);
   const next = params.get('next');
+  // An assistant app sent the person here to allow it: one screen, one button.
+  if (next?.startsWith('/authorize')) return <AllowAssistant next={next} google={google} />;
   const guest = async () => { setBusy(true); try { await tryAsGuest(next); } catch { setError('Could not start right now. Try again.'); setBusy(false); } };
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); setBusy(true); setError('');
@@ -87,12 +90,10 @@ export function Landing({ onSignedIn, google }: { onSignedIn(): void; google?: b
           <Coil width={150} height={38} />
           <h1>Your drone.<br />Your AI.<br /><em>One bench.</em></h1>
           <p>Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen.</p>
-          <div className="in-actions">
-            <button className="lu-btn is-primary is-big" disabled={busy} onClick={guest}>{next ? 'Continue without an account' : 'Try it now'}</button>
-            {next ? <a href="#start" className="lu-btn is-big">Sign in</a> : <a href="/?demo=betaflight" className="lu-btn is-big">Open the demo drone</a>}
-          </div>
-          <small>No sign-up, no install, no API key. Works with Betaflight, ArduPilot and PX4.</small>
-          {!next && <ConnectMenu />}
+          <h2 className="in-ask">Which AI do you use?</h2>
+          <AiButtons big />
+          <small>Connect it once. Then say <b>“{FIRST_MESSAGE}”</b> in any new chat. Free, no sign-up.</small>
+          <div className="in-others"><a href="/?demo=betaflight" className="lu-link">Try the demo drone first</a><ConnectMenu others /><button className="lu-link" disabled={busy} onClick={guest}>or just look around</button></div>
         </div>
         <Scene />
       </section>
@@ -113,6 +114,59 @@ export function Landing({ onSignedIn, google }: { onSignedIn(): void; google?: b
         </form>
       </section>
       <footer className="in-foot">Open source · Apache 2.0 · You approve every change to your aircraft · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>
+      <ClaudeSetup />
+    </div>
+  );
+}
+
+/** Set by “Allow” below, and read once by the consent screen it leads to, so the person clicks Allow only once. */
+export const ALLOW_KEY = 'armable.allow';
+
+/**
+ * Claude's “Connect” opens this when the person isn't signed in to Armable. One button: it makes a guest bench
+ * (saveable later) and allows the assistant. People with an account sign in instead.
+ */
+function AllowAssistant({ next, google }: { next: string; google?: boolean }) {
+  const clientId = new URLSearchParams(next.split('?')[1] ?? '').get('client_id') ?? '';
+  const [name, setName] = useState('Your assistant'), [signIn, setSignIn] = useState(false);
+  const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false);
+  useEffect(() => { if (clientId) api('GET', `/oauth-client/${encodeURIComponent(clientId)}`).then(r => setName(r.name), () => {}); }, [clientId]);
+  const allow = async () => {
+    setBusy(true); setError('');
+    try {
+      await api('POST', '/guest');
+      try { sessionStorage.setItem(ALLOW_KEY, JSON.stringify({ clientId, at: Date.now() })); } catch { /* the next screen asks again */ }
+      location.href = next;
+    } catch (e) { setError(e instanceof ApiError ? e.message : 'Could not reach Armable. Try again.'); setBusy(false); }
+  };
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault(); setBusy(true); setError('');
+    try { await api('POST', '/login', { email, password }); location.href = next; }
+    catch (e) { setError(e instanceof ApiError ? e.message : 'Could not reach Armable.'); setBusy(false); }
+  };
+  return (
+    <div className="lu-consent">
+      <div className="lu-consent-card cs-allow">
+        <img src="/favicon.svg" alt="" width="34" height="34" />
+        <h1>Let {name} use Armable?</h1>
+        <ul>
+          <li><Eye size={18} />See your drone and its settings</li>
+          <li><MousePointerClick size={18} />Suggest changes. Nothing changes until you approve it in Armable.</li>
+        </ul>
+        {!signIn ? <>
+          <button className="lu-btn is-primary is-big" data-allow disabled={busy} onClick={() => void allow()}>Allow</button>
+          {error && <p className="in-error" role="alert">{error}</p>}
+          <p className="lu-hint">No account needed. You can save your bench later.</p>
+          <div className="lu-row"><button className="lu-link" onClick={() => setSignIn(true)}>I already have an account</button><button className="lu-link" onClick={() => { window.close(); history.back(); }}>Cancel</button></div>
+        </> : <form onSubmit={submit} className="in-form">
+          {google && <><GoogleButton next={next} /><span className="gr-or">or</span></>}
+          <label>Email<input type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
+          <label>Password<input type="password" required minLength={8} autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} /></label>
+          {error && <p className="in-error" role="alert">{error}</p>}
+          <button className="lu-btn is-primary is-big" disabled={busy}>Sign in</button>
+          <button type="button" className="lu-link" onClick={() => setSignIn(false)}>Back</button>
+        </form>}
+      </div>
     </div>
   );
 }

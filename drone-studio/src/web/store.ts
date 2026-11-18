@@ -46,6 +46,8 @@ export interface State {
   buildTab?: 'mine' | 'parts' | 'proven' | 'compare';
   compare?: string[];
   dialog?: 'save' | 'feedback';
+  /** Connecting an assistant (ClaudeSetup.tsx): choosing one, waiting for it, or just connected. */
+  setup?: { stage: 'choose' | 'waiting' | 'connected'; ai?: 'claude' | 'chatgpt'; since: number; blocked?: boolean; name?: string };
   /** The moment to ask “did this help?”, asked once each. */
   helpful?: 'fix' | 'build';
 }
