@@ -1,5 +1,5 @@
 # Armable: the hosted app and its tool server in one image.
-FROM node:24-slim
+FROM node:26-slim
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
