@@ -55,7 +55,7 @@ resource "google_billing_budget" "cap" {
   depends_on = [google_project_service.enabled]
 }
 
-# The guard runs as its own account with only the two permissions it needs.
+# The guard runs as its own account with only the permissions it needs.
 resource "google_service_account" "guard" {
   account_id   = "${var.name}-guard"
   display_name = "Armable spending guard"
@@ -64,10 +64,11 @@ resource "google_service_account" "guard" {
 
 resource "google_project_iam_member" "guard" {
   for_each = toset([
-    "roles/billing.projectManager",   # unlink billing from this project
-    "roles/compute.instanceAdmin.v1", # stop the server
-    "roles/run.invoker",              # let the budget topic call the function
-    "roles/eventarc.eventReceiver",   # receive the budget events
+    "roles/billing.projectManager",            # unlink billing from this project
+    "roles/compute.instanceAdmin.v1",          # stop the server
+    "roles/run.invoker",                       # let the budget topic call the function
+    "roles/eventarc.eventReceiver",            # receive the budget events
+    "roles/serviceusage.serviceUsageConsumer", # use the project's APIs; Eventarc checks this when it creates the trigger
   ])
   project = var.project_id
   role    = each.value
