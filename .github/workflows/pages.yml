@@ -1,6 +1,6 @@
 name: Publish the Lucidity intro page to GitHub Pages
 # The app itself needs its server, so Pages only hosts a static intro page. Set the repository variable LUCIDITY_URL
-# to the hosted app's address (for example https://lucidity.example.com) and the page links to it.
+# to the hosted app's address (for example https://app.armable.ai) and the page links to it.
 on:
   push:
     branches: [main]
