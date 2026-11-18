@@ -1,77 +1,108 @@
 <div align="center">
 
-<img src="drone-studio/public/favicon.svg" width="44" height="44" alt="" />
+<img src="drone-studio/public/favicon.svg" width="56" height="56" alt="" />
 
 # Lucidity
 
-**Your drone. Your AI. One bench.**
+**The drone bench your AI can use.**
 
-Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen.
+Plug in your drone. Ask Claude or ChatGPT. Approve the fix.
 
-<img src="docs/media/intro.png" alt="Lucidity: a drawing of a quad with motor 3 fixed, and a short chat asking to fix it" width="760" />
+<img src="docs/media/intro.png" alt="Lucidity: a quad drawn with copper motor windings, and a short exchange asking to fix motor 3" width="820" />
 
 </div>
 
-## How it works
+&nbsp;
 
-```mermaid
-flowchart LR
-  you([You]) -- "Motor 3 spins backwards" --> ai[Claude or ChatGPT<br/>on your subscription]
-  ai -- tools --> cloud[Lucidity]
-  cloud -- live --> tab[Lucidity in your browser]
-  tab -- USB --> drone((Drone))
-  tab -. "you click Approve" .-> drone
-```
+## Say what’s wrong. See it fixed.
 
-1. **Plug in.** Open Lucidity in Chrome or Edge and connect over USB. Nothing to install.
-2. **Ask.** Add Lucidity to your assistant with one link. No API key.
-3. **Approve.** The change appears on the part it affects. Nothing touches the drone until you click.
+Lucidity runs in your browser and connects to your drone over USB. Your assistant connects to Lucidity with one link. It reads the drone, finds the cause and proposes a change on the part it affects. Nothing is written until you approve it, and every change is read back from the drone to confirm it.
 
-<img src="docs/media/proposal.png" alt="Claude proposes reversing motor 3. A ghost arrow and an Approve button appear on the motor itself." width="760" />
+<img src="docs/media/proposal.png" alt="Claude proposes reversing motor 3. A dashed arrow and an Approve button appear on the motor, with the change shown beside it." width="820" />
 
-## What it can do
+1. **Plug in.** Chrome or Edge, a USB cable. Nothing to install.
+2. **Connect your AI.** Claude, ChatGPT, Claude Code, Cursor, VS Code or any agent. No API key.
+3. **Approve.** You make the call. The drone changes only when you click.
+
+&nbsp;
+
+## Every reading, at a glance.
+
+Battery, current, attitude, radio, motors and sensors, live. The numbers that matter sit on dials. Everything else is a search away.
+
+<img src="docs/media/signals.png" alt="Four dials for battery, current, tilt and radio, above live charts of attitude, voltage and current." width="820" />
+
+&nbsp;
+
+## No drone yet? Build one.
+
+Choose what you want to fly and your budget. Pick each part, or start from a proven build. Lucidity checks that the parts work together and shows the cost, take-off weight, thrust and flight time as you go.
+
+<img src="docs/media/build.png" alt="A 5-inch build with dials for cost, take-off weight, thrust to weight and flight time, and a compatibility check." width="820" />
+
+Browse the catalog with filters for price, brand, rating and fit. Swap any part and see what it changes. Every part links to the stores that sell it. Rate the parts you’ve flown.
+
+<img src="docs/media/parts.png" alt="Choosing motors: each with a drawing, specs, price, and whether it fits the build." width="820" />
+
+&nbsp;
+
+## Works with what you fly.
 
 | | Betaflight · INAV | ArduPilot · PX4 |
 | --- | --- | --- |
-| Live readings | Attitude, battery, radio, motors, GPS, sensors, arming blocks | Same, plus vibration, EKF, status messages |
-| Every setting | Console `dump`, ranges and allowed values; features, ports, modes | Full parameter list with readback |
-| Tests | Health checks, motor spin, accelerometer and compass calibration | Same, plus level, gyro, barometer and arming checks |
-| ESCs (BLHeli_S, Bluejay, AM32) | Read, change direction and settings, flash | Same, through ArduPilot passthrough |
-| Firmware | Flight controller over DFU; ExpressLRS receivers | Flight controller over the bootloader (`.apj`) |
-| Video and screen | VTX bands, channels and power presets; OSD layout editor | — |
-| Backups | Snapshot, compare, restore | Snapshot and compare |
-| Flight logs | Blackbox download, decode and analyse | Download and analyse |
+| **Live readings** | Attitude, battery, radio, motors, GPS, sensors, arming blocks | Plus vibration, EKF and status messages |
+| **Settings** | Every value, with ranges and readback | Every parameter, with readback |
+| **Tests** | Health checks, motor spin, calibration | Plus level, gyro, barometer and arming checks |
+| **ESCs** | BLHeli_S, Bluejay and AM32: read, configure, flash | Through ArduPilot passthrough |
+| **Firmware** | Flight controller over DFU, ExpressLRS receivers | Flight controller over the bootloader |
+| **Video** | VTX tables, OSD layout editor | — |
+| **Backups** | Snapshot, compare, restore | Snapshot, compare |
+| **Flight logs** | Blackbox download and analysis | Download and analysis |
 
-**No drone yet? Build one.** The Build view works like a PC part picker for drones. A component list splits into essentials, extras and what you need to fly it, with a drawing of each part, store links and prices. A compatibility banner and checks cover prop size, mounts, cell counts, KV, ESC current and video and radio systems, alongside cost against budget, weight, thrust-to-weight and flight time. Browse the catalog with filters and a compatible-only switch, open any part for its specs, and rate and review parts you have flown; ratings are shared by everyone. Start from one of six proven builds and compare builds side by side. An assistant open next to Lucidity can work on the same build through its tools.
+Also: a history of every change and test, short-lived permissions for small changes, offline use, drone show storyboards, startup tunes, and a demo drone for each firmware.
 
-Plus history of every change and test, standing permissions for small changes, offline use, shows (3D storyboards), startup sounds, and a demo drone for each stack. Everything an assistant does is recorded in Postgres tables you can query.
+&nbsp;
 
-**The assistant gets eleven tools and one searchable map** of everything the connected aircraft offers: readings, tests, settings, guides and playbooks for common problems. It can read, test and propose. It cannot approve, confirm “props removed”, or arm.
+## You stay in control.
 
-## Run it
+Your assistant can read, test and propose. It can’t approve a change, confirm that props are off, or arm the drone. Motor spins and firmware flashes are always started by you. Everything an assistant does is recorded.
+
+&nbsp;
+
+## Run it.
 
 ```sh
 cd drone-studio
-docker compose up --build        # Lucidity + Postgres on http://localhost:8787
+docker compose up --build        # Lucidity and Postgres at http://localhost:8787
 ```
 
-Or for development:
+For development:
 
 ```sh
 npm ci
-npm run build && npm run serve   # http://localhost:8787 (no DATABASE_URL: data stays in memory)
-npm test                         # unit and integration tests
+npm run build && npm run serve   # http://localhost:8787, data kept in memory
+npm test
 ```
 
 Assistants connect to `<your address>/mcp`. Set `PUBLIC_URL` to the address people use.
 
-**On AWS:** Terraform in [`infra/aws`](infra/aws/README.md) sets up CloudFront, a load balancer, ECS Fargate and RDS Postgres, plus keyless deploys from GitHub. About $45 a month.
+To host it on AWS, [`infra/aws`](infra/aws/README.md) sets up CloudFront, ECS Fargate and RDS Postgres with keyless deploys from GitHub, for about $45 a month.
 
 <details>
-<summary>Status and limits</summary>
+<summary><b>Status</b></summary>
 
-Every hardware path is tested against simulated flight controllers, ESCs and bootloaders that speak the real protocols. **Only the ArduPilot reads and ESC passthrough were first proven on a real aircraft; the new browser drivers, Betaflight, PX4, ESC writes, firmware and receiver flashing have not yet run on hardware.** Bench-test with props off before trusting a change. Mission upload and flight are not in the hosted app. See the [plan](drone-studio/docs/TOOL_APP_VISION.md), [design](drone-studio/docs/TOOL_APP_DESIGN.md), [architecture](drone-studio/docs/TOOL_APP_ARCHITECTURE.md) and [execution](drone-studio/docs/TOOL_APP_EXECUTION.md).
+&nbsp;
+
+Every hardware path is tested against simulated flight controllers, ESCs and bootloaders that speak the real protocols. ArduPilot reads and ESC passthrough have run on a real aircraft. The browser drivers, Betaflight, PX4, ESC writes, firmware and receiver flashing have not yet. Test on the bench with props off before you trust a change. Part prices in the build catalog are typical, not live.
+
+More: [vision](drone-studio/docs/TOOL_APP_VISION.md) · [design](drone-studio/docs/DESIGN_SYSTEM.md) · [architecture](drone-studio/docs/TOOL_APP_ARCHITECTURE.md) · [execution](drone-studio/docs/TOOL_APP_EXECUTION.md)
 
 </details>
 
+&nbsp;
+
+<div align="center">
+
 Apache 2.0 · [Security](SECURITY.md)
+
+</div>
