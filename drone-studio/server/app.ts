@@ -352,7 +352,9 @@ export function createApp(options: AppOptions) {
 
   const dir = options.staticDir && existsSync(options.staticDir) ? resolve(options.staticDir) : undefined;
   if (dir) {
-    app.use(express.static(dir, { index: false, maxAge: '1h' }));
+    // Built files have a content hash in their name, so they never change: browsers and Cloudflare keep them a year.
+    // Everything else an hour, and the page itself is checked every time, so a new release shows at once.
+    app.use(express.static(dir, { index: false, maxAge: '1h', setHeaders: (res, file) => { if (/[\\/]assets[\\/]/.test(file)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); } }));
     const page = () => readFileSync(resolve(dir, 'index.html'), 'utf8');
     const escape = (s: string) => s.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
     // A shared build gets its own title and description, so the link previews well where it is posted.
@@ -364,7 +366,7 @@ export function createApp(options: AppOptions) {
       const head = `<title>${escape(title)}</title><meta property="og:title" content="${escape(title)}" /><meta property="og:description" content="${escape(description)}" /><meta name="description" content="${escape(description)}" />`;
       res.type('html').send(page().replace(/<title>[^<]*<\/title>/, head));
     });
-    app.get(/^\/(?!api\/|mcp|live|\.well-known\/).*/, (_req, res) => res.sendFile(resolve(dir, 'index.html')));
+    app.get(/^\/(?!api\/|mcp|live|\.well-known\/).*/, (_req, res) => res.set('Cache-Control', 'no-cache').sendFile(resolve(dir, 'index.html')));
   }
 
   // ---- The live channel to browser tabs ----------------------------------------------------------------------------

@@ -1,7 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Activity, Bot, Cable, ChevronDown, CloudUpload, Eye, FileUp, Hammer, LogOut, Menu as MenuIcon, MessageSquarePlus, Moon, Navigation, Plug, Radio, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
 import { useState } from 'react';
-import { Build, SharedBuild } from './Build';
+// The build planner loads when it is first opened, so the rest of Armable starts faster.
+const Build = lazy(() => import('./Build').then(m => ({ default: m.Build })));
+const SharedBuild = lazy(() => import('./Build').then(m => ({ default: m.SharedBuild })));
 import { boot, FeedbackDialog, HelpfulPrompt, SaveDialog } from './Growth';
 import { History } from './History';
 import { OsdEditor } from './OsdEditor';
@@ -190,8 +192,9 @@ export function App() {
   const consent = new URLSearchParams(location.search).get('consent');
   const shared = location.pathname.match(/^\/b\/([\w-]{4,40})\/?$/)?.[1];
   useEffect(() => { if (!shared) void boot(); }, [shared]);
-  if (shared) return <><SharedBuild share={shared} /><Overlays /></>;
-  if (!me) return <div className="lu-boot" />;
+  if (shared) return <><Suspense fallback={null}><SharedBuild share={shared} /></Suspense><Overlays /></>;
+  // The same splash index.html shows, so there is no flash between the page arriving and the app starting.
+  if (!me) return <div className="boot" role="status" aria-label="Loading Armable"><div>Armable<i /></div></div>;
   if (!me.signedIn) return <Landing onSignedIn={() => void boot()} google={me.google} />;
   if (consent) return <><Consent id={consent} /><Overlays /></>;
   return (
@@ -203,7 +206,7 @@ export function App() {
           : !live && <div className="lu-offline" role="status">Reconnecting to Armable…</div>}
         <div className="lu-view">
           {view === 'drone' && <DroneView />}
-          {view === 'build' && <Build />}
+          {view === 'build' && <Suspense fallback={null}><Build /></Suspense>}
           {view === 'signals' && <Signals />}
           {view === 'flights' && <Flights />}
           {view === 'show' && <Show />}

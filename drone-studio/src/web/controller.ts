@@ -50,8 +50,8 @@ export async function refreshDocs() { set({ docs: await api('GET', '/docs') }); 
 
 let listening = false;
 /** Start everything that needs a signed-in person. */
-export async function start() {
-  const me = await refreshMe();
+export async function start(known?: Awaited<ReturnType<typeof refreshMe>>) {
+  const me = known ?? await refreshMe();
   if (!me.signedIn) return;
   if (!listening) {
     listening = true;
