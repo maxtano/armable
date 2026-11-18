@@ -23,8 +23,10 @@ const base64 = (text: string) => btoa(String.fromCharCode(...new TextEncoder().e
 export const claudeInstallLink = (mcpUrl: string) => `https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Armable&connectorUrl=${encodeURIComponent(mcpUrl)}`;
 export const cursorLink = (mcpUrl: string) => `cursor://anysphere.cursor-deeplink/mcp/install?name=${NAME}&config=${encodeURIComponent(base64(JSON.stringify({ url: mcpUrl })))}`;
 export const vscodeLink = (mcpUrl: string) => `vscode:mcp/install?${encodeURIComponent(JSON.stringify({ name: NAME, type: 'http', url: mcpUrl }))}`;
-/** A new Claude chat with a message typed in, ready to send (Claude's `q` parameter). */
+/** A new chat with a message typed in, ready to send: Claude on the web, the Claude app (documented), ChatGPT. */
 export const claudeChatLink = (message: string) => `https://claude.ai/new?q=${encodeURIComponent(message)}`;
+export const claudeAppChatLink = (message: string) => `claude://claude.ai/new?q=${encodeURIComponent(message)}`;
+export const chatgptChatLink = (message: string) => `https://chatgpt.com/?q=${encodeURIComponent(message)}`;
 export const claudeCodeCommand = (mcpUrl: string) => `claude mcp add --transport http ${NAME} ${mcpUrl}`;
 export const agentPrompt = (skillUrl: string) => `Read and follow ${skillUrl}`;
 
@@ -33,9 +35,9 @@ const SIGN_IN = 'Sign in to Armable when it asks, and press Allow.';
 export function connectOptions(mcpUrl: string, skillUrl: string): ConnectOption[] {
   return [
     { id: 'claude', name: 'Claude', href: claudeInstallLink(mcpUrl), beside: true, copy: mcpUrl,
-      steps: ['Claude opens on the left with Armable filled in. Click Add.', SIGN_IN, 'Start a new chat in Claude and say “Check my drone”.'] },
+      steps: ['Claude opens on the left with Armable filled in. Click Add.', SIGN_IN, 'Start a new chat in Claude and say “Start Armable”.'] },
     { id: 'chatgpt', name: 'ChatGPT', href: 'https://chatgpt.com/#settings/Connectors', beside: true, copy: mcpUrl,
-      steps: ['ChatGPT opens on the left. Under Apps & Connectors, Advanced, turn on Developer mode (once; needs Plus or Pro).', 'Choose Create. Name it Armable, paste the address (already copied), and pick OAuth.', SIGN_IN, 'In a new chat, add Armable from the + menu and say “Check my drone”.'] },
+      steps: ['ChatGPT opens on the left. Under Apps & Connectors, Advanced, turn on Developer mode (once; needs Plus or Pro).', 'Choose Create. Name it Armable, paste the address (already copied), and pick OAuth.', SIGN_IN, 'In a new chat, add Armable from the + menu and say “Start Armable”.'] },
     { id: 'claude-code', name: 'Claude Code', copy: claudeCodeCommand(mcpUrl),
       steps: ['Command copied. Paste it in a terminal.', 'In Claude Code, run /mcp and choose armable.', SIGN_IN] },
     { id: 'cursor', name: 'Cursor', href: cursorLink(mcpUrl), copy: mcpUrl,

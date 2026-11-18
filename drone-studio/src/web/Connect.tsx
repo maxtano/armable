@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Check, Copy, Eye, PencilRuler, Unplug, Wrench } from 'lucide-react';
 import { api } from './cloud';
-import { startClaude } from './ClaudeSetup';
+import { AiButtons, FIRST_MESSAGE } from './ClaudeSetup';
 import { ConnectMenu } from './ConnectMenu';
 import { ALLOW_KEY } from './Landing';
 import { createGrant, refreshMe, revokeGrant, setMode } from './controller';
@@ -37,8 +37,8 @@ export function Connect() {
     <section className="lu-page is-narrow">
       <header className="lu-page-head"><h1>Your assistant</h1><ModeSwitch /></header>
       <p className="lu-hint lu-mode-hint">{MODE_HINT[me?.mode ?? 'observe']}</p>
-      {!me?.assistants?.some(a => /claude/i.test(a.name)) && (
-        <div className="cs-card"><div><h3>Connect Claude</h3><p>Claude opens beside Armable with everything filled in. Two clicks there, one here.</p></div><button className="lu-btn is-primary" data-start="claude" onClick={() => void startClaude()}>Connect Claude</button></div>
+      {me?.assistants?.length ? <p className="cs-card is-ok">In any new chat, say <b>“{FIRST_MESSAGE}”</b>.</p> : (
+        <div className="cs-card"><div><h3>Which AI do you use?</h3><p>Connect it once. Then say <b>“{FIRST_MESSAGE}”</b> in any new chat.</p></div><AiButtons /></div>
       )}
       <h2 className="lu-sub">Connected</h2>
       {me?.assistants?.length ? (

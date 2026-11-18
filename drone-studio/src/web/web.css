@@ -506,3 +506,11 @@ select, .lu-text { height: 34px; padding: 0 10px; border: 1px solid var(--ds-bor
 .lu-connect-link { color: var(--ds-text-muted); }
 @media (prefers-reduced-motion: reduce) { .cs-light:not(.is-on) i { animation: none; } }
 @media (max-width: 640px) { .cs-light { display: none; } }
+/* The checklist sits on the right half while the assistant's window covers the left. */
+@media (min-width: 1000px) { .cs-scrim.is-side { justify-items: end; padding-right: max(4vw, 32px); } }
+.cs-ais { display: flex; flex-wrap: wrap; gap: 12px; }
+.cs-ais .lu-btn { min-width: 150px; justify-content: center; }
+.cs-actions { display: grid; gap: 8px; justify-items: start; }
+.cs-steps li.is-last { padding-top: 12px; border-top: 1px solid var(--ds-border); }
+.cs-card.is-ok { display: block; color: var(--ds-text); }
+.in-ask { margin: 8px 0 12px; font-size: 17px; font-weight: 700; }

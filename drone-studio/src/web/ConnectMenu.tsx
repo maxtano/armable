@@ -50,7 +50,7 @@ export function ConnectMenu({ big, others }: { big?: boolean; /** Everything but
   const [open, setOpen] = useState(false), [chosen, setChosen] = useState<ConnectOption>(), [connected, setConnected] = useState<string>();
   const box = useRef<HTMLDivElement>(null), button = useRef<HTMLButtonElement>(null);
   const addresses = useAddresses();
-  const options = (addresses ? connectOptions(addresses.mcpUrl, addresses.skillUrl) : []).filter(o => !others || o.id !== 'claude');
+  const options = (addresses ? connectOptions(addresses.mcpUrl, addresses.skillUrl) : []).filter(o => !others || (o.id !== 'claude' && o.id !== 'chatgpt'));
   useEffect(() => {
     if (!open) return;
     const away = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
@@ -61,7 +61,7 @@ export function ConnectMenu({ big, others }: { big?: boolean; /** Everything but
   useNewAssistant(!!chosen && !connected, name => {
     setConnected(name);
     const wasSignedIn = !!get().me?.signedIn;
-    toast(`${name} is connected. Ask it: “Check my drone.”`, 'ok');
+    toast(`${name} is connected. Say “Start Armable” in a new chat.`, 'ok');
     // Connected from the intro page: the sign-in happened in the assistant's window, so open Armable here too.
     void (wasSignedIn ? refreshMe() : boot());
   });
@@ -90,7 +90,7 @@ export function ConnectMenu({ big, others }: { big?: boolean; /** Everything but
       <button ref={button} className={others ? `lu-link lu-connect-link${open ? ' is-open' : ''}` : `lu-btn lu-connect-btn${big ? ' is-big' : ''}${open ? ' is-open' : ''}`} aria-haspopup="menu" aria-expanded={open}
         onClick={() => { setOpen(!open); if (!open && connected) { setChosen(undefined); setConnected(undefined); } }}>
         {!others && <span className="lu-connect-stack" aria-hidden>{(['claude', 'chatgpt', 'cursor'] as const).map(id => { const Icon = ICON[id]; return <span key={id}><Icon size={13} /></span>; })}</span>}
-        {others ? 'Use ChatGPT or another app' : 'Connect your AI'} <ChevronDown size={15} />
+        {others ? 'Use a coding tool' : 'Connect your AI'} <ChevronDown size={15} />
       </button>
       {open && (chosen ? (
         <div className="lu-connect-menu is-guide" role="dialog" aria-label={`Connect ${chosen.name}`}>
@@ -112,7 +112,7 @@ export function ConnectMenu({ big, others }: { big?: boolean; /** Everything but
       ) : (
         <div className="lu-connect-menu" role="menu" aria-label="Connect your AI">
           {options.filter(o => MAIN.includes(o.id)).map(o => item(o, true))}
-          {options.length > 0 && <span className="lu-connect-other">{others ? 'Coding tools and agents' : 'Coding tools and other agents'}</span>}
+          {options.length > 0 && !others && <span className="lu-connect-other">Coding tools and other agents</span>}
           {options.filter(o => !MAIN.includes(o.id)).map(o => item(o, false))}
           {!addresses && <p className="lu-connect-next">Loading…</p>}
         </div>

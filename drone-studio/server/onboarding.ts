@@ -33,10 +33,10 @@ there is nothing to run. Do not try commands or ask about network settings. Repl
 
 > To connect Armable, click this link: ${claudeLink}
 > Claude opens with Armable filled in. Click **Add**, sign in to Armable, and press **Allow**. Then start a new chat
-> and say “Check my drone”.
+> and say “Start Armable”.
 
 For ChatGPT, reply instead: “In ChatGPT, open Settings → Apps & Connectors → Advanced and turn on Developer mode.
-Then choose Create, name it Armable, paste ${mcpUrl}, pick OAuth, and sign in to Armable when it asks.”
+Then choose Create, name it Armable, paste ${mcpUrl}, pick OAuth, and sign in to Armable when it asks. Then say “Start Armable” in a new chat.”
 
 **If you can run commands or edit your own settings**, use whichever applies to you:
 

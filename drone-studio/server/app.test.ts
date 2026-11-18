@@ -115,7 +115,7 @@ describe('an assistant over MCP, a person in a tab, a simulated drone on the ben
     expect(tools.map(t => t.name)).toEqual(['get_workspace', 'find', 'read', 'run_test', 'propose_change', 'wait', 'edit', 'undo', 'show', 'capture_view', 'stop']);
     expect(tools.find(t => t.name === 'read')!.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false });
     expect(tools.find(t => t.name === 'propose_change')!.inputSchema.required).toEqual(['changes']);
-    expect(claude.client.getInstructions()).toContain('Start with get_workspace');
+    expect(claude.client.getInstructions()).toContain('"Start Armable", or a first message: call get_workspace');
     expect((await claude.client.listPrompts()).prompts.map(p => p.name)).toContain('motor_wrong_way');
     expect(JSON.stringify(tools).length).toBeLessThan(12000);
   });

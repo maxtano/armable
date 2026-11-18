@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Cable, Eye, MessageSquare, MousePointerClick, Sparkles } from 'lucide-react';
+import { Cable, Eye, MessageSquare, MousePointerClick } from 'lucide-react';
 import { api, ApiError } from './cloud';
-import { ClaudeSetup, startClaude } from './ClaudeSetup';
+import { AiButtons, ClaudeSetup, FIRST_MESSAGE } from './ClaudeSetup';
 import { ConnectMenu } from './ConnectMenu';
 import { Stator } from './Diagram';
 import { Coil } from './Instruments';
@@ -90,12 +90,10 @@ export function Landing({ onSignedIn, google }: { onSignedIn(): void; google?: b
           <Coil width={150} height={38} />
           <h1>Your drone.<br />Your AI.<br /><em>One bench.</em></h1>
           <p>Plug in your drone. Tell Claude or ChatGPT what’s wrong. Watch the fix happen.</p>
-          <div className="in-actions">
-            <button className="lu-btn is-primary is-big" data-start="claude" onClick={() => void startClaude()}><Sparkles size={18} /> Start with Claude</button>
-            <a href="/?demo=betaflight" className="lu-btn is-big">Try the demo drone</a>
-          </div>
-          <small>Free. No sign-up, no install. Works with Betaflight, ArduPilot and PX4.</small>
-          <div className="in-others"><ConnectMenu others /><button className="lu-link" disabled={busy} onClick={guest}>or just look around</button></div>
+          <h2 className="in-ask">Which AI do you use?</h2>
+          <AiButtons big />
+          <small>Connect it once. Then say <b>“{FIRST_MESSAGE}”</b> in any new chat. Free, no sign-up.</small>
+          <div className="in-others"><a href="/?demo=betaflight" className="lu-link">Try the demo drone first</a><ConnectMenu others /><button className="lu-link" disabled={busy} onClick={guest}>or just look around</button></div>
         </div>
         <Scene />
       </section>

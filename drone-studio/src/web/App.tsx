@@ -9,7 +9,7 @@ import { History } from './History';
 import { OsdEditor } from './OsdEditor';
 import { RadioFlash } from './RadioFlash';
 import type { PartId } from '../device/types';
-import { ClaudeLight, ClaudeSetup, MovedRight } from './ClaudeSetup';
+import { ClaudeLight, ClaudeSetup } from './ClaudeSetup';
 import { Connect, Consent, ModeSwitch } from './Connect';
 import { answerPrompt, connectDemo, connectUsb, disconnect, go, select, signOut, stopAll } from './controller';
 import { Diagram } from './Diagram';
@@ -191,7 +191,7 @@ function Overlays() {
 }
 
 export function App() {
-  const me = useStore(s => s.me), view = useStore(s => s.view), live = useStore(s => s.live), moved = useStore(s => s.moved);
+  const me = useStore(s => s.me), view = useStore(s => s.view), live = useStore(s => s.live);
   const consent = new URLSearchParams(location.search).get('consent');
   const shared = location.pathname.match(/^\/b\/([\w-]{4,40})\/?$/)?.[1];
   useEffect(() => { if (!shared) void boot(); }, [shared]);
@@ -200,7 +200,6 @@ export function App() {
   if (!me) return <div className="boot" role="status" aria-label="Loading Armable"><div>Armable<i /></div></div>;
   if (!me.signedIn) return <Landing onSignedIn={() => void boot()} google={me.google} />;
   if (consent) return <><Consent id={consent} /><Overlays /></>;
-  if (moved) return <MovedRight />;
   return (
     <div className="lu">
       <Rail />
