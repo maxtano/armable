@@ -2,6 +2,22 @@
 
 **Status: plan, November 17, 2026; revised the same day from a local-app design to a hosted one.** Design for the direction in [TOOL_APP_VISION.md](TOOL_APP_VISION.md) and the interface in [TOOL_APP_DESIGN.md](TOOL_APP_DESIGN.md). Sections marked *exists* describe code in the repository today; everything else is proposed. Build order is in [TOOL_APP_EXECUTION.md](TOOL_APP_EXECUTION.md).
 
+## Two surfaces, one codebase *(exists)*
+
+Armable ships as two products from this one repository, each with its own page, bundle and navigation:
+
+| | Entry point | Interface code |
+| --- | --- | --- |
+| **Armable** — the drone bench | `index.html` → `src/web/main.tsx`, served at `/` | `src/web` |
+| **Armable Shows** — the drone-show studio | `show.html` → `src/show/main.tsx`, served at `/show` | `src/show`, `src/core`, `src/components`, `src/audio`, `src/agent` |
+
+Neither surface imports the other; `src/show/boundary.test.ts` enforces that. Everything below the interface is
+shared and unduplicated: the device layer (`src/device`), aircraft services (`src/aircraft`, including the
+storyboard-to-bench compiler in `bench-show*.ts`), the bench an assistant drives (`src/bench`), the map
+(`src/map`), the cloud transport and workspace platform (`src/platform`), the design system, and the whole of
+`server`. A browser tab tells the server which surface it is when it opens the live channel, so a request about
+the aircraft only ever reaches a bench tab.
+
 ## Where the code was when this plan was written
 
 This table describes the old local workspace, which is now in `archive/local-workspace/`. It is kept to explain the decisions below.

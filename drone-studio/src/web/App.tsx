@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
-import { Activity, Bot, Cable, ChevronDown, CloudUpload, Eye, FileUp, Hammer, LogOut, Menu as MenuIcon, MessageSquarePlus, Moon, Navigation, Plug, Radio, SlidersHorizontal, Sparkles, Square, Sun, Usb, X } from 'lucide-react';
+import { Activity, Bot, Cable, ChevronDown, CloudUpload, Eye, FileUp, Hammer, Layers3, LogOut, Menu as MenuIcon, MessageSquarePlus, Moon, Navigation, Plug, Radio, SlidersHorizontal, Square, Sun, Usb, X } from 'lucide-react';
 import { useState } from 'react';
 // The build planner loads when it is first opened, so the rest of Armable starts faster.
 const Build = lazy(() => import('./Build').then(m => ({ default: m.Build })));
@@ -19,21 +19,22 @@ import { Landing } from './Landing';
 import { PartPanel, Proposal } from './PartPanel';
 import { CHIP_PARTS, PART_NAME } from './parts';
 import { SettingsView } from './SettingsView';
-import { Show } from './Show';
 import { Signals } from './Signals';
 import { Sound } from './Sound';
 import { set, useStore, type View } from './store';
 import { Timeline } from './Timeline';
 
-/** Four places, no more: the drone, building one, shows, and a menu for everything about you and your assistant. */
-type Section = 'bench' | 'build' | 'create';
-const SECTIONS: [Section, typeof Activity, string, View][] = [['bench', Navigation, 'Drone', 'drone'], ['build', Hammer, 'Build', 'build'], ['create', Sparkles, 'Shows', 'show']];
+/**
+ * Three places, no more: the drone, building one, and a menu for everything about you and your assistant.
+ * Choreography is a different product and lives at /show; the only trace of it here is one link in the menu.
+ */
+type Section = 'bench' | 'build';
+const SECTIONS: [Section, typeof Activity, string, View][] = [['bench', Navigation, 'Drone', 'drone'], ['build', Hammer, 'Build', 'build']];
 const PAGES: Record<Section, [View, string][]> = {
-  bench: [['drone', 'Drone'], ['signals', 'Signals'], ['flights', 'Flights'], ['settings', 'Settings'], ['history', 'History']],
+  bench: [['drone', 'Drone'], ['signals', 'Signals'], ['flights', 'Flights'], ['sound', 'Sound'], ['settings', 'Settings'], ['history', 'History']],
   build: [],
-  create: [['show', 'Show'], ['sound', 'Sound']],
 };
-const sectionOf = (view: View): Section | undefined => view === 'build' ? 'build' : view === 'show' || view === 'sound' ? 'create' : view === 'connect' ? undefined : 'bench';
+const sectionOf = (view: View): Section | undefined => view === 'build' ? 'build' : view === 'connect' ? undefined : 'bench';
 const theme = () => document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 function toggleTheme() { const next = theme() === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = next; try { localStorage.setItem('armable.appearance.v1', next); } catch { /* private mode */ } }
 
@@ -88,6 +89,8 @@ function Menu({ guest, email }: { guest: boolean; email?: string }) {
           <label className="lu-menu-switch"><Eye size={17} /><span><b>Follow the assistant</b><small>Show what it’s looking at</small></span><input type="checkbox" checked={follow} onChange={() => set({ follow: !follow })} /></label>
           <hr />
           {guest && <button role="menuitem" className="is-signal" onClick={pick(() => set({ dialog: 'save' }))}><CloudUpload size={17} /><span><b>Save your bench</b><small>Keep it, from any browser</small></span></button>}
+          <a role="menuitem" href="/show" onClick={() => setOpen(false)}><Layers3 size={17} /><span><b>Armable Shows</b><small>Design a drone show</small></span></a>
+          <hr />
           <button role="menuitem" onClick={pick(() => set({ dialog: 'feedback' }))}><MessageSquarePlus size={17} /><span><b>Send feedback</b></span></button>
           <button role="menuitem" onClick={pick(toggleTheme)}><Moon size={17} className="only-light" /><Sun size={17} className="only-dark" /><span><b className="only-light">Dark mode</b><b className="only-dark">Light mode</b></span></button>
           <button role="menuitem" onClick={pick(() => void signOut())}><LogOut size={17} /><span><b>Sign out</b>{email && <small>{email}</small>}</span></button>
@@ -212,13 +215,12 @@ export function App() {
           {view === 'build' && <Suspense fallback={null}><Build /></Suspense>}
           {view === 'signals' && <Signals />}
           {view === 'flights' && <Flights />}
-          {view === 'show' && <Show />}
           {view === 'sound' && <Sound />}
           {view === 'settings' && <SettingsView />}
           {view === 'history' && <History />}
           {view === 'connect' && <><div className="lu-mode-bar"><ModeSwitch /></div><Connect /></>}
         </div>
-        {view !== 'show' && view !== 'build' && <Timeline />}
+        {view !== 'build' && <Timeline />}
       </main>
       <Overlays />
     </div>

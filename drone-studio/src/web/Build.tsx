@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { Antenna, ArrowLeftRight, BatteryFull, Bot, Camera, Check, ChevronDown, Cog, Cpu, ExternalLink, Frame, Gamepad2, Glasses, ListFilter, Package, PackageCheck, PlugZap, Plus, RadioReceiver, RadioTower, Satellite, Search, Share2, Sparkles, Star, Trash2, Wind, X, type LucideIcon } from 'lucide-react';
 import { analyse, cellRange, compareBuilds, emptyBuild, fitOf, groupOf, provenBuild, resolve, SLOT_LABEL, SLOTS, STYLES, type Build as BuildDoc, type BuildOp, type Check as BuildCheck, type Goal, type Item } from '../build/build';
 import { PART_BY_ID, PARTS, PROVEN, storeLinks, type Category, type Part, type Video } from '../build/catalog';
-import { api, ApiError } from './cloud';
+import { api, ApiError } from '../platform/cloud';
 import { publishFocus, refreshDocs } from './controller';
 import { Coil, Dial, Lamp } from './Instruments';
 import { PartArt, type Drawable } from './PartArt';

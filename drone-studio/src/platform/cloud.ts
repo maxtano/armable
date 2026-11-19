@@ -10,19 +10,22 @@ export async function api<T = any>(method: string, path: string, body?: unknown)
 }
 
 export type ServerMessage = { type: 'rpc'; id: string; request: any } | { type: 'event'; event: string; data?: any };
-/** One WebSocket that reconnects on its own. Messages sent while it is down are dropped, except the latest mirror. */
+/**
+ * One WebSocket that reconnects on its own. Messages sent while it is down are dropped, except the latest mirror.
+ * `surface` tells the server which workspace this tab is, so requests about the aircraft only ever reach the bench.
+ */
 export class Live {
   private ws?: WebSocket;
   private closed = false;
   private retry = 500;
   private lastMirror?: Mirror;
   readonly tab = `tab_${Math.random().toString(36).slice(2, 10)}`;
-  constructor(private onMessage: (message: ServerMessage) => void, private onState: (open: boolean) => void) {}
+  constructor(private surface: 'bench' | 'show', private onMessage: (message: ServerMessage) => void, private onState: (open: boolean) => void) {}
   open() {
     if (this.closed || this.ws) return;
     const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/live`);
     this.ws = ws;
-    ws.onopen = () => { this.retry = 500; ws.send(JSON.stringify({ type: 'hello', tab: this.tab })); if (this.lastMirror) ws.send(JSON.stringify({ type: 'mirror', mirror: this.lastMirror })); this.onState(true); };
+    ws.onopen = () => { this.retry = 500; ws.send(JSON.stringify({ type: 'hello', tab: this.tab, surface: this.surface })); if (this.lastMirror) ws.send(JSON.stringify({ type: 'mirror', mirror: this.lastMirror })); this.onState(true); };
     ws.onmessage = event => { try { this.onMessage(JSON.parse(String(event.data))); } catch { /* ignore a malformed frame */ } };
     ws.onclose = () => { this.ws = undefined; this.onState(false); if (!this.closed) setTimeout(() => this.open(), this.retry = Math.min(this.retry * 2, 8000)); };
     ws.onerror = () => ws.close();

@@ -47,6 +47,26 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     await page.close();
   });
 
+  it('keeps the two products apart: no show in the drone workspace, and Shows on its own page', async () => {
+    const { page, context, errors } = await signedInPage();
+    // The bench's whole navigation: two sections and a menu, and pages about one aircraft.
+    expect(await page.locator('.lu-rail > button').evaluateAll((els: Element[]) => els.map(e => e.getAttribute('data-label')))).toEqual(['Drone', 'Build']);
+    expect(await page.locator('.lu-tabs button').allInnerTexts()).toEqual(['Drone', 'Signals', 'Flights', 'Sound', 'Settings', 'History']);
+    expect((await page.locator('.lu-main').innerText()).toLowerCase()).not.toMatch(/storyboard|formation|keyframe|timeline/);
+    // The one way across is a link in the menu, to a page of its own.
+    await page.click('[aria-label="Menu"]');
+    expect(await page.locator('.lu-menu a[href="/show"]').innerText()).toContain('Armable Shows');
+    await page.click('.lu-menu a[href="/show"]');
+    await page.waitForSelector('.studio-home');
+    expect(await page.title()).toBe('Armable Shows');
+    // And the way back, to the bench, without any storyboard on it.
+    await page.click('.studio-home-crosslink');
+    await page.waitForSelector('.lu-rail');
+    expect(new URL(page.url()).pathname).toBe('/');
+    expect(errors).toEqual([]);
+    await context.close();
+  });
+
   it('connects a demo drone, draws it from its configuration, and changes a setting by hand with readback', async () => {
     const { page, errors } = await signedInPage();
     await page.click('[data-demo=ardupilot]');

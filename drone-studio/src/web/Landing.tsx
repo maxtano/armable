@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Cable, Eye, MessageSquare, MousePointerClick } from 'lucide-react';
-import { api, ApiError } from './cloud';
+import { api, ApiError } from '../platform/cloud';
 import { AiButtons, ClaudeSetup, FIRST_MESSAGE } from './ClaudeSetup';
 import { ConnectMenu } from './ConnectMenu';
 import { Stator } from './Diagram';
 import { Coil } from './Instruments';
 import { GoogleButton, tryAsGuest } from './Growth';
+import { isLocalPath } from '../../server/paths';
 
 /**
  * The intro page. One picture explains the product, with the most common new-build problem: it will not arm.
@@ -78,8 +79,8 @@ export function Landing({ onSignedIn, google }: { onSignedIn(): void; google?: b
     event.preventDefault(); setBusy(true); setError('');
     try {
       await api('POST', mode === 'signup' ? '/signup' : '/login', { email, password });
-      // An assistant app sent them here to sign in first: carry on with that request.
-      if (next?.startsWith('/authorize')) location.href = next; else onSignedIn();
+      // An assistant app, or Armable Shows, sent them here to sign in first: carry on with that request.
+      if (next && isLocalPath(next)) location.href = next; else onSignedIn();
     } catch (e) { setError(e instanceof ApiError ? e.message : 'Could not reach Armable.'); setBusy(false); }
   };
   return (

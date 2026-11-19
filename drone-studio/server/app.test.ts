@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PgStore } from './store';
 import { assistant, Browser, openTab, startApp, testPool } from './testkit';
@@ -445,6 +448,24 @@ describe('the Allow screen', () => {
     const grant = await person.connectAssistant('Claude');
     expect((await new Browser(app.base).get(`/api/oauth-client/${grant.clientId}`)).json).toEqual({ name: 'Claude' });
     expect((await new Browser(app.base).get('/api/oauth-client/nope')).status).toBe(404);
+  });
+});
+
+describe('two products, two pages', () => {
+  /** Armable is the drone bench and Armable Shows. Each is served its own page; neither leads through the other. */
+  it('serves the bench at / and Armable Shows at /show', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'armable-static-'));
+    writeFileSync(join(dir, 'index.html'), '<html><body>bench page</body></html>');
+    writeFileSync(join(dir, 'show.html'), '<html><body>shows page</body></html>');
+    const app = await startApp(undefined, dir); closers.push(() => app.close());
+    const page = async (path: string) => (await fetch(app.base + path)).text();
+    expect(await page('/')).toContain('bench page');
+    expect(await page('/build')).toContain('bench page');
+    expect(await page('/show')).toContain('shows page');
+    expect(await page('/show/')).toContain('shows page');
+    expect(await page('/show/anything')).toContain('shows page');
+    // Not a prefix match: nothing else is the show page.
+    expect(await page('/shows')).toContain('bench page');
   });
 });
 

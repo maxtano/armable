@@ -43,7 +43,7 @@ export async function openBench(services: Services, account: string, stack: 'ard
   const tabId = `tab_${Math.random().toString(36).slice(2, 8)}`;
   const bench = new Bench(runtime, { mirror: m => { hub.mirror = m; }, reply: (id, ok, payload) => hub.settle(id, ok, payload) }, { stateEveryMs: 20 });
   const executed: string[] = [];
-  hub.attach({ id: tabId, bench: true, active: Date.now(), send: message => {
+  hub.attach({ id: tabId, surface: 'bench', bench: true, active: Date.now(), send: message => {
     if (message.type === 'rpc') void bench.handle(message.id, message.request);
     // A proposal a standing permission approved: the tab carries it out, as the real tab does.
     else if (message.event === 'execute') { const p = message.data as any; executed.push(p.id); void bench.execute(p, p.grantConditions ?? []).then(outcome => services.complete(account, p.id, outcome)); }

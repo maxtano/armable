@@ -64,6 +64,16 @@ Browse the catalog with filters for price, brand, rating and fit. Swap any part 
 
 &nbsp;
 
+## Shows are a different product.
+
+**Armable Shows** is the other half of Armable: formations, keyframes, transitions, storyboards, and what the audience sees from where they stand. It has its own page at **[app.armable.ai/show](https://app.armable.ai/show)** and its own navigation.
+
+The two never lead through each other. Someone who came to flash an ESC is never shown a timeline; someone who came to design a show never walks through aircraft configuration to reach one. One link in the Armable menu goes across, and one link in the Shows header comes back.
+
+What they share is underneath: one account and one set of saved documents, the device layer that talks to real aircraft, the design system, and the tools your assistant uses. A storyboard can be compiled into a bench run and flown on a real drone — that path is the point of keeping them in one codebase.
+
+&nbsp;
+
 ## Works with what you fly.
 
 | | Betaflight · INAV | ArduPilot · PX4 |
@@ -77,7 +87,7 @@ Browse the catalog with filters for price, brand, rating and fit. Swap any part 
 | **Backups** | Snapshot, compare, restore | Snapshot, compare |
 | **Flight logs** | Blackbox download and analysis | Download and analysis |
 
-Also: a history of every change and test, short-lived permissions for small changes, offline use, drone show storyboards, startup tunes, and a demo drone for each firmware.
+Also: a history of every change and test, short-lived permissions for small changes, offline use, startup tunes, and a demo drone for each firmware.
 
 &nbsp;
 
@@ -111,7 +121,7 @@ Assistants connect to `<your address>/mcp`, a standard [MCP](https://modelcontex
 | `FEEDBACK_WEBHOOK_URL` | Optional. Posts feedback to a Discord channel as it arrives |
 | `ADMIN_EMAILS` | Optional. Who can read all feedback, with screenshots, at `/api/admin/feedback` |
 
-Anyone can try Armable without an account. Guest benches nobody opens for 30 days are deleted. Links that open straight in: `/?demo=betaflight`, `/?demo=ardupilot` and `/build`. A shared build lives at `/b/<id>`.
+Anyone can try Armable without an account. Guest benches nobody opens for 30 days are deleted. Links that open straight in: `/?demo=betaflight`, `/?demo=ardupilot` and `/build`. A shared build lives at `/b/<id>`. Armable Shows is served at `/show` from the same server, as its own page.
 
 To host it free, [`infra/gcp`](infra/gcp/README.md) is Terraform for one small server on Google Cloud’s always-free tier, behind Cloudflare, with HTTPS, nightly backups and a hard spending cap, from one command in Cloud Shell. To host it on AWS, [`infra/aws`](infra/aws/README.md) sets up CloudFront, ECS Fargate and RDS Postgres with keyless deploys from GitHub, for about $45 a month.
 

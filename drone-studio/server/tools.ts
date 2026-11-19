@@ -374,7 +374,7 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'show', title: 'Point the screen at something', level: 0, readOnly: true,
-    input: { target: z.string().min(1).max(80).describe('A part (motors, battery, receiver, gps, fc), an id from find (setting, reading, test, reference), a document or build id, or a view (drone, signals, flights, settings, show, sound).') },
+    input: { target: z.string().min(1).max(80).describe('A part (motors, battery, receiver, gps, fc), an id from find (setting, reading, test, reference), a document or build id, or a view (drone, signals, flights, sound, settings).') },
     description: 'Point Armable at a part, setting, chart, document or guide so the person sees what you mean. It only navigates; it never presses anything.',
     async run(args: { target: string }, ctx) {
       await gate(ctx, 0);
@@ -386,8 +386,8 @@ export const TOOLS: ToolDef[] = [
     },
   },
   {
-    name: 'capture_view', title: 'See the screen', level: 0, readOnly: true, input: { view: z.enum(['drone', 'signals', 'flights', 'show']).optional() },
-    description: 'Get an image of one Armable view. Use it only for questions that are truly visual; read and find are faster for facts.',
+    name: 'capture_view', title: 'See the screen', level: 0, readOnly: true, input: { view: z.enum(['drone', 'signals', 'flights']).optional() },
+    description: 'Get an image of one Armable bench view. Use it only for questions that are truly visual; read and find are faster for facts.',
     async run(args: { view?: string }, ctx) {
       await gate(ctx, 0);
       const image = await ctx.services.hub(ctx.account).call({ op: 'capture', view: args.view ?? 'drone' }, 15_000) as { png?: string; note?: string };

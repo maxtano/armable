@@ -40,7 +40,7 @@ export class CloudDemos {
       mirror: mirror => { if (!hub.tabs.has(tabId)) return; hub.mirror = { ...mirror, at: this.now() }; void this.services.observe(account, mirror).catch(() => {}); },
       reply: (id, ok, payload) => hub.settle(id, ok, payload),
     }, { stateEveryMs: 500 });
-    hub.attach({ id: tabId, bench: true, active: this.now(), send: message => {
+    hub.attach({ id: tabId, surface: 'bench', bench: true, active: this.now(), send: message => {
       if (message.type === 'rpc') void bench.handle(message.id, message.request);
       // A standing permission approved something: carry it out, as a tab does.
       else if (message.type === 'event' && message.event === 'execute') { const p = message.data as ProposalLike & { id: string; grantConditions?: Condition[] }; void bench.execute(p, p.grantConditions ?? []).then(outcome => this.services.complete(account, p.id, outcome)); }

@@ -35,9 +35,9 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { AudioEngine, type TrackInfo } from './audio/engine';
-import { applyOperations, type Operation } from './core/commands';
-import { parseProjectFile, projectBundle } from './core/export';
+import { AudioEngine, type TrackInfo } from '../audio/engine';
+import { applyOperations, type Operation } from '../core/commands';
+import { parseProjectFile, projectBundle } from '../core/export';
 import {
   cueStart,
   defaultProject,
@@ -54,26 +54,26 @@ import {
   type DroneEdit,
   type DroneKeyframe,
   type Vector3Tuple,
-} from './core/model';
-import type { ValidationReport } from './core/validation';
-import { FormationThumb } from './components/FormationThumb';
-import { Modal } from './components/Modal';
-import { Stage } from './components/Stage';
-import { Timeline } from './components/Timeline';
-import { EDIT_FPS, reorderOperations } from './core/timeline';
-import { DroneInspector, SelectionPicker } from './components/DroneInspector';
-import { SceneSource } from './components/SceneSource';
-import { TransitionInspector } from './components/TransitionInspector';
-import { ImmersiveStudy } from './components/ImmersiveStudy';
-import { AircraftPanel } from './components/AircraftPanel';
-import { compileStoryboardBenchPlan, createBenchStoryboard } from './core/bench-storyboard';
-import { createZorroStopStoryboard, isZorroStopStoryboard } from './core/zorro-test';
-import { StoryboardMotorPreview } from './components/StoryboardMotorPreview';
-import { ZorroStopPreview } from './components/ZorroStopPreview';
-import { isOneFootHoverStoryboard } from './components/first-flight-preview';
-import { createFirstLiveHoverStoryboard, isFirstLiveHoverStoryboard } from './core/first-live-show';
-import { StudioHome } from './components/StudioHome';
-import { WorkspaceNavigation, useWorkspaceNavigation } from './platform/WorkspaceNavigation';
+} from '../core/model';
+import type { ValidationReport } from '../core/validation';
+import { FormationThumb } from '../components/FormationThumb';
+import { Modal } from '../components/Modal';
+import { Stage } from '../components/Stage';
+import { Timeline } from '../components/Timeline';
+import { EDIT_FPS, reorderOperations } from '../core/timeline';
+import { DroneInspector, SelectionPicker } from '../components/DroneInspector';
+import { SceneSource } from '../components/SceneSource';
+import { TransitionInspector } from '../components/TransitionInspector';
+import { ImmersiveStudy } from '../components/ImmersiveStudy';
+import { AircraftPanel } from '../components/AircraftPanel';
+import { compileStoryboardBenchPlan, createBenchStoryboard } from '../core/bench-storyboard';
+import { createZorroStopStoryboard, isZorroStopStoryboard } from '../core/zorro-test';
+import { StoryboardMotorPreview } from '../components/StoryboardMotorPreview';
+import { ZorroStopPreview } from '../components/ZorroStopPreview';
+import { isOneFootHoverStoryboard } from '../components/first-flight-preview';
+import { createFirstLiveHoverStoryboard, isFirstLiveHoverStoryboard } from '../core/first-live-show';
+import { StudioHome } from '../components/StudioHome';
+import { WorkspaceNavigation, useWorkspaceNavigation } from '../platform/WorkspaceNavigation';
 import {
   createStoryboard,
   deleteStoryboard,
@@ -84,7 +84,7 @@ import {
   saveStoryboard,
   shouldPersistInitialStoryboard,
   type StoredStoryboard,
-} from './core/storyboards';
+} from '../core/storyboards';
 
 const STORAGE_KEY = 'armable.studio.project.v1';
 function initialProject(storage: Storage): Project {
@@ -240,7 +240,7 @@ export default function App({
     setReport(null);
     setChecking(true);
     setCheckError('');
-    const worker = new Worker(new URL('./core/review.worker.ts', import.meta.url), {
+    const worker = new Worker(new URL('../core/review.worker.ts', import.meta.url), {
       type: 'module',
     });
     worker.onmessage = (event) => {
@@ -566,7 +566,7 @@ export default function App({
   }
   function exportCsv() {
     setExporting(true);
-    const worker = new Worker(new URL('./core/review.worker.ts', import.meta.url), {
+    const worker = new Worker(new URL('../core/review.worker.ts', import.meta.url), {
       type: 'module',
     });
     exportWorker.current = worker;
@@ -713,6 +713,7 @@ export default function App({
     <>
       <StudioHome
         embedded={!!navigation}
+        onLeaveToBench={onPlatformHome}
         storyboards={entries.map(({ project: item, updatedAt }) => ({
           id: item.id,
           name: item.name,
