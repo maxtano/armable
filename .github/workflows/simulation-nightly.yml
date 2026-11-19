@@ -1,0 +1,39 @@
+# The nightly rows of the show engine's simulation matrix.
+#
+# An hour-long 50-drone show is ~1.8 M drone-state updates and runs in the
+# per-commit suite, which is where the headline test has to stay. At 200 and
+# 1,000 aircraft it is far larger, so it runs here instead.
+name: Show simulation, nightly
+on:
+  schedule:
+    # 03:30 UTC, after the day's merges have settled.
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: drone-studio
+    env:
+      CI: 'true'
+      NIGHTLY: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: drone-studio/package-lock.json
+      - run: npm ci
+      - name: 200 and 1,000 aircraft
+        run: npm run sim:nightly
+      - name: Regenerate the sample run report, and fail if it moved
+        # The committed report is a fixture. A drift here means the engine changed
+        # a figure a regulator would read, and that belongs in a reviewed diff.
+        run: |
+          npm run sim:report
+          git diff --exit-code -- src/core/sim/fixtures/sample-run-report.md
