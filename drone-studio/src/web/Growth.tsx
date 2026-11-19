@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, MessageSquarePlus, ThumbsDown, ThumbsUp, X } from 'lucide-react';
-import { api, ApiError } from './cloud';
+import { api, ApiError } from '../platform/cloud';
 import { captureView } from './capture';
 import { connectDemo, go, refreshMe, start } from './controller';
 import { get, set, toast, useStore } from './store';

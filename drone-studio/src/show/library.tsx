@@ -1,9 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { Project } from '../core/model';
 import { STORYBOARDS_STORAGE_KEY, type StoredStoryboard } from '../core/storyboards';
-import { api } from './cloud';
-import { refreshDocs } from './controller';
-import { useStore } from './store';
+import { api } from '../platform/cloud';
 
 const Studio = lazy(() => import('./Studio'));
 const CURRENT = 'armable.studio.project.v1';
@@ -44,15 +42,16 @@ class CloudStorage implements Storage {
         else if (known.json !== json) { const saved = await api('PUT', `/docs/${known.doc}`, { baseRevision: known.rev, content: entry.project, name: entry.project.name }); this.known.set(entry.project.id, { ...known, rev: saved.revision, json }); }
       } catch { this.onConflict(); return; }
     }
-    void refreshDocs();
   }
 }
 
-export function Show() {
-  const rev = useStore(s => s.docRevision), docs = useStore(s => s.docs);
+/**
+ * The storyboard library for this account, and the editor on top of it. `revision` goes up whenever the cloud says
+ * a document changed, which is what makes a storyboard edited elsewhere arrive here.
+ */
+export function ShowLibrary({ revision, onLeaveToBench }: { revision: number; onLeaveToBench?: () => void }) {
   const [entries, setEntries] = useState<{ doc: string; rev: number; project: Project; updatedAt: number }[]>();
   const [generation, setGeneration] = useState(0);
-  const signature = docs.filter(d => d.kind === 'storyboard').map(d => `${d.id}:${d.revision}:${d.updatedBy}`).join(',');
   useEffect(() => {
     let alive = true;
     void (async () => {
@@ -63,8 +62,8 @@ export function Show() {
       setEntries(previous => { const changed = !previous || loaded.some(l => l.by !== 'you' && previous.find(p => p.doc === l.doc)?.rev !== l.rev) || loaded.length < previous.length; if (changed) setGeneration(g => g + 1); return changed ? loaded : previous; });
     })();
     return () => { alive = false; };
-  }, [rev, signature]);
+  }, [revision]);
   const storage = useMemo(() => entries && new CloudStorage(entries, () => setGeneration(g => g + 1)), [entries, generation]);
-  if (!storage) return <div className="lu-empty"><h2>Loading shows</h2></div>;
-  return <div className="lu-show"><Suspense fallback={<div className="lu-empty"><h2>Loading editor</h2></div>}><Studio key={generation} storage={storage} /></Suspense></div>;
+  if (!storage) return <div className="sh-loading" role="status"><h2>Loading your storyboards</h2></div>;
+  return <Suspense fallback={<div className="sh-loading" role="status"><h2>Loading the editor</h2></div>}><Studio key={generation} storage={storage} onPlatformHome={onLeaveToBench} /></Suspense>;
 }

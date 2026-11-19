@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, Check, Copy, MessageCircle, Monitor, Sparkles, X } from 'lucide-react';
-import { api } from './cloud';
+import { api } from '../platform/cloud';
 import { chatgptChatLink, claudeAppChatLink, claudeChatLink, claudeInstallLink, openBeside } from './connectLinks';
 import { go, refreshMe } from './controller';
 import { boot } from './Growth';

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#e9e7e2" />
+    <meta name="description" content="Armable Shows — design a drone show: formations, keyframes, transitions, and what the audience sees." />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icon-64.png" type="image/png" sizes="64x64" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <title>Armable Shows</title>
+    <!-- Shown the moment the page arrives, until the studio takes over. Colours match the light and dark themes. -->
+    <style>
+      html, body { margin: 0; height: 100%; }
+      .boot { position: fixed; inset: 0; display: grid; place-items: center; background: #e9e7e2; color: #1c1c1a; font: 600 22px/1 Manrope, system-ui, sans-serif; letter-spacing: -0.01em; }
+      :root[data-theme='dark'] .boot { background: #151514; color: #efede7; }
+      .boot i { display: block; width: 112px; height: 2px; margin: 14px auto 0; border-radius: 1px; background: linear-gradient(90deg, transparent, #e2561c, transparent) 0 0 / 50% 100% no-repeat; animation: boot 1.2s ease-in-out infinite; }
+      @keyframes boot { from { background-position: -60% 0; } to { background-position: 160% 0; } }
+      @media (prefers-reduced-motion: reduce) { .boot i { animation: none; background-size: 100% 100%; } }
+    </style>
+    <script src="/theme.js"></script>
+  </head>
+  <body>
+    <div id="root"><div class="boot" role="status" aria-label="Loading Armable Shows"><div>Armable Shows<i></i></div></div></div>
+    <script type="module" src="/src/show/main.tsx"></script>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 @import url('/fonts/fonts.css');
-@import './design-system/tokens.css';
-@import './design-system/primitives.css';
+@import '../design-system/tokens.css';
+@import '../design-system/primitives.css';
 
 :root {
   /* Shared by the shell, lazy studio panels, and dialogs portaled to body. */

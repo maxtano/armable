@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { FileUp, Radio, Usb } from 'lucide-react';
 import { flashEspDevice } from '../device/flash/esp';
 import { WebSerialTransport } from '../device/transport';
-import { api } from './cloud';
+import { api } from '../platform/cloud';
 import { words } from './controller';
 import { set, toast } from './store';
 

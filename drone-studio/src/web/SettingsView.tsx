@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Search } from 'lucide-react';
 import type { PartId } from '../device/types';
-import { api } from './cloud';
+import { api } from '../platform/cloud';
 import { SettingControl } from './controls';
 import { loadSettings, runTest } from './controller';
 import { format, optionLabel, PART_NAME } from './parts';

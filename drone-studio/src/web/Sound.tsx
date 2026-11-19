@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Play, Plus, Square, Trash2 } from 'lucide-react';
-import { api, ApiError } from './cloud';
+import { api, ApiError } from '../platform/cloud';
 import { refreshDocs } from './controller';
 import { toast, useStore } from './store';
 

@@ -76,9 +76,11 @@ Each view follows the same five rules.
 | **Drone** | The living diagram. The home screen once an aircraft is connected. |
 | **Signals** | Live gauges and scrolling traces for attitude, power, and radio. |
 | **Flights** | Each recorded flight as a strip of charts with marked events, not a report. |
-| **Show** | The existing 3D storyboard editor. |
-| **Sound** | The existing melody composer. |
+| **Sound** | The existing melody composer, for ESC startup melodies. |
 | **All settings** | The full searchable parameter table, for exact work. |
+
+The 3D storyboard editor is not one of these views. It is **Armable Shows**, a separate product at `/show` with
+its own page and navigation; the bench carries one link to it and nothing else of it.
 
 ## What happens to today's screens
 
