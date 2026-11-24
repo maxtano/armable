@@ -173,6 +173,8 @@ body:not([data-app=""]) .no-app { display: none; }
   .steps b{font-family:var(--mono);font-size:.6rem;letter-spacing:.2em;color:var(--amber);display:block;margin-bottom:.6rem}
   .steps p{margin:0;font-weight:600;font-size:1rem;letter-spacing:-.01em}
   .steps span{display:block;margin-top:.3rem;font-family:var(--mono);font-size:.66rem;color:var(--faint);line-height:1.5}
+  .steps.bare>div{padding:1.1rem 1.1rem 1.2rem}   /* no second line to make room for */
+  .steps+.act{margin-top:1.7rem}
   @media(min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
 
   /* 02 in use */
