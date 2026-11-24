@@ -7,10 +7,10 @@
   <meta name="description" content="Plug in your FPV drone, ask Claude or ChatGPT what’s wrong, and approve the fix. Free, open-source drone setup tools for Betaflight, INAV, ArduPilot and PX4. Runs in your browser, on the AI subscription you already have." />
   <link rel="canonical" href="https://armable.ai/" />
   <meta name="robots" content="index, follow" />
-  <meta name="theme-color" content="#e9e7e2" />
+  <meta name="theme-color" content="#070707" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="preload" href="fonts/manrope-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="home.css" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Armable" />
   <meta property="og:title" content="Armable – Drone tools for your AI" />
@@ -56,102 +56,321 @@
 </head>
 <!-- The deploy workflow replaces __ARMABLE_URL__ with the hosted app's address (the ARMABLE_URL repository variable), or with nothing. -->
 <body data-app="__ARMABLE_URL__">
-  <div class="wrap">
-    <header class="top">
-      <a class="logo" href="./"><img src="favicon.svg" alt="" width="28" height="28" />Armable</a>
-      <nav class="links" aria-label="Site">
-        <a href="#how">How it works</a>
-        <a href="#build">Build a drone</a>
-        <a href="guides/quad-wont-arm/">Quad won’t arm?</a>
-        <a href="https://github.com/maxtano/armable">GitHub</a>
-      </nav>
-      <a class="btn needs-app" href="__ARMABLE_URL__">Open Armable</a>
-    </header>
 
-    <section class="hero">
-      <div>
-        <h1>Drone tools for <em>your AI.</em></h1>
-        <p class="lede">Plug in your FPV drone. Ask Claude or ChatGPT what’s wrong. Approve the fix. It runs on the subscription you already have.</p>
-        <div class="actions">
-          <a class="btn signal needs-app" href="__ARMABLE_URL__/?demo=betaflight">Try the demo drone</a>
-          <a class="btn primary no-app" href="https://github.com/maxtano/armable#run-it">Run it yourself</a>
-          <a class="btn" href="https://github.com/maxtano/armable">View on GitHub</a>
-        </div>
-        <span class="fine">Free and open source · No sign-up · No install · No API key<br />Betaflight · INAV · ArduPilot · PX4</span>
-      </div>
-      <img class="shot" src="media/proposal.jpg" width="1600" height="1000" alt="A quad that won’t arm in Armable: it hears nothing from its receiver, and Claude proposes switching the receiver protocol from SBUS to CRSF, with an Approve button." />
-    </section>
+<div class="stick pad" id="stick">
+  <div class="hold" style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+    <b>ARMABLE</b>
+    <a class="btn needs-app" href="__ARMABLE_URL__">Open Armable <i>&rsaquo;</i></a>
+  </div>
+</div>
 
-    <section id="how" aria-labelledby="how-title">
-      <h2 id="how-title">Say what’s wrong. See it fixed.</h2>
-      <p class="lede">Your assistant does the thinking. Armable does the hardware, and you make every call.</p>
-      <div class="grid3">
-        <article class="card"><span class="num">1</span><h3>Plug in</h3><p>Connect your flight controller over USB in Chrome or Edge. Nothing to install. No drone? Open the demo.</p></article>
-        <article class="card"><span class="num">2</span><h3>Ask your AI</h3><p>Add Armable to Claude, ChatGPT, Claude Code, Cursor or VS Code as a connector, with one link. Then say “my quad won’t arm”.</p></article>
-        <article class="card"><span class="num">3</span><h3>Approve</h3><p>The fix appears on the part it affects. Nothing changes until you click, and every change is read back to confirm it.</p></article>
-      </div>
-    </section>
+<div class="frame pad">
+  <video id="vid" autoplay muted loop playsinline style="display:none"></video>
+  <canvas id="film" width="1400" height="1900" aria-label="FPV quad in flight at dusk"></canvas>
+  <div class="veil"></div><div class="grid"></div>
+  <div class="sweep"></div>
+  <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
 
-    <section class="feature" aria-labelledby="fix-title">
-      <div>
-        <h2 id="fix-title">Fix the problems that stop you flying.</h2>
-        <p>Won’t arm, motors spinning the wrong way, no receiver signal, a shaky tune, GPS that never gets a fix. Your assistant reads every setting, runs the right checks and explains the cause in plain words.</p>
-        <p><a href="guides/quad-wont-arm/">Why won’t my quad arm? Every Betaflight arming flag, explained →</a></p>
-      </div>
-      <img class="shot" src="media/signals.jpg" width="1600" height="1000" loading="lazy" alt="Live readings on dials: battery voltage per cell, current, tilt and radio channels, above live charts." />
-    </section>
+  <div class="top rise" style="--d:.06s">
+    <span class="id"><b>ARMABLE</b><span>MCP-01</span></span>
+    <a class="needs-app" href="__ARMABLE_URL__">Sign in</a>
+  </div>
 
-    <section id="build" class="feature flip" aria-labelledby="build-title">
-      <div>
-        <h2 id="build-title">No drone yet? Build one.</h2>
-        <p>Choose what you want to fly and your budget. Pick every part, or start from a proven build. Armable checks that the frame, motors, ESC, props, battery, receiver and video system work together, and shows the cost, take-off weight, thrust-to-weight and flight time as you go.</p>
-        <p>Every part links to the stores that sell it. Share a build with one link.</p>
-      </div>
-      <img class="shot" src="media/build.jpg" width="1600" height="1000" loading="lazy" alt="Building a 5-inch FPV drone: dials for cost, take-off weight, thrust to weight and flight time, and a compatibility check." />
-    </section>
+  <div class="mid">
+    <h1>
+      <span class="w"><span style="--d:.18s">Hands</span></span>
+      <span class="w"><span style="--d:.27s">for your</span></span>
+      <span class="w"><span class="amb" style="--d:.36s">agent</span></span>
+    </h1>
+    <p class="lead hero rise" style="--d:.52s">Armable plugs your drone into Claude or ChatGPT,
+       so it can read it, fix it, and help you build one.</p>
 
-    <section aria-labelledby="works-title">
-      <h2 id="works-title">Works with what you fly.</h2>
-      <table>
-        <thead><tr><th></th><th>Betaflight · INAV</th><th>ArduPilot · PX4</th></tr></thead>
-        <tbody>
-          <tr><th scope="row">Live readings</th><td>Attitude, battery, radio, motors, GPS, sensors, arming blocks</td><td>Plus vibration, EKF and status messages</td></tr>
-          <tr><th scope="row">Settings</th><td>Every value, with ranges and readback</td><td>Every parameter, with readback</td></tr>
-          <tr><th scope="row">Tests</th><td>Health checks, motor spin, calibration</td><td>Plus level, gyro, barometer and arming checks</td></tr>
-          <tr><th scope="row">ESCs</th><td>BLHeli_S, Bluejay and AM32</td><td>Through passthrough</td></tr>
-          <tr><th scope="row">Firmware</th><td>Flight controller, ExpressLRS receivers</td><td>Flight controller</td></tr>
-          <tr><th scope="row">Flight logs</th><td>Blackbox download and analysis</td><td>Download and analysis</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section aria-labelledby="faq-title">
-      <h2 id="faq-title">Questions</h2>
-      <div style="margin-top: 24px">
-        <details open><summary>Do I need an API key?</summary><p>No. Armable has no AI of its own. You add it to Claude or ChatGPT as a connector, and it runs on the subscription you already have, with your history and preferences intact.</p></details>
-        <details><summary>Which drones does it work with?</summary><p>Anything running Betaflight, INAV, ArduPilot or PX4, connected over USB in Chrome or Edge. ESCs on BLHeli_S, Bluejay or AM32, and ExpressLRS receivers.</p></details>
-        <details><summary>Can the AI change my drone without asking?</summary><p>No. It can read, test and propose. Every change waits for your approval, and is read back from the drone to confirm it. It can never arm the drone, spin motors or flash firmware on its own.</p></details>
-        <details><summary>Do I need a drone to try it?</summary><p>No. The demo drone has a real problem to solve: it won’t arm. Ask your AI why.</p></details>
-        <details><summary>Is it free?</summary><p>Yes. Free and open source, under the Apache 2.0 licence.</p></details>
-      </div>
-    </section>
-
-    <div class="cta">
-      <h2>Your drone. Your AI. One bench.</h2>
-      <p>Free, open source, and running in your browser.</p>
-      <a class="btn needs-app" href="__ARMABLE_URL__/?demo=betaflight">Try the demo drone</a>
-      <a class="btn no-app" href="https://github.com/maxtano/armable">Get it on GitHub</a>
+    <div class="act rise" style="--d:.60s">
+      <a class="btn needs-app" href="__ARMABLE_URL__">Open Armable <i>&rsaquo;</i></a>
+      <a class="btn ghost needs-app" href="__ARMABLE_URL__/?demo=betaflight">Try the demo drone</a>
+      <a class="btn no-app" href="https://github.com/maxtano/armable#run-it">Run it yourself</a>
     </div>
 
-    <footer>
-      <span>Armable · Apache 2.0</span>
-      <a href="guides/quad-wont-arm/">Quad won’t arm?</a>
-      <a href="https://github.com/maxtano/armable">GitHub</a>
-      <a href="https://github.com/maxtano/armable/blob/main/SECURITY.md">Security</a>
-      <a class="needs-app" href="__ARMABLE_URL__/terms.html">Terms</a>
-      <a class="needs-app" href="__ARMABLE_URL__/privacy.html">Privacy</a>
-      <span>You approve every change to your aircraft.</span>
-    </footer>
   </div>
+
+  <a class="cue" href="#connect">More <s>&darr;</s></a>
+
+  <div class="tel" id="tel">
+    <div class="rise" style="--d:.80s"><div class="k">Receiver</div><div class="v warn" id="t1">NO SIGNAL</div></div>
+    <div class="rise" style="--d:.86s"><div class="k">Arming</div><div class="v warn" id="t2">BLOCKED</div></div>
+    <div class="rise" style="--d:.92s"><div class="k">Pack</div><div class="v" id="t3">16.1 V</div></div>
+  </div>
+</div>
+
+<section class="pad">
+  <div class="hold">
+    <h2 class="rv">Your assistant already knows FPV. It just cannot reach your drone.</h2>
+    <p class="lead rv" style="--d:.06s">Ask it why your quad will not arm and you get a decent guess.
+       It cannot open your flight controller, read what is actually set, or change a thing.
+       Armable is the part that can.</p>
+
+    <div class="vs rv" style="--d:.12s">
+      <div><b>On its own</b><p>It guesses from whatever you can describe.</p></div>
+      <div class="on"><b>With Armable</b><p>It reads the drone, runs the tests, and fixes it in front of you.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="hold">
+    <h2 class="rv">This is what using it looks like.</h2>
+    <p class="lead rv" style="--d:.06s">Plug the quad in over USB, props off, then talk to your
+       assistant the way you already do.</p>
+
+    <div class="panel rv" style="--d:.12s">
+      <div class="ph"><i></i><span id="host">Claude</span></div>
+      <div class="pb">
+        <div class="msg"><b>You</b><p class="said"><span id="you"></span><span class="cur"></span></p></div>
+        <div class="ran" id="ran"><i></i><span id="rant"></span></div>
+        <div class="msg"><b>Claude</b><p class="reply" id="bot"></p></div>
+      </div>
+    </div>
+    <div class="who"><span id="bar"><b></b></span></div>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="hold">
+    <h2 class="rv">What it can get at, once it has hands.</h2>
+    <p class="lead rv" style="--d:.06s">Betaflight, INAV, ArduPilot and PX4, over a USB cable,
+       the same way a person with a configurator would.</p>
+
+    <dl class="spec rv" style="--d:.12s">
+      <div><dt>Firmware</dt><dd>Betaflight<br>INAV<br>ArduPilot<br>PX4</dd></div>
+      <div><dt>Reads</dt><dd>Every setting<br>Receiver and link<br>Motor and ESC<br>Blackbox logs</dd></div>
+      <div><dt>Writes</dt><dd>PIDs and rates<br>Filters<br>Modes and failsafe<br>Protocols</dd></div>
+      <div><dt>Flashes</dt><dd>Flight controller<br>ESCs<br>Bluejay / AM32<br>With a backup first</dd></div>
+    </dl>
+
+    <div class="safe rv" style="--d:.18s">
+      <i></i>
+      <p><b>You make every call.</b> Your assistant can read, test and propose. It cannot approve a change,
+         confirm the props are off, or arm the drone. Nothing is written until you click, and every change
+         is read back from the drone to confirm it.</p>
+    </div>
+  </div>
+</section>
+
+<section class="pad">
+  <div class="hold">
+    <h2 class="rv">No drone yet? It will help you build one.</h2>
+    <p class="lead rv" style="--d:.06s">Say what you want to fly and what you can spend. It picks the parts,
+       checks they work together, and shows the cost, weight, thrust and flight time before you buy anything.</p>
+
+    <div class="steps rv" style="--d:.12s">
+      <div><b>Pick</b><p>What you want to fly</p><span>Freestyle, long range, cinematic, or a proven build to start from.</span></div>
+      <div><b>Check</b><p>That it all fits</p><span>Every part against every other part, with the reason when it does not.</span></div>
+      <div><b>Fly</b><p>Then set it up together</p><span>Plug the finished quad in and your assistant configures it.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="pad" id="connect">
+  <div class="hold">
+    <h2 class="rv">Getting started takes about a minute.</h2>
+
+    <div class="steps rv" style="--d:.06s">
+      <div><b>01</b><p>Open Armable</p><span>Pick Claude or ChatGPT and follow three clicks. Nothing to install, no API key.</span></div>
+      <div><b>02</b><p>Say "Start Armable"</p><span>In a new chat. Armable opens beside it.</span></div>
+      <div><b>03</b><p>Plug the quad in</p><span>USB, props off, in Chrome or Edge. Or open the demo drone instead.</span></div>
+    </div>
+
+    <div class="act rv" style="--d:.12s" id="go">
+      <a class="btn big needs-app" href="__ARMABLE_URL__">Open Armable <i>&rsaquo;</i></a>
+      <a class="btn ghost needs-app" href="__ARMABLE_URL__/?demo=betaflight">Try the demo drone</a>
+      <a class="btn no-app" href="https://github.com/maxtano/armable#run-it">Run it yourself</a>
+    </div>
+    <p class="where rv" style="--d:.16s">Works with Claude, ChatGPT, Claude Code, Cursor and VS Code.</p>
+
+    <details class="byhand rv" style="--d:.2s">
+      <summary>Claude Code, or your own server</summary>
+      <p class="where">Armable can run at an address of your own. Point Claude Code at it:</p>
+      <div class="conn"><code id="snip2">claude mcp add --transport http armable &lt;your address&gt;/mcp</code><button id="copy2">Copy</button></div>
+    </details>
+  </div>
+</section>
+
+<section class="pad mission">
+  <div class="hold">
+    <p class="rv">Armable is free and open source. It has no AI of its own and never asks for an API key,
+       and you can read every byte it writes.</p>
+    <p class="rv" style="--d:.06s">Run it on your own machine with one command, or use the hosted one.</p>
+  </div>
+</section>
+
+<footer class="pad">
+  <div class="hold">
+    <div class="fgrid">
+      <div class="fcol rv"><b>Code</b><a href="https://github.com/maxtano/armable">GitHub</a><span>Apache 2.0</span></div>
+    </div>
+    <div class="sig"><i></i><span>Armable has no AI of its own</span>
+      <a class="needs-app" href="__ARMABLE_URL__/terms.html">Terms</a>
+      <a class="needs-app" href="__ARMABLE_URL__/privacy.html">Privacy</a></div>
+  </div>
+</footer>
+
+<script>
+(function(){
+var reduce=matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function lit(){document.body.classList.add('lit');}
+function go(){lit();document.body.classList.add('go');}
+if(document.fonts&&document.fonts.ready&&!reduce){
+  /* flush the starting styles first, or the class lands before there is anything to transition from */
+  void document.body.offsetHeight; lit();
+  var waited=new Promise(function(r){setTimeout(r,300);});
+  /* not requestAnimationFrame: it never fires in a background tab, and the reveal would wait. */
+  Promise.race([document.fonts.ready,waited]).then(go);
+} else setTimeout(go,40);
+
+/* real clip: var FILM='media/flight.mp4' */
+var FILM=null,vid=document.getElementById('vid'),cv=document.getElementById('film');
+if(FILM){vid.src=FILM;vid.style.display='block';cv.style.display='none';document.getElementById('slot').style.display='none';}
+
+var x=cv.getContext('2d'),W,H,t=0,pts=[];
+for(var i=0;i<78;i++)pts.push({x:Math.random(),y:Math.random(),z:Math.random()*.9+.1,w:Math.random()>.9});
+function size(){var r=cv.getBoundingClientRect();if(!r.width)return;
+  var d=Math.min(2,devicePixelRatio||1);cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);W=cv.width;H=cv.height;}
+size();addEventListener('resize',size);
+var onscreen=true;
+function frame(){
+  requestAnimationFrame(frame);
+  if(!onscreen)return;                       /* stop burning a GPU once the hero scrolls away */
+  t+=reduce?0:1;
+  var bank=Math.sin(t/180)*.085, hz=H*.44+Math.sin(t/112)*H*.022;
+  var g=x.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0d1420');g.addColorStop(.3,'#251f1b');g.addColorStop(.44,'#5d3418');
+  g.addColorStop(.5,'#8d4a16');g.addColorStop(.58,'#2a1a10');g.addColorStop(1,'#050505');
+  x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.save();x.translate(W/2,hz);x.rotate(bank);x.translate(-W/2,-hz);
+  var bl=x.createLinearGradient(0,hz-H*.13,0,hz);
+  bl.addColorStop(0,'rgba(255,122,24,0)');bl.addColorStop(1,'rgba(255,122,24,.34)');
+  x.fillStyle=bl;x.fillRect(-W,hz-H*.13,W*3,H*.135);
+  x.beginPath();x.moveTo(-W,hz);
+  for(var rx=-W;rx<=W*2;rx+=24){x.lineTo(rx,hz-Math.abs(Math.sin(rx/240)*H*.02+Math.sin(rx/68)*H*.008));}
+  x.lineTo(W*2,H*2);x.lineTo(-W,H*2);x.closePath();x.fillStyle='#050506';x.fill();
+  for(var j=0;j<pts.length;j++){var p=pts[j];
+    if(!reduce){p.y+=.0012+p.z*.0052;if(p.y>1){p.y=.015;p.x=Math.random();}}
+    var py=hz+p.y*(H-hz)*1.08;if(py<hz)continue;
+    var sc=(py-hz)/(H-hz),px=p.x*W*1.5-W*.25;
+    x.globalAlpha=Math.min(1,sc*1.7)*(.26+p.z*.6);
+    x.strokeStyle=p.w?'#ffdcb0':'#ff7a18';
+    x.lineWidth=.8+sc*2.9*p.z;
+    x.beginPath();x.moveTo(px,py);x.lineTo(px,py+sc*H*.02*p.z);x.stroke();}
+  x.globalAlpha=1;x.restore();
+  var v=x.createRadialGradient(W/2,H*.44,H*.12,W/2,H*.44,H*.6);
+  v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.82)');
+  x.fillStyle=v;x.fillRect(0,0,W,H);
+}
+frame();
+
+/* copy, on both connect lines */
+function wire(codeId,btnId){
+  var snip=document.getElementById(codeId),copy=document.getElementById(btnId);
+  copy.addEventListener('click',function(){
+    function ok(){copy.textContent='Copied';copy.className='done';
+      setTimeout(function(){copy.textContent='Copy';copy.className='';},1800);}
+    if(navigator.clipboard&&navigator.clipboard.writeText)
+      navigator.clipboard.writeText(snip.textContent).then(ok,sel); else sel();
+    function sel(){var r=document.createRange();r.selectNodeContents(snip);
+      var s=getSelection();s.removeAllRanges();s.addRange(r);ok();}
+  });
+}
+wire('snip2','copy2');
+
+/* telemetry flips once, the way the fix actually lands */
+var t1=document.getElementById('t1'),t2=document.getElementById('t2'),t3=document.getElementById('t3');
+function put(el,txt,cls){
+  if(reduce){el.textContent=txt;el.className='v '+cls;return;}
+  el.classList.add('set');
+  setTimeout(function(){el.textContent=txt;el.className='v '+cls;},190);
+}
+function cycle(){
+  put(t1,'NO SIGNAL','warn');
+  put(t2,'BLOCKED','warn');
+  setTimeout(function(){put(t1,'CRSF LINK','ok');},reduce?0:2600);
+  setTimeout(function(){put(t2,'READY','ok');},reduce?0:3300);
+  setTimeout(cycle,reduce?9000:7200);
+}
+setTimeout(cycle,reduce?0:1500);
+setInterval(function(){ if(!reduce) t3.textContent=(15.8+Math.random()*.5).toFixed(1)+' V'; },900);
+
+/* the sticky bar takes over once the hero is behind you */
+var stick=document.getElementById('stick'),hero=document.querySelector('.frame');
+if('IntersectionObserver' in window){
+  new IntersectionObserver(function(es){
+    es.forEach(function(e){ onscreen=e.isIntersecting;
+      stick.classList.toggle('on',!e.isIntersecting); });
+  },{threshold:0}).observe(hero);
+
+  /* each section arrives the way the hero did */
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);} });
+  },{threshold:.15,rootMargin:'0px 0px -6% 0px'});
+  [].forEach.call(document.querySelectorAll('.rv'),function(el){io.observe(el);});
+} else {
+  [].forEach.call(document.querySelectorAll('.rv'),function(el){el.classList.add('in');});
+}
+
+/* 02 - one stream, a beginner and an expert in the same queue, so nobody has to pick a door */
+var TURNS=[
+  {q:"My quad won't arm.",
+   r:'armable read 214 settings',
+   a:"Your receiver is talking CRSF but the board is set to SBUS, so it hears nothing. I have switched it over. Try arming now."},
+  {q:"I've never flown. What do I need?",
+   r:'armable checked 38 parts',
+   a:"A 5 inch analog build comes to about $312, and everything on that list fits together. Want me to walk you through it?"},
+  {q:"Bluejay is on. Turn on RPM filtering.",
+   r:'armable wrote 6 settings',
+   a:"Done. Bidirectional DShot is on, pole count set to 14, and all four ESCs are reporting RPM back to the gyro filter."},
+  {q:"Will it lift a GoPro?",
+   r:'armable weighed the build',
+   a:"It comes out at 612 g with the GoPro on, which leaves you 4.1 to 1 on thrust. It will lift it easily."}
+];
+var you=document.getElementById('you'),ran=document.getElementById('ran'),rant=document.getElementById('rant'),
+    bot=document.getElementById('bot'),bar=document.getElementById('bar'),n=0,live=false,timer=null;
+
+function type(s,done){var i=0;if(reduce){you.textContent=s;return done();}
+  (function k(){you.textContent=s.slice(0,++i);
+    i<s.length?timer=setTimeout(k,25+Math.random()*22):timer=setTimeout(done,320);})();}
+function erase(done){if(reduce)return done();var s=you.textContent;
+  (function k(){s=s.slice(0,-1);you.textContent=s;s.length?timer=setTimeout(k,9):done();})();}
+/* the reply arrives a few words at a time, the way one lands in a chat window */
+function say(txt){
+  bot.innerHTML='';
+  txt.split(' ').forEach(function(w,i){
+    var el=document.createElement('span');el.textContent=(i?' ':'')+w;bot.appendChild(el);
+    if(reduce){el.classList.add('in');return;}
+    setTimeout(function(){el.classList.add('in');},90+i*34);
+  });
+}
+function play(){
+  if(!live)return;
+  var it=TURNS[n++%TURNS.length];
+  ran.classList.remove('in');bot.innerHTML='';
+  bar.classList.remove('on');void bar.offsetWidth;bar.classList.add('on');
+  type(it.q,function(){
+    rant.textContent=it.r; timer=setTimeout(function(){ran.classList.add('in');},reduce?0:260);
+    timer=setTimeout(function(){say(it.a);},reduce?0:720);
+    timer=setTimeout(function(){bot.innerHTML='';ran.classList.remove('in');
+      erase(function(){timer=setTimeout(play,220);});},reduce?1600:7000);
+  });
+}
+/* it only runs while you are looking at it */
+if('IntersectionObserver' in window){
+  new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting&&!live){live=true;play();}
+      else if(!e.isIntersecting&&live){live=false;clearTimeout(timer);}
+    });
+  },{threshold:.3}).observe(document.querySelector('.panel'));
+} else {live=true;play();}
+})();
+</script>
 </body>
 </html>
