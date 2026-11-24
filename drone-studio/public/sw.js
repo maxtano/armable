@@ -1,6 +1,8 @@
-/* Armable service worker: keeps the app itself available offline. It never caches the API, sign-in or MCP. */
-const CACHE = 'armable-shell-v1';
+/* Armable service worker: keeps both workspaces available offline. It never caches the API, sign-in or MCP. */
+const CACHE = 'armable-shell-v2';
 const SHELL = ['/', '/favicon.svg', '/fonts/fonts.css'];
+/* The bench and Armable Shows are separate pages, so each is cached under its own key. */
+const shell = path => (/^\/show(\/|$)/.test(path) ? '/show' : '/');
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -21,9 +23,10 @@ self.addEventListener('fetch', event => {
   }
   // Pages: network first, falling back to the cached app.
   if (event.request.mode === 'navigate') {
+    const key = shell(url.pathname);
     event.respondWith(fetch(event.request).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put('/', copy)); }
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(key, copy)); }
       return res;
-    }).catch(() => caches.match('/')));
+    }).catch(() => caches.match(key)));
   }
 });

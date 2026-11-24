@@ -1,0 +1,37 @@
+/* Armable Shows: the little that belongs to this surface rather than to the studio. Everything visual comes from
+   the shared design system; the studio's own stylesheet (studio.css) covers the editor itself. */
+
+.boot {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  background: var(--ds-bg); color: var(--ds-text);
+  font: var(--weight-strong) 22px/1 var(--font-sans); letter-spacing: -0.01em;
+}
+.boot i {
+  display: block; width: 112px; height: 2px; margin: 14px auto 0; border-radius: 1px;
+  background: linear-gradient(90deg, transparent, var(--ds-primary), transparent) 0 0 / 50% 100% no-repeat;
+  animation: sh-boot 1.2s ease-in-out infinite;
+}
+@keyframes sh-boot { from { background-position: -60% 0; } to { background-position: 160% 0; } }
+@media (prefers-reduced-motion: reduce) { .boot i { animation: none; background-size: 100% 100%; } }
+
+.sh-loading { display: grid; place-items: center; min-height: 100vh; color: var(--ds-text-muted); }
+.sh-loading h2 { font: var(--weight-medium) var(--text-lg)/1.3 var(--font-sans); }
+
+.sh-gate { display: grid; place-items: center; min-height: 100vh; padding: var(--space-6); background: var(--ds-bg); }
+.sh-gate-card {
+  display: grid; justify-items: start; gap: var(--space-4); max-width: 30rem;
+  border: 1px solid var(--ds-border); border-radius: var(--radius-panel);
+  background: var(--ds-surface); padding: var(--space-8); color: var(--ds-text);
+}
+.sh-gate-mark {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-control);
+  background: var(--ds-feature-bg); color: var(--ds-feature-text);
+}
+.sh-gate-card h1 { margin: 0; font: var(--weight-strong) var(--text-title)/1.15 var(--font-sans); letter-spacing: -0.02em; }
+.sh-gate-card p { margin: 0; color: var(--ds-text-muted); font-size: var(--text-base); line-height: var(--leading-body); }
+.sh-gate-error { color: var(--ds-danger); }
+.sh-gate-aside {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  color: var(--ds-text-subtle); font-size: var(--text-sm); text-decoration: none;
+}
+.sh-gate-aside:hover { color: var(--ds-text); text-decoration: underline; }

@@ -165,9 +165,10 @@ h1, h2, h3 { letter-spacing: -0.02em; }
 .lu-menu-wrap { position: relative; }
 .lu-menu { position: absolute; left: calc(100% + 10px); bottom: 0; z-index: 320; display: grid; gap: 2px; width: 270px; padding: 6px; border: 1px solid var(--ds-border); border-radius: 4px; background: var(--ds-surface); box-shadow: var(--shadow-dialog); animation: lu-in 140ms var(--motion-ease); }
 .lu-menu.is-down { left: auto; right: 0; bottom: auto; top: calc(100% + 8px); width: 220px; max-height: 70vh; overflow: auto; }
-.lu-menu > button, .lu-menu > label { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 10px; border: 0; border-radius: 4px; background: none; color: var(--ds-text); text-align: left; cursor: pointer; }
-.lu-menu > button:hover, .lu-menu > label:hover { background: var(--ds-surface-raised); }
+.lu-menu > button, .lu-menu > label, .lu-menu > a { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 10px; border: 0; border-radius: 4px; background: none; color: var(--ds-text); text-align: left; cursor: pointer; }
+.lu-menu > button:hover, .lu-menu > label:hover, .lu-menu > a:hover { background: var(--ds-surface-raised); }
 .lu-menu > button.is-current { background: var(--ds-surface-raised); }
+.lu-menu > a { text-decoration: none; }
 .lu-menu svg { flex-shrink: 0; color: var(--ds-text-subtle); }
 .lu-menu span { display: grid; flex: 1; min-width: 0; }
 .lu-menu b { font-weight: 700; font-size: 14px; }

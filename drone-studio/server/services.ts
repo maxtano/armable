@@ -58,7 +58,7 @@ export interface Focus { tab: string; at: number; route?: string; part?: string;
 export type TabMessage =
   | { type: 'rpc'; id: string; request: RemoteRequest | { op: 'capture'; view: string } }
   | { type: 'event'; event: string; data?: unknown };
-interface Tab { id: string; send(message: TabMessage): void; bench: boolean; active: number }
+interface Tab { id: string; send(message: TabMessage): void; surface: 'bench' | 'show'; bench: boolean; active: number }
 
 const PROPOSAL_TTL = 10 * 60_000;
 const TERMINAL: ProposalStatus[] = ['done', 'failed', 'rejected', 'expired', 'cancelled'];
@@ -84,7 +84,7 @@ export class Hub {
   notify(event: string, data?: unknown) { for (const tab of this.tabs.values()) tab.send({ type: 'event', event, data }); }
   /** Ask the bench tab to do something on the aircraft. Only observe-level requests exist in this vocabulary. */
   call(request: RemoteRequest | { op: 'capture'; view: string }, timeoutMs = 30_000): Promise<unknown> {
-    const tab = request.op === 'capture' ? [...this.tabs.values()].sort((a, b) => b.active - a.active)[0] : this.benchTab();
+    const tab = request.op === 'capture' ? [...this.tabs.values()].filter(t => t.surface === 'bench').sort((a, b) => b.active - a.active)[0] : this.benchTab();
     if (!tab) return Promise.reject(new ToolError('no_bench', request.op === 'capture' ? 'Armable is not open in any browser tab.' : 'Armable is not open with a drone connected.', 'Ask the person to open Armable and connect the drone, then try again.'));
     const id = newId(6);
     return new Promise((resolve, reject) => {

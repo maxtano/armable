@@ -375,6 +375,8 @@ export function createApp(options: AppOptions) {
       const head = `<title>${escape(title)}</title><meta property="og:title" content="${escape(title)}" /><meta property="og:description" content="${escape(description)}" /><meta name="description" content="${escape(description)}" />`;
       res.type('html').send(page().replace(/<title>[^<]*<\/title>/, head));
     });
+    // Two products, two pages. /show is Armable Shows; everything else is the bench.
+    app.get(/^\/show(\/.*)?$/, (_req, res) => res.set('Cache-Control', 'no-cache').sendFile(resolve(dir, 'show.html')));
     app.get(/^\/(?!api\/|mcp|live|\.well-known\/).*/, (_req, res) => res.set('Cache-Control', 'no-cache').sendFile(resolve(dir, 'index.html')));
   }
 
@@ -399,7 +401,7 @@ export function createApp(options: AppOptions) {
       try { m = JSON.parse(String(raw)); } catch { return; }
       if (m.type === 'hello' && typeof m.tab === 'string' && !tabId) {
         tabId = m.tab.slice(0, 40);
-        hub.attach({ id: tabId, bench: false, active: Date.now(), send });
+        hub.attach({ id: tabId, surface: m.surface === 'show' ? 'show' : 'bench', bench: false, active: Date.now(), send });
         void (async () => send({ type: 'event', event: 'hello', data: { mode: (await services.account(account))?.assistantMode ?? 'propose', proposals: (await services.proposals(account)).filter(p => p.status === 'awaiting_approval' || p.status === 'approved') } }))();
         return;
       }

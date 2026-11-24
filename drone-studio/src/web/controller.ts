@@ -6,9 +6,9 @@ import { Runtime } from '../device/runtime';
 import { ardupilotDemo, betaflightDemo, type PortSource } from '../device/sim/demo';
 import { WebSerialTransport } from '../device/transport';
 import type { Change, Condition, PartId, PromptRequest, TestSpec } from '../device/types';
-import { api, ApiError, flushOutbox, Live, offlineError, queue, type ServerMessage } from './cloud';
+import { api, ApiError, flushOutbox, Live, offlineError, queue, type ServerMessage } from '../platform/cloud';
 import { captureView } from './capture';
-import { askHelpful, clearMark, EMPTY_SNAP, get, mark, set, toast, type ProposalCard, type View } from './store';
+import { askHelpful, clearMark, EMPTY_SNAP, get, mark, set, toast, type DocMeta, type ProposalCard, type View } from './store';
 
 /**
  * The one place that owns the drone connection in this tab. Every button calls a function here; every
@@ -29,7 +29,7 @@ const partOfId = (id: string | undefined): string | undefined => {
   return ({ battery: 'battery', gps: 'gps', rc: 'receiver', motor: 'motors', esc: 'motors', escs: 'motors', airframe: 'motors', attitude: 'fc', fc: 'fc', sensors: 'fc', link: 'link', arming: 'safety', log: 'logging' } as Record<string, string>)[head];
 };
 const PARTS = ['fc', 'motors', 'battery', 'receiver', 'gps', 'link', 'tuning', 'safety', 'osd', 'vtx', 'lights', 'ports', 'compass', 'logging'];
-const VIEWS: View[] = ['drone', 'build', 'signals', 'flights', 'show', 'sound', 'settings', 'history', 'connect'];
+const VIEWS: View[] = ['drone', 'build', 'signals', 'flights', 'sound', 'settings', 'history', 'connect'];
 
 const ME = 'armable.me.v1';
 /** Who is signed in. Offline, the last answer is used so the bench still opens. */
@@ -46,7 +46,8 @@ export async function refreshMe() {
     set({ me }); return me;
   }
 }
-export async function refreshDocs() { set({ docs: await api('GET', '/docs') }); }
+/** The bench's documents. Storyboards belong to Armable Shows and are left out of this workspace entirely. */
+export async function refreshDocs() { set({ docs: (await api<(DocMeta | { kind: 'storyboard' })[]>('GET', '/docs')).filter(d => d.kind !== 'storyboard') as DocMeta[] }); }
 
 let listening = false;
 /** Start everything that needs a signed-in person. */
@@ -83,7 +84,7 @@ async function comeBackOnline() {
 async function goOnline() {
   void flushOutbox();
   bench?.dispose();
-  live = new Live(onServer, open => set({ live: open }));
+  live = new Live('bench', onServer, open => set({ live: open }));
   bench = new Bench(runtime, { mirror: m => live!.mirror(m), reply: (id, ok, payload) => live!.send({ type: 'reply', id, ok, payload }) }, { capture: captureView });
   live.open();
   const [activity, proposals] = await Promise.all([api('GET', '/activity'), api('GET', '/proposals'), refreshDocs()]);
@@ -122,6 +123,7 @@ function onServer(message: ServerMessage) {
     set(s => ({ proposals: [...s.proposals.filter(p => p.id !== data.id), ...(open ? [data] : [])] }));
     if (data.status === 'awaiting_approval' && get().follow) { go('drone', (data.part ?? partOfId(data.changes?.[0]?.id)) as PartId, motorOf(data)); toast(`${data.by} proposes a change`, 'info'); }
   } else if (event === 'document') {
+    if (data.kind === 'storyboard') return;
     void refreshDocs(); set(s => ({ docRevision: s.docRevision + 1 }));
     if (data.by && data.by !== 'you') {
       mark(data.id, 'changed', data.by);
@@ -142,7 +144,9 @@ function showTarget(target: string, reference?: any) {
   if (PARTS.includes(target)) return go('drone', target as PartId);
   if (target.startsWith('build_')) { set({ build: target, buildTab: 'mine' }); return go('build'); }
   if (target.startsWith('proven.')) { set({ buildTab: 'proven' }); return go('build'); }
-  if (/^(show|tune|file|snap)_/.test(target)) return go(target.startsWith('show') ? 'show' : target.startsWith('tune') ? 'sound' : 'settings');
+  // Storyboards belong to Armable Shows, a different workspace. This one says so rather than changing products.
+  if (target.startsWith('show_')) return toast('That storyboard is in Armable Shows. Open it from the menu.', 'info');
+  if (/^(tune|file|snap)_/.test(target)) return go(target.startsWith('tune') ? 'sound' : 'settings');
   const part = partOfId(target);
   const motor = target.match(/^esc\.(\d+)\./)?.[1];
   if (part) { go('drone', part as PartId, motor ? Number(motor) : undefined); mark(part, 'reading', 'assistant'); }

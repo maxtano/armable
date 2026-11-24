@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Trash2,
   Upload,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '../design-system';
 import './StudioHome.css';
@@ -37,6 +38,8 @@ export interface StudioHomeProps {
   onCreate: () => void;
   onOpenStarter: () => void;
   onImport: () => void;
+  /** The way across to the drone bench, the other Armable workspace. Absent when there is nowhere to go. */
+  onLeaveToBench?: () => void;
 }
 
 function durationLabel(duration: number) {
@@ -64,6 +67,7 @@ export function StudioHome({
   onCreate,
   onOpenStarter,
   onImport,
+  onLeaveToBench,
 }: StudioHomeProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [focusSavedHeading, setFocusSavedHeading] = useState(false);
@@ -94,6 +98,12 @@ export function StudioHome({
               <span>Drone Show</span>
               <small>STORYBOARD LIBRARY</small>
             </div>
+            {onLeaveToBench && (
+              <button className="studio-home-crosslink" type="button" onClick={onLeaveToBench}>
+                <Wrench size={14} aria-hidden="true" />
+                Configuring a drone? Open the Armable bench
+              </button>
+            )}
           </div>
         </header>
       )}

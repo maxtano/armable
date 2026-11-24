@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowUpRight, Bot, Check, ChevronDown, Code2, Copy, MessageCircle, MousePointer2, Sparkles, SquareTerminal } from 'lucide-react';
-import { api } from './cloud';
+import { api } from '../platform/cloud';
 import { connectOptions, openBeside, type ConnectOption, type ConnectTarget } from './connectLinks';
 import { refreshMe } from './controller';
 import { boot } from './Growth';

@@ -5,7 +5,7 @@ import type { PartId, PromptRequest, Setting } from '../device/types';
 import type { Reference } from '../map/library';
 
 /** Everything the interface shows, in one place. Small on purpose: no library, one subscribe function. */
-export type View = 'drone' | 'build' | 'signals' | 'flights' | 'show' | 'sound' | 'settings' | 'history' | 'connect';
+export type View = 'drone' | 'build' | 'signals' | 'flights' | 'sound' | 'settings' | 'history' | 'connect';
 export type AssistantMode = 'off' | 'observe' | 'propose';
 export interface Me { offline?: boolean; signedIn: boolean; guest?: boolean; google?: boolean; email?: string; mode?: AssistantMode; mcpUrl?: string; assistants?: { clientId: string; name: string; scopes: string[]; lastSeen: number | null }[] }
 export interface ProposalCard {
@@ -16,7 +16,8 @@ export interface ProposalCard {
 }
 export interface ActivityItem { id: string; at: number; who: string; kind: string; title: string; part?: string; ids?: string[]; ok?: boolean | null; detail?: any }
 export interface GrantInfo { id: string; expiresAt: number; aircraftName: string; parts: string[]; tests: string[]; conditions: string[]; maxChanges: number; used: number }
-export interface DocMeta { id: string; revision: number; kind: 'storyboard' | 'tune' | 'file' | 'snapshot' | 'build'; name: string; updatedBy: string; updatedAt: number; canUndo: boolean }
+/** A document this workspace owns. Storyboards are Armable Shows' and never reach this list. */
+export interface DocMeta { id: string; revision: number; kind: 'tune' | 'file' | 'snapshot' | 'build'; name: string; updatedBy: string; updatedAt: number; canUndo: boolean }
 /** A visible trace of something that just happened to a part or setting. */
 export interface Mark { kind: 'reading' | 'changed'; by: string; at: number }
 export interface State {

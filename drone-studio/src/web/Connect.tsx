@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, Copy, Eye, PencilRuler, Unplug, Wrench } from 'lucide-react';
-import { api } from './cloud';
+import { api } from '../platform/cloud';
 import { AiButtons, FIRST_MESSAGE } from './ClaudeSetup';
 import { ConnectMenu } from './ConnectMenu';
 import { ALLOW_KEY } from './Landing';
