@@ -102,7 +102,7 @@ body:not([data-app=""]) .no-app { display: none; }
   .conn code::-webkit-scrollbar{display:none}
   .conn button{background:transparent;border:0;border-left:1px solid var(--rule);color:var(--mut);
                font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
-               padding:0 .9rem;cursor:pointer;transition:color .25s ease,background .25s ease}
+               padding:0 .9rem;min-height:44px;cursor:pointer;transition:color .25s ease,background .25s ease}
   .conn button:hover{color:var(--ink);background:rgba(255,255,255,.05)}
   .conn button.done{color:var(--live)}
 
@@ -125,12 +125,12 @@ body:not([data-app=""]) .no-app { display: none; }
          padding-block:.6rem;transform:translateY(-102%);transition:transform .5s var(--ease)}
   .stick.on{transform:none}
   .stick b{font-weight:700;font-size:.9rem;letter-spacing:.02em}
-  .stick .btn{padding:.6rem 1.05rem;font-size:.74rem}
+  .stick .btn{padding:.6rem 1.05rem;font-size:.74rem;min-height:44px}
 
   /* ---------- sections ---------- */
-  section{border-top:1px solid var(--rule);padding-block:4.2rem 4rem;position:relative}
+  section{border-top:1px solid var(--rule);padding-block:3.2rem 3rem;position:relative}
   h2{font-size:clamp(1.3rem,4.6vw,1.95rem);font-weight:600;letter-spacing:-.022em;line-height:1.2;
-     margin:0 0 1.8rem;max-width:26ch}
+     margin:0 0 1.4rem;max-width:26ch}
 
   /* scroll reveal, same grammar as the load */
   .rv{opacity:0;transform:translateY(18px);
@@ -147,7 +147,7 @@ body:not([data-app=""]) .no-app { display: none; }
   .where{font-family:var(--mono);font-size:.66rem;color:var(--faint);margin:.75rem 0 0;letter-spacing:.05em;
          line-height:1.6}
   .lead{font-size:clamp(.98rem,3.4vw,1.18rem);font-weight:500;line-height:1.55;color:var(--mut);
-        max-width:48ch;margin:0 0 2rem}
+        max-width:48ch;margin:0 0 1.6rem}
   .lead b{color:var(--ink);font-weight:600}
   .lead.hero{color:var(--ink);margin:0 0 .9rem;max-width:30ch;position:relative;z-index:3}
   .vs{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule)}
@@ -205,19 +205,32 @@ body:not([data-app=""]) .no-app { display: none; }
   @keyframes fill{to{transform:scaleX(1)}}
 
   /* 03 surface */
-  .spec{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule)}
-  .spec>div{background:var(--ground);padding:1rem 1rem 1.15rem}
-  .spec dt{font-family:var(--mono);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
-           margin-bottom:.5rem}
-  .spec dd{margin:0;font-family:var(--mono);font-size:.78rem;color:var(--ink);line-height:1.65;letter-spacing:.02em}
-  @media(min-width:680px){.spec{grid-template-columns:repeat(2,1fr)}}
-  @media(min-width:980px){.spec{grid-template-columns:repeat(4,1fr)}}
+  /* four tiles, two across on a phone: the whole surface in one screen instead of four */
+  .spec{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule)}
+  .spec>div{background:var(--ground);padding:1rem .9rem 1.1rem}
+  .ic{width:26px;height:26px;display:block;color:var(--amber);margin-bottom:.75rem;overflow:visible}
+  .spec dt{font-family:var(--mono);font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
+           margin-bottom:.4rem}
+  .spec dd{margin:0;font-size:.82rem;font-weight:500;color:var(--ink);line-height:1.45;letter-spacing:-.01em}
+  @media(min-width:680px){.spec{grid-template-columns:repeat(4,1fr)}.spec>div{padding:1.1rem 1rem 1.2rem}}
+
+  /* the icons only move once the tiles are on screen */
+  .spec .needle{transform-origin:12px 17.5px}
+  .spec.in .needle{animation:needle 3.6s ease-in-out infinite alternate}
+  @keyframes needle{from{transform:rotate(-54deg)}to{transform:rotate(48deg)}}
+  .spec.in .k1{animation:knob 3.2s ease-in-out infinite alternate}
+  .spec.in .k2{animation:knob 3.2s ease-in-out .5s infinite alternate-reverse}
+  @keyframes knob{from{transform:translateX(0)}to{transform:translateX(6px)}}
+  .spec.in .bolt{animation:spark 2.4s ease-in-out infinite}
+  @keyframes spark{0%,100%{opacity:1}44%{opacity:.2}}
+  .spec.in .pins{animation:pins 2.8s ease-in-out infinite}
+  @keyframes pins{0%,100%{opacity:1}50%{opacity:.4}}
 
   .safe{display:flex;align-items:flex-start;gap:.8rem;border:1px solid rgba(255,122,24,.32);
         background:rgba(255,122,24,.05);padding:1rem 1.1rem;margin-top:1.6rem}
   .safe i{width:7px;height:7px;background:var(--amber);flex:none;margin-top:.42em}
-  .safe p{margin:0;font-family:var(--mono);font-size:.72rem;line-height:1.7;color:var(--mut);letter-spacing:.03em}
-  .safe b{color:var(--ink);font-weight:500}
+  .safe p{margin:0;font-size:.88rem;font-weight:500;line-height:1.5;color:var(--mut)}
+  .safe b{color:var(--ink);font-weight:600}
 
   /* 04 mission */
   .mission p{font-size:clamp(1.05rem,3.6vw,1.45rem);font-weight:700;letter-spacing:-.02em;line-height:1.35;
@@ -257,7 +270,7 @@ body:not([data-app=""]) .no-app { display: none; }
     .grid{opacity:.3}
     h1 .w>span{transform:none;transition:none}
     .sweep{display:none}
-    .cur,.cue s,.who span.on b{animation:none}
+    .cur,.cue s,.who span.on b,.spec.in .needle,.spec.in .k1,.spec.in .k2,.spec.in .bolt,.spec.in .pins{animation:none}
     .who span.on b{transform:scaleX(1)}
     .btn,.btn i,.conn,.conn button,.top a,.tel .v,.agent,.stick{transition:none}
     .btn:hover,.btn:hover i{transform:none}

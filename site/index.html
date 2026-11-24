@@ -137,21 +137,46 @@
 <section class="pad">
   <div class="hold">
     <h2 class="rv">What it can get at, once it has hands.</h2>
-    <p class="lead rv" style="--d:.06s">Betaflight, INAV, ArduPilot and PX4, over a USB cable,
-       the same way a person with a configurator would.</p>
-
     <dl class="spec rv" style="--d:.12s">
-      <div><dt>Firmware</dt><dd>Betaflight<br>INAV<br>ArduPilot<br>PX4</dd></div>
-      <div><dt>Reads</dt><dd>Every setting<br>Receiver and link<br>Motor and ESC<br>Blackbox logs</dd></div>
-      <div><dt>Writes</dt><dd>PIDs and rates<br>Filters<br>Modes and failsafe<br>Protocols</dd></div>
-      <div><dt>Flashes</dt><dd>Flight controller<br>ESCs<br>Bluejay / AM32<br>With a backup first</dd></div>
+      <div>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" aria-hidden="true">
+          <rect x="6.5" y="6.5" width="11" height="11" rx="1"/>
+          <path class="pins" d="M10 3.2v3.3M14 3.2v3.3M10 17.5v3.3M14 17.5v3.3M3.2 10h3.3M3.2 14h3.3M17.5 10h3.3M17.5 14h3.3"/>
+        </svg>
+        <dt>Firmware</dt><dd>Betaflight, INAV, ArduPilot, PX4</dd>
+      </div>
+      <div>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" aria-hidden="true">
+          <path d="M3.6 17.5a8.4 8.4 0 0 1 16.8 0"/>
+          <path class="needle" d="M12 17.5V9.2"/>
+        </svg>
+        <dt>Reads</dt><dd>Every setting, the link, motors, blackbox</dd>
+      </div>
+      <div>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" aria-hidden="true">
+          <path d="M3 8.5h18M3 15.5h18"/>
+          <circle class="k1" cx="8" cy="8.5" r="2.5"/>
+          <circle class="k2" cx="13" cy="15.5" r="2.5"/>
+        </svg>
+        <dt>Writes</dt><dd>PIDs, rates, filters, modes, failsafe</dd>
+      </div>
+      <div>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3.5" y="13.5" width="17" height="7" rx="1"/>
+          <path class="bolt" d="M13.4 2.8 9.2 9.4h3.1l-1.1 4.1 4.6-6.6h-3.1z" fill="currentColor" stroke="none"/>
+        </svg>
+        <dt>Flashes</dt><dd>Boards and ESCs, with a backup first</dd>
+      </div>
     </dl>
 
     <div class="safe rv" style="--d:.18s">
       <i></i>
-      <p><b>You make every call.</b> Your assistant can read, test and propose. It cannot approve a change,
-         confirm the props are off, or arm the drone. Nothing is written until you click, and every change
-         is read back from the drone to confirm it.</p>
+      <p><b>You make every call.</b> Nothing is written until you click, every change is read back from
+         the drone, and your assistant can never arm it or spin a motor.</p>
     </div>
   </div>
 </section>
@@ -161,12 +186,6 @@
     <h2 class="rv">No drone yet? It will help you build one.</h2>
     <p class="lead rv" style="--d:.06s">Say what you want to fly and what you can spend. It picks the parts,
        checks they work together, and shows the cost, weight, thrust and flight time before you buy anything.</p>
-
-    <div class="steps rv" style="--d:.12s">
-      <div><b>Pick</b><p>What you want to fly</p><span>Freestyle, long range, cinematic, or a proven build to start from.</span></div>
-      <div><b>Check</b><p>That it all fits</p><span>Every part against every other part, with the reason when it does not.</span></div>
-      <div><b>Fly</b><p>Then set it up together</p><span>Plug the finished quad in and your assistant configures it.</span></div>
-    </div>
   </div>
 </section>
 
