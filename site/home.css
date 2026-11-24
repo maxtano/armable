@@ -108,7 +108,8 @@ body:not([data-app=""]) .no-app { display: none; }
 
   .tel{position:relative;z-index:3;display:flex;border-top:1px solid var(--rule);overflow-x:auto;scrollbar-width:none}
   .tel::-webkit-scrollbar{display:none}
-  .tel>div{flex:1 0 auto;min-width:33%;padding:.7rem .9rem .8rem 0;border-right:1px solid var(--rule)}
+  .tel>div{flex:1 0 auto;min-width:33%;padding:.7rem .9rem .8rem;border-right:1px solid var(--rule)}
+  .tel>div:first-child{padding-left:0}  /* the first column keeps the page's own gutter */
   .tel>div:last-child{border-right:0}
   .tel .k{font-family:var(--mono);font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
   .tel .v{font-family:var(--mono);font-size:.92rem;font-weight:700;margin-top:.22rem;font-variant-numeric:tabular-nums;
