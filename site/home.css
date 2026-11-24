@@ -276,3 +276,29 @@ body:not([data-app=""]) .no-app { display: none; }
     .btn:hover,.btn:hover i{transform:none}
     .tel .v.set{opacity:1;transform:none}
   }
+
+/* onboarding pill: one line, copied, that teaches any agent to connect itself */
+.pill{display:inline-flex;align-items:center;gap:.6rem;max-width:100%;
+      background:none;border:1px solid var(--rule);border-radius:100px;color:var(--mut);
+      font-family:inherit;font-size:.78rem;font-weight:500;letter-spacing:-.01em;line-height:1;
+      padding:.5rem .95rem;margin:0 0 1.15rem;min-height:44px;cursor:pointer;text-align:left;
+      -webkit-tap-highlight-color:transparent;
+      /* the rise properties are repeated here on purpose: a shorthand that
+         left them out would silently drop the staggered reveal */
+      transition:opacity .75s ease var(--d,0s),transform .9s var(--ease) var(--d,0s),
+                 border-color .25s ease,color .25s ease}
+.pill:hover{border-color:rgba(255,255,255,.32);color:var(--ink)}
+.pill .marks{display:inline-flex;align-items:center;gap:.42rem;flex:none}
+.pill .m{width:14px;height:14px;display:block;fill:currentColor;opacity:.72;
+         transition:opacity .25s ease}
+.pill:hover .m{opacity:1}
+.pill .m.cl{fill:var(--amber);opacity:.92}
+.pill .m.tm{fill:none;stroke:currentColor;stroke-width:1.9;
+            stroke-linecap:round;stroke-linejoin:round}
+.pill.done{border-color:rgba(126,211,122,.45);color:var(--live)}
+.pill.done .m{opacity:.5}
+@media(max-width:420px){
+  .pill{font-size:.72rem;padding:.5rem .8rem;gap:.45rem}
+  .pill .marks{gap:.34rem}
+  .pill .m{width:13px;height:13px}
+}
