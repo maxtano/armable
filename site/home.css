@@ -223,18 +223,17 @@ body:not([data-app=""]) .no-app { display: none; }
   .mission p{font-size:clamp(1.05rem,3.6vw,1.45rem);font-weight:700;letter-spacing:-.02em;line-height:1.35;
              max-width:30ch;margin:0 0 1rem;text-wrap:balance}
   .mission p+p{color:var(--mut);font-weight:500;font-size:clamp(.95rem,3vw,1.1rem);max-width:38ch}
+  .mission a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--amber);
+             text-underline-offset:5px;text-decoration-thickness:1px}
+  .mission a:hover{color:var(--amber)}
 
   /* footer */
   footer{border-top:1px solid var(--rule);padding-block:2.6rem 2.2rem}
-  .fgrid{display:flex;flex-wrap:wrap;gap:1.6rem 2.6rem;align-items:flex-start;justify-content:space-between}
-  .fcol{display:flex;flex-direction:column;gap:.55rem}
-  .fcol b{font-family:var(--mono);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
-          font-weight:500}
-  .fcol a,.fcol span{font-family:var(--mono);font-size:.74rem;color:var(--mut);transition:color .25s ease}
-  .fcol a:hover{color:var(--ink)}
-  .sig{display:flex;align-items:center;gap:.5rem;margin-top:2.2rem;padding-top:1.2rem;border-top:1px solid var(--rule);
-       font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
-  .sig i{width:5px;height:5px;background:var(--live);display:inline-block;animation:pulse 2.6s ease-in-out infinite}
+  .sig{display:flex;align-items:center;flex-wrap:wrap;gap:.9rem 1.4rem;
+       font-family:var(--mono);font-size:.68rem;letter-spacing:.05em;color:var(--faint);line-height:1.6}
+  .sig .btn{font-size:.8rem;padding:.78rem 1.25rem;font-family:var(--font)}
+  .sig a:not(.btn){color:var(--mut);transition:color .25s ease}
+  .sig a:not(.btn):hover{color:var(--ink)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
   /* a small promise that there is more down there */
@@ -258,7 +257,7 @@ body:not([data-app=""]) .no-app { display: none; }
     .grid{opacity:.3}
     h1 .w>span{transform:none;transition:none}
     .sweep{display:none}
-    .cur,.cue s,.sig i,.who span.on b{animation:none}
+    .cur,.cue s,.who span.on b{animation:none}
     .who span.on b{transform:scaleX(1)}
     .btn,.btn i,.conn,.conn button,.top a,.tel .v,.agent,.stick{transition:none}
     .btn:hover,.btn:hover i{transform:none}
