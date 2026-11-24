@@ -118,9 +118,6 @@ body:not([data-app=""]) .no-app { display: none; }
   .tel .v.ok{color:var(--live)}
   .tel .v.set{opacity:0;transform:translateY(-6px)}
 
-  .slot{position:absolute;z-index:3;top:3.6rem;right:16px;font-family:var(--mono);font-size:.5rem;
-        letter-spacing:.18em;text-transform:uppercase;color:var(--faint);opacity:0;transition:opacity .8s ease .95s}
-  .go .slot{opacity:1}
 
   /* ---------- the bar that takes over once the hero is gone ---------- */
   .stick{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;

@@ -230,7 +230,7 @@ if(document.fonts&&document.fonts.ready&&!reduce){
 
 /* real clip: var FILM='media/flight.mp4' */
 var FILM=null,vid=document.getElementById('vid'),cv=document.getElementById('film');
-if(FILM){vid.src=FILM;vid.style.display='block';cv.style.display='none';document.getElementById('slot').style.display='none';}
+if(FILM){vid.src=FILM;vid.style.display='block';cv.style.display='none';}
 
 var x=cv.getContext('2d'),W,H,t=0,pts=[];
 for(var i=0;i<78;i++)pts.push({x:Math.random(),y:Math.random(),z:Math.random()*.9+.1,w:Math.random()>.9});
