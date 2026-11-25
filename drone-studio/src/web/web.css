@@ -91,6 +91,21 @@ select, .lu-text { height: 34px; padding: 0 10px; border: 1px solid var(--ds-bor
 .lu-idle { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 18px; text-align: center; background: radial-gradient(closest-side, color-mix(in srgb, var(--ds-bg) 88%, transparent), transparent); }
 .lu-idle h1 { font: 700 34px/1.15 var(--font-sans); letter-spacing: -0.02em; letter-spacing: -0.01em; }
 .lu-idle .lu-row { justify-content: center; color: var(--ds-text-subtle); font-size: 13px; }
+/* What actually goes wrong, in three lines, under the one button that matters. */
+.lu-idle-notes { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; color: var(--ds-text-muted); font-size: 13px; }
+.lu-idle-notes b { color: var(--ds-text); font-weight: 700; }
+.lu-idle-else { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; }
+.lu-idle-else .lu-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.lu-idle .lu-hint { font-size: 12px; }
+
+/* The gate: the drone is on the bench, and the bench has no brain of its own yet. */
+.lu-dialog.gate { width: min(460px, 92vw); justify-items: center; text-align: center; gap: 15px; padding: 32px 30px; }
+.gate-badge { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 100px; background: var(--ds-success-bg); color: var(--ds-success); font-size: 12.5px; font-weight: 700; }
+.lu-dialog.gate h2 { justify-content: center; font: 800 30px/1.12 var(--font-sans); letter-spacing: -0.03em; }
+.gate-why { color: var(--ds-text-muted); font-size: 15px; }
+.gate .cs-ais { width: 100%; }
+.gate .cs-ais .lu-btn { flex: 1; }
+.gate-rest { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; }
 .lu-orphans { position: absolute; left: 18px; bottom: 18px; width: 320px; display: grid; gap: 10px; }
 .lu-empty { height: 100%; display: grid; place-content: center; justify-items: center; gap: 8px; color: var(--ds-text-subtle); text-align: center; }
 .lu-empty h2 { font: 700 24px var(--font-sans); letter-spacing: -0.02em; color: var(--ds-text-muted); }
@@ -356,14 +371,19 @@ select, .lu-text { height: 34px; padding: 0 10px; border: 1px solid var(--ds-bor
 
 /* ---- Start screen: the doorway into the bench, not a second home page ---- */
 .st { min-height: 100%; display: grid; grid-template-rows: 1fr auto; max-width: 1120px; margin: 0 auto; padding: 0 28px; }
-.st-card { align-self: center; justify-self: center; width: min(520px, 100%); display: grid; gap: 18px; justify-items: start; padding: 34px 32px; border: 1px solid var(--ds-border-strong); border-radius: 4px; background: var(--ds-surface); }
-.st-card h1 { font: 800 clamp(28px, 4vw, 38px)/1.1 var(--font-sans); letter-spacing: -0.03em; }
-.st-card p { color: var(--ds-text-muted); font-size: 15px; line-height: 1.5; }
-.st-card hr { width: 100%; height: 1px; border: 0; background: var(--ds-border); }
-.st-card .cs-ais { width: 100%; }
-.st-card .cs-ais .lu-btn { flex: 1; }
-.st-rest { display: grid; gap: 8px; justify-items: start; }
-.st-form { width: 100%; padding: 0; border: 0; background: none; }
+.st-card { align-self: center; justify-self: center; width: min(720px, 100%); display: grid; gap: 26px; justify-items: center; text-align: center; padding: 40px 36px; border: 1px solid var(--ds-border-strong); border-radius: 4px; background: var(--ds-surface); }
+.st-card h1 { font: 800 clamp(27px, 4.2vw, 40px)/1.08 var(--font-sans); letter-spacing: -0.03em; }
+/* Two answers, side by side, stacking on a phone. The one with a drone in it gets the signal colour. */
+.st-doors { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; }
+.st-door { flex: 1 1 250px; display: grid; justify-items: start; gap: 9px; padding: 24px 22px; border: 1px solid var(--ds-border); border-radius: 8px; background: var(--ds-surface-inset); color: var(--ds-text); text-align: left; text-decoration: none; transition: border-color var(--motion-fast), transform var(--motion-fast); }
+.st-door:hover { border-color: var(--ds-border-strong); transform: translateY(-1px); }
+.st-door svg { color: var(--ds-text-subtle); }
+.st-door b { font: 800 20px var(--font-sans); letter-spacing: -0.02em; }
+.st-door span { color: var(--ds-text-muted); font-size: 14px; }
+.st-door.is-primary { border: 2px solid var(--lu-signal); background: var(--ds-accent-bg); padding: 23px 21px; }
+.st-door.is-primary svg { color: var(--lu-signal); }
+.st-signin { color: var(--ds-text-subtle); }
+.st-form { width: 100%; padding: 0; border: 0; background: none; text-align: left; justify-items: stretch; }
 .in-logo { display: flex; align-items: center; gap: 10px; font: 700 21px var(--font-sans); letter-spacing: -0.02em; }
 .in-form { display: grid; gap: 14px; width: min(400px, 100%); padding: 28px; border: 1px solid var(--ds-border-strong); border-radius: 4px; background: var(--ds-surface); }
 .in-form h2 { font: 700 26px var(--font-sans); letter-spacing: -0.02em; }

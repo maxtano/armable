@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Eye, MousePointerClick } from 'lucide-react';
+import { Eye, MousePointerClick, Navigation, Usb } from 'lucide-react';
 import { api, ApiError } from './cloud';
-import { AiButtons, ClaudeSetup, FIRST_MESSAGE } from './ClaudeSetup';
-import { ConnectMenu } from './ConnectMenu';
+import { ClaudeSetup } from './ClaudeSetup';
 import { GoogleButton, tryAsGuest } from './Growth';
 
 /**
  * The doorway, and deliberately not a second home page: armable.ai already makes the case for the product, and
- * two pages making it were two places to keep in step. This screen has one job, which is to get whoever clicked
- * “Open Armable” into the bench. So it asks the only question that changes anything -- which assistant -- and
- * gives anyone without a drone to plug in a demo bench instead of a reason to leave.
+ * two pages making it were two places to keep in step.
+ *
+ * It asks the one question whose answer changes what happens next, and the assistant is not that question --
+ * asking for one before there is a drone to point it at is asking for a favour. So: get something on the bench,
+ * then ask, which is what Gate does. Two answers, because everyone arriving is either holding a drone or not.
  */
 export function Start({ onSignedIn, google }: { onSignedIn(): void; google?: boolean }) {
   const params = new URLSearchParams(location.search), next = params.get('next');
@@ -18,13 +19,14 @@ export function Start({ onSignedIn, google }: { onSignedIn(): void; google?: boo
   return <Doorway onSignedIn={onSignedIn} google={google} next={next} failed={params.get('signin') ?? ''} />;
 }
 
-/** Connect an assistant, open a demo bench, or sign back in. The form stays folded away until it is asked for. */
+/** Two answers, and a sign-in form folded away until someone asks for it. */
 function Doorway({ onSignedIn, google, next, failed }: { onSignedIn(): void; google?: boolean; next: string | null; failed: string }) {
   // A sign-in that failed elsewhere (Google, say) comes back with its reason, so open straight to the form.
   const [form, setForm] = useState(!!failed), [mode, setMode] = useState<'signup' | 'login'>('login');
   const [email, setEmail] = useState(''), [password, setPassword] = useState('');
   const [error, setError] = useState(failed), [busy, setBusy] = useState(false);
-  const guest = async () => {
+  // Yes: a bench of their own, then the screen that says what to plug in. No: the demo route, which boot() knows.
+  const mine = async () => {
     setBusy(true);
     try { await tryAsGuest(next); } catch { setError('Could not start right now. Try again.'); setBusy(false); }
   };
@@ -52,17 +54,21 @@ function Doorway({ onSignedIn, google, next, failed }: { onSignedIn(): void; goo
             <button type="button" className="lu-link" onClick={() => { setForm(false); setError(''); }}>Back</button>
           </form>
         ) : <>
-          <h1>Connect your AI</h1>
-          <p>Armable is the hands. Your assistant is the brain, and it is the one you already pay for. Connect it once, then say <b>“{FIRST_MESSAGE}”</b> in any new chat.</p>
-          <AiButtons big />
-          <ConnectMenu others />
-          {error && <p className="in-error" role="alert">{error}</p>}
-          <hr />
-          <div className="st-rest">
-            <a className="lu-link" href="/?demo=betaflight">No drone yet? Open the demo bench</a>
-            <button className="lu-link" disabled={busy} onClick={() => void guest()}>or just look around</button>
-            <button className="lu-link" onClick={() => setForm(true)}>Sign in</button>
+          <h1>Is your drone with you?</h1>
+          <div className="st-doors">
+            <button type="button" className="st-door is-primary" data-door="usb" disabled={busy} onClick={() => void mine()}>
+              <Usb size={26} />
+              <b>Yes, it’s here</b>
+              <span>Plug in the flight controller.</span>
+            </button>
+            <a className="st-door" data-door="demo" href="/?demo=betaflight">
+              <Navigation size={26} />
+              <b>Not right now</b>
+              <span>Use a demo drone.</span>
+            </a>
           </div>
+          {error && <p className="in-error" role="alert">{error}</p>}
+          <button className="lu-link st-signin" onClick={() => setForm(true)}>Sign in</button>
         </>}
       </div>
       <footer className="in-foot">Open source · Apache 2.0 · You approve every change to your aircraft · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>

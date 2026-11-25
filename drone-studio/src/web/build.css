@@ -252,11 +252,6 @@
 .bd-table .is-best { color: var(--ds-success); font-weight: 700; }
 
 /* The idle screen's way in */
-.lu-build-cta { display: flex; align-items: center; gap: 12px; margin-top: 6px; padding: 12px 16px; border: 1px solid var(--ds-accent-border); border-radius: 4px; background: var(--ds-accent-bg); color: var(--ds-text); text-align: left; transition: transform var(--motion-fast); }
-.lu-build-cta:hover { transform: translateY(-1px); }
-.lu-build-cta svg { color: var(--ds-accent); flex-shrink: 0; }
-.lu-build-cta span { display: grid; }
-.lu-build-cta small { color: var(--ds-text-muted); font-size: 12.5px; }
 
 @media (max-width: 1100px) {
   .bd-head, .bd-row { grid-template-columns: 140px minmax(0, 1fr) 120px 130px; }
