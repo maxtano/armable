@@ -113,7 +113,7 @@ Assistants connect to `<your address>/mcp`, a standard [MCP](https://modelcontex
 
 Anyone can try Armable without an account. Guest benches nobody opens for 30 days are deleted. Links that open straight in: `/?demo=betaflight`, `/?demo=ardupilot` and `/build`. A shared build lives at `/b/<id>`.
 
-To host it free, [`infra/gcp`](infra/gcp/README.md) is Terraform for one small server on Google Cloud’s always-free tier, behind Cloudflare, with HTTPS, nightly backups and a hard spending cap, from one command in Cloud Shell. To host it on AWS, [`infra/aws`](infra/aws/README.md) sets up CloudFront, ECS Fargate and RDS Postgres with keyless deploys from GitHub, for about $45 a month.
+To host it free, [`infra/gcp`](infra/gcp/README.md) is Terraform for one small server on Google Cloud’s always-free tier, behind Cloudflare, with HTTPS, nightly backups and a hard spending cap, from one command in Cloud Shell.
 
 <details>
 <summary><b>Status</b></summary>

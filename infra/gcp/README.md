@@ -124,4 +124,4 @@ Free for a small number of users:
 - **Guard:** Pub/Sub, a small function, its build and its storage all sit in Google’s free allowances.
 - **The fixed IP address** may show as a few dollars a month under “External IPv4”. Google’s free-tier page says it is free, but Google charges for many public IPv4 addresses. The $1 email tells you within a day.
 
-When it outgrows this, [`../aws`](../aws/README.md) runs the same app with room to grow.
+
