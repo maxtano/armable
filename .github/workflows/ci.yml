@@ -49,10 +49,8 @@ jobs:
         with:
           terraform_version: 1.16.7
       - name: Format
-        run: terraform -chdir=infra/aws fmt -check -recursive
+        run: terraform -chdir=infra/gcp fmt -check -recursive
       - name: Validate
         run: |
-          terraform -chdir=infra/aws init -backend=false -input=false
-          terraform -chdir=infra/aws validate
-          terraform -chdir=infra/aws/bootstrap init -input=false
-          terraform -chdir=infra/aws/bootstrap validate
+          terraform -chdir=infra/gcp init -backend=false -input=false
+          terraform -chdir=infra/gcp validate

@@ -22,5 +22,5 @@ updates:
     directory: /infra/gcp/guard
     schedule: { interval: monthly }
   - package-ecosystem: terraform
-    directories: [/infra/gcp, /infra/aws]
+    directories: [/infra/gcp]
     schedule: { interval: monthly }

@@ -12,9 +12,9 @@ Decisions taken: design edits apply at once with undo; Postgres for storage; sim
 | Map and tools (`src/map`, `server/tools.ts`) | Readings, tests, settings, 13 playbooks, 29 references; the eleven tools, including `read` of past changes, tests and connections | Tool tests against simulated aircraft on both stacks |
 | Cloud (`server`) | Postgres and memory stores with numbered migrations, sign-in, OAuth with PKCE for assistants, stateless MCP endpoint, live WebSocket, documents, proposals, scoped grants (standing permissions), activity | Integration tests over real HTTP, MCP and WebSocket, on Postgres 16 |
 | Tracking (`server/tracker.ts`) | Postgres tables `aircraft`, `aircraft_connections`, `tool_calls`, `proposal_events`, `setting_changes`, `test_runs`, `telemetry_samples`; views `tool_usage_daily`, `proposal_outcomes`; read back at `/api/data` | Tracker tests on Postgres and in memory |
-| Interface (`src/web`) | Intro page, living diagram, part panels, on-the-part approval, timeline, Signals, Flights (ArduPilot and Betaflight logs), OSD editor, VTX presets, radio firmware, History, Permissions, all settings with backups, Sound, Show, offline use with sync, assistant connection and consent | Playwright end-to-end tests in Chromium (9), desktop and phone width |
+| Interface (`src/web`) | Start screen, living diagram, part panels, on-the-part approval, timeline, Signals, Flights (ArduPilot and Betaflight logs), OSD editor, VTX presets, radio firmware, History, Permissions, all settings with backups, Sound, Show, offline use with sync, assistant connection and consent | Playwright end-to-end tests in Chromium (9), desktop and phone width |
 
-Hosting: Terraform for AWS in `infra/aws` (CloudFront, load balancer, one ECS Fargate task, RDS Postgres 16, GitHub OIDC deploys). Validated with Terraform 1.16.7 and the AWS provider 6.70; the container image was built and run against Postgres. Not yet applied to an AWS account.
+Hosting: Terraform for Google Cloud in `infra/gcp` (one always-free e2-micro running the app, Postgres and Caddy, behind Cloudflare, with a spending guard and nightly backups). This is what `app.armable.ai` runs on. The server follows release tags, checking every ten minutes, so a push to `main` reaches it only once a `v*.*.*` tag is pushed.
 
 Tests: 1,674 unit and integration tests and 9 browser end-to-end tests pass.
 

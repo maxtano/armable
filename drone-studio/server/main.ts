@@ -12,7 +12,8 @@ const publicUrl = process.env.PUBLIC_URL ?? `http://localhost:${port}`;
 let store: Store;
 let tracker: Tracker | undefined;
 if (process.env.DATABASE_URL) {
-  // On AWS the database requires TLS. DATABASE_CA_FILE points at Amazon's certificate bundle so the server is verified.
+  // A managed Postgres that requires TLS: point DATABASE_CA_FILE at its CA bundle and the certificate is verified.
+  // The Google Cloud server in infra/gcp runs Postgres beside the app, over the Docker network, so it sets neither.
   const ca = process.env.DATABASE_CA_FILE ? readFileSync(process.env.DATABASE_CA_FILE, 'utf8') : undefined;
   const pgStore = await PgStore.open(new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 10, ...(ca ? { ssl: { ca, rejectUnauthorized: true } } : {}) }));
   store = pgStore;
