@@ -3,7 +3,7 @@ import { Check, Copy, Eye, PencilRuler, Unplug, Wrench } from 'lucide-react';
 import { api } from './cloud';
 import { AiButtons, FIRST_MESSAGE } from './ClaudeSetup';
 import { ConnectMenu } from './ConnectMenu';
-import { ALLOW_KEY } from './Landing';
+import { ALLOW_KEY } from './Start';
 import { createGrant, refreshMe, revokeGrant, setMode } from './controller';
 import { Conditions } from './controls';
 import { PART_NAME } from './parts';

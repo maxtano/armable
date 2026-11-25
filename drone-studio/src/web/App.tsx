@@ -15,7 +15,7 @@ import { answerPrompt, connectDemo, connectUsb, disconnect, go, select, signOut,
 import { Diagram } from './Diagram';
 import { Coil, Lamp } from './Instruments';
 import { Flights } from './Flights';
-import { Landing } from './Landing';
+import { Start } from './Start';
 import { PartPanel, Proposal } from './PartPanel';
 import { CHIP_PARTS, PART_NAME } from './parts';
 import { SettingsView } from './SettingsView';
@@ -198,7 +198,7 @@ export function App() {
   if (shared) return <><Suspense fallback={null}><SharedBuild share={shared} /></Suspense><Overlays /></>;
   // The same splash index.html shows, so there is no flash between the page arriving and the app starting.
   if (!me) return <div className="boot" role="status" aria-label="Loading Armable"><div>Armable<i /></div></div>;
-  if (!me.signedIn) return <Landing onSignedIn={() => void boot()} google={me.google} />;
+  if (!me.signedIn) return <Start onSignedIn={() => void boot()} google={me.google} />;
   if (consent) return <><Consent id={consent} /><Overlays /></>;
   return (
     <div className="lu">

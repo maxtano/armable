@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowUpRight, Check, Copy, MessageCircle, Monitor, Sparkles, X } from 'lucide-react';
 import { api } from './cloud';
 import { chatgptChatLink, claudeAppChatLink, claudeChatLink, claudeInstallLink, openBeside } from './connectLinks';
-import { go, refreshMe } from './controller';
+import { connectDemo, go, refreshMe } from './controller';
 import { boot } from './Growth';
 import { get, set, useStore } from './store';
 
@@ -43,8 +43,12 @@ export function startSetup(ai: Ai) {
 function connected(name: string) {
   const wasSignedIn = !!get().me?.signedIn;
   set({ setup: { ...get().setup!, stage: 'connected', since: Date.now(), name } });
-  // Set up from the intro page: the sign-in happened in the assistant's window, so open the bench here too.
-  void (wasSignedIn ? refreshMe() : boot());
+  // Set up from the start screen: the sign-in happened in the assistant's window, so open the bench here too.
+  void (wasSignedIn ? refreshMe() : boot()).then(() => {
+    // Someone who had a drone to plug in would have plugged it in by now. Rather than hand them an empty bench
+    // at the one moment they are looking, put a demo drone on it: the assistant can work the moment they ask.
+    if (get().snap.status === 'idle') void connectDemo('betaflight').catch(() => {});
+  });
 }
 
 /** The last click: a new chat with “Start Armable” typed, in a normal tab. The setup window goes away. */

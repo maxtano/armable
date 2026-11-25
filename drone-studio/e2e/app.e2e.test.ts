@@ -30,20 +30,24 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const errors: string[] = [];
     page.on('pageerror', (e: Error) => errors.push(e.message));
     await page.goto(app.base);
-    await expect(page.getByRole('heading', { name: /Your drone/ })).toBeTruthy();
+    await expect(page.getByRole('heading', { name: /Connect your AI/ })).toBeTruthy();
     // No sign-up: a guest bench opens at once.
     await page.click('button:has-text("just look around")');
     await page.waitForSelector('[data-demo=ardupilot]');
     return { page, context, errors };
   }
 
-  it('explains itself before sign-in, in few words', async () => {
+  it('is a doorway, not a second home page: one choice, and a way in for someone with no drone', async () => {
     const page = await browser.newPage();
     await page.goto(app.base);
-    const text = await page.locator('.in-hero').innerText();
-    expect(text).toContain('One bench.');
-    expect(text.split(/\s+/).length).toBeLessThan(70);
-    expect(await page.locator('.in-drone').count()).toBe(1);
+    await page.waitForSelector('.st-card');
+    // armable.ai makes the case for the product. This screen only has to let someone in, so it stays short.
+    const text = await page.locator('.st-card').innerText();
+    expect(text.split(/\s+/).length).toBeLessThan(60);
+    expect(await page.locator('[data-start=claude]').count()).toBe(1);
+    expect(await page.locator('[data-start=chatgpt]').count()).toBe(1);
+    // Having no drone of your own is not a dead end.
+    expect(await page.locator('a[href="/?demo=betaflight"]').count()).toBe(1);
     await page.close();
   });
 
