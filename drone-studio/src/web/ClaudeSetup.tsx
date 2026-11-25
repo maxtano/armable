@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, Check, Copy, MessageCircle, Monitor, Sparkles, X } from 'lucide-react';
+import { ArrowUpRight, Check, Copy, Monitor, X } from 'lucide-react';
+import { ClaudeMark, OpenAiMark } from './Brands';
+import { ConnectMenu } from './ConnectMenu';
 import { api } from './cloud';
 import { chatgptChatLink, claudeAppChatLink, claudeChatLink, claudeInstallLink, openBeside } from './connectLinks';
 import { connectDemo, go, refreshMe } from './controller';
@@ -160,12 +162,47 @@ export function ClaudeSetup() {
   );
 }
 
+/**
+ * The moment to ask. A drone is on the bench and the bench can do nothing with it on its own, so this is where
+ * connecting an assistant stops being a chore and becomes the obvious next move. It shows once a drone lands --
+ * plugged in or demo, it makes no difference -- and only while nothing is connected. "Later" is deliberate: a
+ * gate with no way past it is the kind of thing people close the tab on.
+ */
+const GATE_ASKED = 'armable.gate.v1';
+const gateAsked = () => { try { return localStorage.getItem(GATE_ASKED) === '1'; } catch { return false; } };
+
+export function Gate() {
+  const connected = useStore(s => s.snap.status === 'connected');
+  const assistants = useStore(s => s.me?.assistants?.length ?? 0);
+  const setup = useStore(s => s.setup);
+  const identity = useStore(s => s.snap.identity);
+  const [dismissed, setDismissed] = useState(gateAsked);
+  const showing = connected && assistants === 0 && !setup && !dismissed;
+  // Asked once per browser, however they answer. A second drone is not a second chance to nag.
+  useEffect(() => { if (showing) { try { localStorage.setItem(GATE_ASKED, '1'); } catch { /* private mode */ } } }, [showing]);
+  if (!showing) return null;
+  return (
+    <div className="lu-scrim cs-scrim" role="dialog" aria-modal aria-label="Connect your AI">
+      <div className="lu-dialog gate" data-gate>
+        <p className="gate-badge"><Check size={14} /> {identity?.craftName ?? identity?.firmware ?? 'Drone'} connected</p>
+        <h2>Now give it a brain</h2>
+        <p className="gate-why">Armable has no AI of its own.</p>
+        <AiButtons big />
+        <div className="gate-rest">
+          <ConnectMenu others />
+          <button className="lu-link" data-gate-later onClick={() => setDismissed(true)}>Later</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Claude or ChatGPT: the only choice anyone makes. */
 export function AiButtons({ big }: { big?: boolean }) {
   return (
     <div className="cs-ais">
-      <button className={`lu-btn is-primary${big ? ' is-big' : ''}`} data-start="claude" onClick={() => startSetup('claude')}><Sparkles size={18} /> Claude</button>
-      <button className={`lu-btn is-primary${big ? ' is-big' : ''}`} data-start="chatgpt" onClick={() => startSetup('chatgpt')}><MessageCircle size={18} /> ChatGPT</button>
+      <button className={`lu-btn is-primary${big ? ' is-big' : ''}`} data-start="claude" onClick={() => startSetup('claude')}><ClaudeMark size={18} /> Claude</button>
+      <button className={`lu-btn${big ? ' is-big' : ''}`} data-start="chatgpt" onClick={() => startSetup('chatgpt')}><OpenAiMark size={18} /> ChatGPT</button>
     </div>
   );
 }

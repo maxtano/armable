@@ -24,37 +24,74 @@ describe.skipIf(!ready)('Armable in a browser', () => {
   beforeAll(async () => { app = await startApp(undefined, 'dist'); browser = await pw!.chromium.launch(); });
   afterAll(async () => { await browser?.close(); await app?.close(); });
 
+  /** The gate asks for an assistant the moment a drone lands, once per browser. Tests not about it wave it past. */
+  async function pastGate(page: any) {
+    const later = page.locator('[data-gate-later]');
+    await later.waitFor({ timeout: 5000 }).catch(() => {});
+    if (await later.count()) {
+      await later.click();
+      await page.waitForSelector('[data-gate]', { state: 'detached' });
+    }
+  }
+
   async function signedInPage(width = 1440, height = 900) {
     const context = await browser.newContext({ viewport: { width, height } });
     const page = await context.newPage();
     const errors: string[] = [];
     page.on('pageerror', (e: Error) => errors.push(e.message));
     await page.goto(app.base);
-    await expect(page.getByRole('heading', { name: /Connect your AI/ })).toBeTruthy();
-    // No sign-up: a guest bench opens at once.
-    await page.click('button:has-text("just look around")');
+    await expect(page.getByRole('heading', { name: /Is your drone with you/ })).toBeTruthy();
+    // No sign-up: answering the question opens a guest bench at once.
+    await page.click('[data-door=usb]');
     await page.waitForSelector('[data-demo=ardupilot]');
     return { page, context, errors };
   }
 
-  it('is a doorway, not a second home page: one choice, and a way in for someone with no drone', async () => {
+  it('asks one question, offers two answers, and says nothing else', async () => {
     const page = await browser.newPage();
     await page.goto(app.base);
     await page.waitForSelector('.st-card');
     // armable.ai makes the case for the product. This screen only has to let someone in, so it stays short.
     const text = await page.locator('.st-card').innerText();
-    expect(text.split(/\s+/).length).toBeLessThan(60);
-    expect(await page.locator('[data-start=claude]').count()).toBe(1);
-    expect(await page.locator('[data-start=chatgpt]').count()).toBe(1);
-    // Having no drone of your own is not a dead end.
-    expect(await page.locator('a[href="/?demo=betaflight"]').count()).toBe(1);
+    expect(text.split(/\s+/).length).toBeLessThan(28);
+    expect(await page.locator('.st-door').count()).toBe(2);
+    expect(await page.locator('[data-door=usb]').count()).toBe(1);
+    expect(await page.locator('[data-door=demo]').count()).toBe(1);
+    // The assistant is not asked for here: there is nothing for it to work on yet.
+    expect(await page.locator('[data-start]').count()).toBe(0);
     await page.close();
+  });
+
+  it('asks for an assistant the moment a drone lands, and lets it be put off', async () => {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (e: Error) => errors.push(e.message));
+    // The door for someone with no drone: a demo one lands, and the bench cannot do anything with it alone.
+    await page.goto(app.base);
+    await page.click('[data-door=demo]');
+    await page.waitForSelector('.lu-status.is-connected');
+    await page.waitForSelector('[data-gate] h2:has-text("Now give it a brain")');
+    expect(await page.locator('[data-gate] [data-start=claude]').count()).toBe(1);
+    expect(await page.locator('[data-gate] [data-start=chatgpt]').count()).toBe(1);
+    await page.click('[data-gate-later]');
+    await page.waitForSelector('[data-gate]', { state: 'detached' });
+    // Put off once is put off for good in this browser: the next drone does not ask again.
+    await page.reload();
+    await page.click('[data-demo=betaflight]');
+    await page.waitForSelector('.lu-status.is-connected');
+    expect(await page.locator('[data-gate]').count()).toBe(0);
+    // The top bar still offers the way back, which is the only place it is offered now.
+    await page.waitForSelector('.cs-light:has-text("Connect your AI")');
+    expect(errors).toEqual([]);
+    await context.close();
   });
 
   it('connects a demo drone, draws it from its configuration, and changes a setting by hand with readback', async () => {
     const { page, errors } = await signedInPage();
     await page.click('[data-demo=ardupilot]');
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     await page.waitForFunction(() => document.querySelectorAll('[data-motor]').length === 4 && !document.querySelector('.dg-unknown'));
     expect(await page.locator('.dg-caption').textContent()).toContain('Quad X');
     await page.click('[aria-label^="Battery"]');
@@ -73,6 +110,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const { page, context, errors } = await signedInPage();
     await page.click('[data-demo=ardupilot]');
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     // Connect an assistant with this person's session, the way an assistant app would.
     const person = new Browser(app.base);
     person.cookie = (await context.cookies()).map((c: { name: string; value: string }) => `${c.name}=${c.value}`).join('; ');
@@ -114,7 +152,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
 
   it('lets someone with no drone build one: parts appear live, and the person swaps and compares them', async () => {
     const { page, context, errors } = await signedInPage();
-    await page.click('.lu-build-cta');
+    await page.click('.lu-idle-else button:has-text("Build one")');
     await page.click('button:has-text("Start my build")');
     await page.waitForSelector('.bd-sheet');
     const person = new Browser(app.base);
@@ -157,6 +195,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     // A link posted anywhere: no sign-up, the demo drone connects, and it will not arm.
     await page.goto(`${app.base}/?demo=betaflight`);
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     await page.waitForSelector('.dg-chip:has-text("Won\'t arm")');
     expect(new URL(page.url()).search).toBe('');
     await page.click('button[aria-label="Menu"]');
@@ -190,7 +229,8 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const page = await context.newPage();
     const errors: string[] = [];
     page.on('pageerror', (e: Error) => errors.push(e.message));
-    await page.goto(app.base);
+    await page.goto(`${app.base}/?demo=betaflight`);
+    await page.waitForSelector('[data-gate]');
     await page.getByRole('button', { name: /Use a coding tool/ }).click();
     const items = page.locator('.lu-connect-menu [role=menuitem]');
     expect((await items.allInnerTexts()).map((t: string) => t.split('\n')[0])).toEqual(['Claude Code', 'Cursor', 'VS Code', 'Any other agent']);
@@ -216,22 +256,25 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const page = await context.newPage();
     const errors: string[] = [];
     page.on('pageerror', (e: Error) => errors.push(e.message));
-    await page.goto(app.base);
+    // A demo drone lands, and the gate asks for the assistant that will work on it.
+    await page.goto(`${app.base}/?demo=betaflight`);
+    await page.waitForSelector('[data-gate]');
     // 1. One choice. Claude opens in its own window with Armable filled in.
-    const [claude] = await Promise.all([page.waitForEvent('popup'), page.click('[data-start=claude]')]);
+    const [claude] = await Promise.all([page.waitForEvent('popup'), page.click('[data-gate] [data-start=claude]')]);
     await claude.waitForURL(/claude\.ai\/customize\/connectors/);
     const install = new URL(claude.url());
     expect(Object.fromEntries(install.searchParams)).toEqual({ modal: 'add-custom-connector', connectorName: 'Armable', connectorUrl: `${app.base}/mcp` });
     await page.waitForSelector('.cs-steps li.is-now[data-step="1"]');
     await page.waitForSelector('.cs-wait:has-text("Waiting for you")');
-    // 2. Claude's Connect opens Armable's sign-in. Not signed in: one screen, one Allow, no account needed.
+    // 2. Claude's Connect opens Armable's consent screen. The demo already made them a guest bench, so this is
+    //    the signed-in path; AllowAssistant covers the person who never opened Armable at all.
     const redirect = 'http://localhost:9/callback';
     const client = await (await fetch(`${app.base}/register`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_name: 'Claude', redirect_uris: [redirect], token_endpoint_auth_method: 'none', grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] }) })).json() as { client_id: string };
     const verifier = 'v'.repeat(64), challenge = createHash('sha256').update(verifier).digest('base64url');
     const allow = await context.newPage();
     await allow.goto(`${app.base}/authorize?${new URLSearchParams({ response_type: 'code', client_id: client.client_id, redirect_uri: redirect, code_challenge: challenge, code_challenge_method: 'S256', state: 's', scope: 'observe design propose' })}`);
-    await allow.waitForSelector('h1:has-text("Let Claude use Armable?")');
-    await allow.click('[data-allow]');
+    await allow.waitForSelector('h1:has-text("Connect Claude?")');
+    await allow.click('.lu-consent button:has-text("Allow")');
     await allow.waitForURL(/localhost:9\/callback\?.*code=/);
     const code = new URL(allow.url()).searchParams.get('code')!;
     await fetch(`${app.base}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', code, code_verifier: verifier, client_id: client.client_id, redirect_uri: redirect }) });
@@ -248,12 +291,27 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     await context.close();
   });
 
+  it('lets someone who never opened Armable allow it from Claude, with no account', async () => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const redirect = 'http://localhost:9/callback';
+    await context.route('http://localhost:9/**', (route: any) => route.fulfill({ status: 200, contentType: 'text/html', body: 'back in Claude' }));
+    const client = await (await fetch(`${app.base}/register`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_name: 'Claude', redirect_uris: [redirect], token_endpoint_auth_method: 'none', grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'] }) })).json() as { client_id: string };
+    const challenge = createHash('sha256').update('v'.repeat(64)).digest('base64url');
+    await page.goto(`${app.base}/authorize?${new URLSearchParams({ response_type: 'code', client_id: client.client_id, redirect_uri: redirect, code_challenge: challenge, code_challenge_method: 'S256', state: 's', scope: 'observe design propose' })}`);
+    await page.waitForSelector('h1:has-text("Let Claude use Armable?")');
+    await page.click('[data-allow]');
+    await page.waitForURL(/localhost:9\/callback\?.*code=/);
+    await context.close();
+  });
+
   it('sets up ChatGPT with the address copied and each click spelled out', async () => {
     const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
     await context.route('https://chatgpt.com/**', (route: any) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>ChatGPT</title>' }));
     const page = await context.newPage();
-    await page.goto(app.base);
-    const [chatgpt] = await Promise.all([page.waitForEvent('popup'), page.click('[data-start=chatgpt]')]);
+    await page.goto(`${app.base}/?demo=betaflight`);
+    await page.waitForSelector('[data-gate]');
+    const [chatgpt] = await Promise.all([page.waitForEvent('popup'), page.click('[data-gate] [data-start=chatgpt]')]);
     expect(chatgpt.url()).toMatch(/^https:\/\/chatgpt\.com\//);
     await page.waitForSelector('.cs h2:has-text("Connect ChatGPT")');
     await page.waitForSelector('.cs-steps:has-text("Developer mode")');
@@ -267,6 +325,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const page = await context.newPage();
     await page.goto(`${app.base}/?demo=betaflight`);
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     await page.click('.cs-light:has-text("Connect your AI")');
     await page.waitForSelector('.cs h2:has-text("Which AI do you use?")');
     const [claude] = await Promise.all([page.waitForEvent('popup'), page.click('.cs [data-start=claude]')]);
@@ -332,6 +391,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const { page, errors } = await signedInPage(390, 844);
     await page.click('[data-demo=betaflight]');
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     await page.click('[data-motor="1"]');
     await page.waitForSelector('.lu-panel');
     const box = await page.locator('.lu-panel').boundingBox();
@@ -345,6 +405,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const { page, errors } = await signedInPage();
     await page.click('[data-demo=betaflight]');
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     await page.click('.lu-top button:has-text("Parts")');
     await page.click('.lu-menu button:has-text("On-screen display")');
     const vbat = page.locator('[data-osd="vbat"]');
@@ -358,6 +419,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     await page.waitForSelector('.lu-toast.is-ok', { timeout: 20000 });
     // The flight controller restarted to save; after reconnecting, the editor shows what it reads back.
     await page.waitForSelector('.lu-status.is-connected', { timeout: 20000 });
+    await pastGate(page);
     await page.waitForFunction(() => document.querySelector('[data-osd="vbat"]')?.getAttribute('aria-label')?.includes('column 4, row 13'), undefined, { timeout: 20000 });
     expect(await page.locator('[data-osd="rssi"]').count()).toBe(0);
     expect(errors).toEqual([]);
@@ -368,6 +430,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const { page, errors } = await signedInPage();
     await page.click('[data-demo=betaflight]');
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     await page.click('.lu-top button:has-text("Parts")');
     await page.click('.lu-menu button:has-text("Video")');
     const table = page.locator('[data-setting="bf.vtxtable"]');
@@ -375,6 +438,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     await table.locator('select').selectOption('Tramp');
     await table.getByRole('button', { name: /Apply/ }).click();
     await page.waitForSelector('.lu-status.is-connected', { timeout: 20000 });
+    await pastGate(page);
     await page.waitForFunction(() => document.querySelector('[data-setting="bf.vtx_band"] select')?.textContent?.includes('raceband'), undefined, { timeout: 20000 });
     expect(await page.locator('.lu-readings').innerText()).toMatch(/5917 MHz[\s\S]*25 mW|5917 MHz/);
     expect(errors).toEqual([]);
@@ -385,6 +449,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const { page, errors } = await signedInPage();
     await page.click('[data-demo=betaflight]');
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     await page.click('[data-view="flights"]');
     await page.click('button:has-text("Analyse latest")');
     await page.waitForSelector('.lu-findings', { timeout: 30000 });
@@ -401,6 +466,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     const { page, context, errors } = await signedInPage();
     await page.click('[data-demo=betaflight]');
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     await page.click('button[aria-label="Menu"]');
     await page.click('.lu-menu button:has-text("Your assistant")');
     await page.getByRole('button', { name: 'Allow' }).click();
@@ -434,6 +500,7 @@ describe.skipIf(!ready)('Armable in a browser', () => {
     await page.waitForSelector('.lu-offline:has-text("Offline")');
     await page.click('[data-demo=ardupilot]');
     await page.waitForSelector('.lu-status.is-connected');
+    await pastGate(page);
     await page.click('[aria-label^="Battery"]');
     const capacity = page.locator('[data-setting="param.BATT_CAPACITY"]');
     await capacity.waitFor();

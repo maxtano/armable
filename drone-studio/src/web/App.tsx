@@ -9,7 +9,7 @@ import { History } from './History';
 import { OsdEditor } from './OsdEditor';
 import { RadioFlash } from './RadioFlash';
 import type { PartId } from '../device/types';
-import { ClaudeLight, ClaudeSetup } from './ClaudeSetup';
+import { ClaudeLight, ClaudeSetup, Gate } from './ClaudeSetup';
 import { Connect, Consent, ModeSwitch } from './Connect';
 import { answerPrompt, connectDemo, connectUsb, disconnect, go, select, signOut, stopAll } from './controller';
 import { Diagram } from './Diagram';
@@ -123,7 +123,10 @@ function TopBar() {
       <div className="lu-top-end">
         {connected && section === 'bench' && <PartsMenu />}
         {connected && <button className="lu-btn is-stop" onClick={stopAll}><Square size={12} fill="currentColor" /> Stop</button>}
-        {snap.status === 'idle' ? <button className="lu-btn is-primary" disabled={!!busy} onClick={connectUsb}><Usb size={15} /> Connect</button> : <button className="lu-btn" onClick={disconnect}><Plug size={14} /> Disconnect</button>}
+        {/* The bench already offers this in signal orange, and the design system spends that colour on one thing at a time. */}
+        {snap.status === 'idle'
+          ? section !== 'bench' && <button className="lu-btn is-primary" disabled={!!busy} onClick={connectUsb}><Usb size={15} /> Connect</button>
+          : <button className="lu-btn" onClick={disconnect}><Plug size={14} /> Disconnect</button>}
       </div>
     </header>
   );
@@ -142,12 +145,20 @@ function DroneView() {
         {snap.status === 'idle' && (
           <div className="lu-idle">
             <Coil className="lu-idle-coil" width={150} height={38} />
-            <h1>Plug in your drone</h1>
-            <p className="lu-hint">Props off before you connect. Armable is early software, so check each change before you fly.</p>
+            <h1>Plug the flight controller into this computer</h1>
             <button className="lu-btn is-primary is-big" disabled={!!busy} onClick={connectUsb}><Cable size={18} /> Connect over USB</button>
-            <div className="lu-row"><span>No drone handy?</span><button className="lu-link" data-demo="betaflight" onClick={() => connectDemo('betaflight')}>Try the demo drone</button><span>· it won’t arm. Find out why.</span><button className="lu-link" data-demo="ardupilot" onClick={() => connectDemo('ardupilot')}>ArduPilot demo</button></div>
-            <button className="lu-link" onClick={() => setRadio(true)}><Radio size={14} /> Flash a receiver or radio over USB</button>
-            <button className="lu-build-cta" onClick={() => go('build')}><Hammer size={18} /><span><b>Don’t have a drone? Build one.</b><small>Pick parts that work together, with prices and links.</small></span></button>
+            <ul className="lu-idle-notes">
+              <li><b>Props off.</b> Motors can spin.</li>
+              <li>Charge-only cables won&rsquo;t work.</li>
+              <li>Your browser will ask which device.</li>
+            </ul>
+            <div className="lu-idle-else">
+              <button className="lu-link" data-demo="betaflight" onClick={() => connectDemo('betaflight')}>Use a demo drone</button>
+              <button className="lu-link" data-demo="ardupilot" onClick={() => connectDemo('ardupilot')}>ArduPilot demo</button>
+              <button className="lu-link" onClick={() => setRadio(true)}><Radio size={13} /> Flash a receiver</button>
+              <button className="lu-link" onClick={() => go('build')}><Hammer size={13} /> Build one</button>
+            </div>
+            <p className="lu-hint">Armable is early software. Check each change before you fly.</p>
           </div>
         )}
         {snap.status !== 'idle' && busy && !part && <div className="lu-progress is-floating" role="status"><span>{progress?.label ?? busy}</span>{progress?.total ? <progress value={progress.done ?? 0} max={progress.total} /> : <i />}</div>}
@@ -165,6 +176,7 @@ function Overlays() {
   return (
     <>
       <ClaudeSetup />
+      <Gate />
       {toast && <div className={`lu-toast is-${toast.tone}`} role="status">{toast.text}</div>}
       <SaveDialog />
       <FeedbackDialog />
