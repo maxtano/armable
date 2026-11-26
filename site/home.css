@@ -35,6 +35,32 @@ body:not([data-app=""]) .no-app { display: none; }
   .lit #film,.lit video{opacity:1;transform:scale(1)}
 
   .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,7,7,.72)0%,rgba(7,7,7,.28)30%,rgba(7,7,7,.9)70%,#070707 100%)}
+
+  /* The quad itself, raymarched into characters by the script. It is parked on
+     the right, clear of the headline, and kept out of the row the headline and
+     the pill actually occupy - on a short screen there is no room to share. */
+  /* Default is the top band: above the headline, which on a narrow or portrait
+     screen takes the middle of the hero for itself. */
+  .quad{position:absolute;left:14%;right:1%;top:4.5rem;height:32%;z-index:2;margin:0;
+        text-align:center;overflow:hidden;
+        font-family:var(--mono);white-space:pre;line-height:1;letter-spacing:0;
+        pointer-events:none;-webkit-user-select:none;user-select:none;
+        opacity:0;transition:opacity 1.6s ease .4s}
+  .lit .quad{opacity:.95}
+  .quad i{font-style:normal}
+  .q0{color:#9c4712}.q1{color:#ff8c3a}.q2{color:#ffe0c4}   /* body */
+  .q3{color:#2b7f8c}.q4{color:#5fc8d6}.q5{color:#cfeef5}   /* motors */
+  .q6{color:#8e887c}.q7{color:#ded7c9}.q8{color:#fff}      /* blades */
+  /* Only once the hero is wide enough for its right half to be empty top to
+     bottom does centring there beat sitting above the headline. */
+  /* A plain fallback; the script sets left, top and height from where the
+     headline actually lands, and a transform here would fight it. */
+  @media(min-width:1000px){.quad{left:34%;top:22%;height:min(58%,28rem)}}
+  @media(max-width:700px){.quad{left:8%;right:0}}
+  .quad.q-off{display:none}
+  /* A hero this short has nothing to give at any width. Everything else is the
+     script's business: it measures the real gap and stands the quad down itself. */
+  @media(max-height:560px){.quad{display:none}}
   .grid{position:absolute;inset:0;opacity:0;transition:opacity 1.1s ease .45s;
     background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
     background-size:100% 25%,25% 100%}
@@ -267,6 +293,7 @@ body:not([data-app=""]) .no-app { display: none; }
   @media(prefers-reduced-motion:reduce){
     html{scroll-behavior:auto}
     #film,video,.grid,.tick,.rise,.slot,.rv,.cue{opacity:1;transform:none;transition:none}
+    .quad{opacity:.92;transition:none}
     .grid{opacity:.3}
     h1 .w>span{transform:none;transition:none}
     .sweep{display:none}

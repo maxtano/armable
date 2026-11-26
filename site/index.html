@@ -68,6 +68,7 @@
   <video id="vid" autoplay muted loop playsinline style="display:none"></video>
   <canvas id="film" width="1400" height="1900" aria-label="FPV quad in flight at dusk"></canvas>
   <div class="veil"></div><div class="grid"></div>
+  <pre class="quad" id="quad" aria-hidden="true"></pre>
   <div class="sweep"></div>
   <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
 
@@ -268,7 +269,7 @@ function size(){var r=cv.getBoundingClientRect();if(!r.width)return;
   var d=Math.min(2,devicePixelRatio||1);cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);W=cv.width;H=cv.height;}
 size();addEventListener('resize',size);
 var onscreen=true;
-function frame(){
+function frame(ts){
   requestAnimationFrame(frame);
   if(!onscreen)return;                       /* stop burning a GPU once the hero scrolls away */
   t+=reduce?0:1;
@@ -296,8 +297,227 @@ function frame(){
   var v=x.createRadialGradient(W/2,H*.44,H*.12,W/2,H*.44,H*.6);
   v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.82)');
   x.fillStyle=v;x.fillRect(0,0,W,H);
+  /* characters need nothing like 60fps, and each frame rewrites a few thousand of them */
+  if(!reduce&&(ts||0)-qlast>=45){qlast=ts||0;qt+=1.7;qdraw();}
 }
 frame();
+
+/* 01b - the quad, raymarched into characters.
+   Signed distance fields, one ray per character cell: no model file and no image.
+   Few parts, three colours and big glyphs on purpose. At this size extra detail
+   reads as noise, and the silhouette is the only thing worth having. */
+var art=document.getElementById('quad');
+
+function sdBox(px,py,pz,bx,by,bz,r){
+  var qx=Math.abs(px)-bx,qy=Math.abs(py)-by,qz=Math.abs(pz)-bz;
+  var mx=qx>0?qx:0,my=qy>0?qy:0,mz=qz>0?qz:0;
+  var o=qx>qy?qx:qy; if(qz>o)o=qz;
+  return Math.sqrt(mx*mx+my*my+mz*mz)+(o<0?o:0)-r;
+}
+function sdCyl(px,py,pz,r,h){
+  var d=Math.sqrt(px*px+pz*pz)-r,dy=Math.abs(py)-h;
+  var a=d>dy?d:dy,mx=d>0?d:0,my=dy>0?dy:0;
+  return (a<0?a:0)+Math.sqrt(mx*mx+my*my);
+}
+function sdCap(px,py,pz,ax,ay,az,bx,by,bz,r){
+  var pax=px-ax,pay=py-ay,paz=pz-az,bax=bx-ax,bay=by-ay,baz=bz-az;
+  var h=(pax*bax+pay*bay+paz*baz)/(bax*bax+bay*bay+baz*baz);
+  h=h<0?0:h>1?1:h;
+  var dx=pax-bax*h,dy=pay-bay*h,dz=paz-baz*h;
+  return Math.sqrt(dx*dx+dy*dy+dz*dz)-r;
+}
+
+var sa0=0,ca0=1,sa1=0,ca1=1,sa2=0,ca2=1;
+function spin(a){
+  sa0=Math.sin(a);ca0=Math.cos(a);
+  sa1=Math.sin(a+2.0943951);ca1=Math.cos(a+2.0943951);
+  sa2=Math.sin(a+4.1887902);ca2=Math.cos(a+4.1887902);
+}
+
+/* Five parts, three colours. map() is the hot one and runs tens of thousands of
+   times a frame; matAt() re-reads the same parts only where a ray actually
+   landed, so the march never has to carry a material. Change one, change both. */
+function map(px,py,pz){
+  var d=sdBox(px,py,pz,.30,.095,.21,.055);                        /* hull */
+  var t=sdBox(px-.31,py-.045,pz,.045,.045,.062,.030); if(t<d)d=t; /* camera */
+  var ax=px<0?-px:px,az=pz<0?-pz:pz;             /* four arms, one evaluation */
+  t=sdCap(ax,py,az,.14,0,.09,.60,0,.48,.068);         if(t<d)d=t;
+  t=sdCyl(ax-.60,py-.035,az-.48,.115,.095);             if(t<d)d=t; /* motors */
+  /* Blades, in the folded frame. The mirroring is what makes the diagonals
+     counter-rotate the way they do on a real quad, and it costs nothing. */
+  var bx=ax-.60,bz=az-.48,by=py-.135;
+  t=sdBox(bx*ca0+bz*sa0-.18,by,bz*ca0-bx*sa0,.17,.017,.048,.012); if(t<d)d=t;
+  t=sdBox(bx*ca1+bz*sa1-.18,by,bz*ca1-bx*sa1,.17,.017,.048,.012); if(t<d)d=t;
+  t=sdBox(bx*ca2+bz*sa2-.18,by,bz*ca2-bx*sa2,.17,.017,.048,.012); if(t<d)d=t;
+  return d;
+}
+var M_BODY=0,M_MOTOR=1,M_BLADE=2;
+function matAt(px,py,pz){
+  var m=M_BODY,d=sdBox(px,py,pz,.30,.095,.21,.055);
+  var t=sdBox(px-.31,py-.045,pz,.045,.045,.062,.030); if(t<d){d=t;m=M_MOTOR;}
+  var ax=px<0?-px:px,az=pz<0?-pz:pz;
+  t=sdCap(ax,py,az,.14,0,.09,.60,0,.48,.068);         if(t<d){d=t;m=M_BODY;}
+  t=sdCyl(ax-.60,py-.035,az-.48,.115,.095);             if(t<d){d=t;m=M_MOTOR;}
+  var bx=ax-.60,bz=az-.48,by=py-.135;
+  t=sdBox(bx*ca0+bz*sa0-.18,by,bz*ca0-bx*sa0,.17,.017,.048,.012); if(t<d){d=t;m=M_BLADE;}
+  t=sdBox(bx*ca1+bz*sa1-.18,by,bz*ca1-bx*sa1,.17,.017,.048,.012); if(t<d){d=t;m=M_BLADE;}
+  t=sdBox(bx*ca2+bz*sa2-.18,by,bz*ca2-bx*sa2,.17,.017,.048,.012); if(t<d){d=t;m=M_BLADE;}
+  return m;
+}
+
+/* Brightness picks the tier. Inside the middle tier the character is chosen by
+   which way the surface runs on screen - strokes along the contour, square to the
+   projected normal - and that is what reads as shape instead of as a gradient. */
+var HATCH=['-','/','|','\\'];
+
+var QC=0,QR=0,qasp=1,qt=0,qlast=0;
+
+/* How far right the headline block actually inks. Its elements run the full
+   width of the hero, so their boxes say nothing - only the glyphs do. */
+function inkRight(el){
+  var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),n,m=0,i,rs;
+  while(n=w.nextNode()){
+    var r=document.createRange(); r.selectNodeContents(n);
+    rs=r.getClientRects();
+    for(i=0;i<rs.length;i++) if(rs[i].width&&rs[i].height&&rs[i].right>m) m=rs[i].right;
+  }
+  [].forEach.call(el.querySelectorAll('.act>*,.pill'),function(e){
+    var b=e.getBoundingClientRect(); if(b.right>m)m=b.right;
+  });
+  return m;
+}
+
+function qsize(){
+  /* Wide enough and the stylesheet centres it in the empty right half. Otherwise
+     it lives in the air between the top bar and the headline block - and that gap
+     moves with however the headline wraps, so measure it instead of guessing it
+     with a breakpoint. Too little air and it stands down. */
+  art.classList.remove('q-off');
+  var fr=document.querySelector('.frame').getBoundingClientRect();
+  var tb=document.querySelector('.top').getBoundingClientRect();
+  var mdEl=document.querySelector('.mid'), md=mdEl.getBoundingClientRect();
+  if(matchMedia('(min-width:1000px)').matches){
+    /* Beside the headline, and level with it. The hero's own middle is the wrong
+       mark: the headline block sits at the bottom of the hero, so centring on the
+       box leaves the quad floating well above the text it is meant to sit next to. */
+    var x0=Math.max(inkRight(mdEl)-fr.left+56, fr.width*.30);
+    var h=Math.min(fr.height*.62,460);
+    var y0=md.top+md.height/2-fr.top-h/2;
+    var lo=tb.bottom-fr.top+12, hi=fr.height-12;
+    if(y0<lo)y0=lo;
+    if(y0+h>hi)h=hi-y0;
+    if(fr.width-x0<300||h<160){ art.classList.add('q-off'); return; }
+    art.style.left=Math.round(x0)+'px';
+    art.style.top=Math.round(y0)+'px';
+    art.style.height=Math.round(h)+'px';
+  }
+  else{
+    art.style.left='';
+    var a0=Math.round(tb.bottom-fr.top+16), a1=Math.round(md.top-fr.top-16);
+    if(a1-a0<120){ art.classList.add('q-off'); return; }
+    art.style.top=a0+'px'; art.style.height=(a1-a0)+'px';
+  }
+  if(getComputedStyle(art).display==='none')return;
+  art.style.paddingTop='0px';
+  var b=art.getBoundingClientRect(); if(!b.width||!b.height)return;
+  QC=b.width>=560?84:b.width>=380?64:46;
+  QR=b.width>=560?24:b.width>=380?20:18;
+  var fs=Math.min(b.width/(QC*.601),b.height/QR);
+  fs=Math.max(4,Math.min(fs,26));
+  art.style.fontSize=fs+'px'; art.style.lineHeight=fs+'px';
+  var m=document.createElement('canvas').getContext('2d');
+  m.font=fs+'px '+getComputedStyle(art).fontFamily;
+  var cw=m.measureText('M').width||fs*.6;
+  qasp=(QC*cw)/(QR*fs);
+  /* centred by hand: a flex or grid parent would turn every colour span into an
+     item of its own and lay the whole grid out in a single row */
+  art.style.paddingTop=Math.max(0,(b.height-QR*fs)/2)+'px';
+}
+
+function qdraw(){
+  if(!QC)return;
+  var ang=qt*.0135,bob=Math.sin(qt*.034)*.085,bank=Math.sin(qt*.022)*.20;
+  spin(qt*.42);
+
+  var dist=2.40,ey=1.55+Math.sin(qt*.017)*.30;
+  var rox=Math.sin(ang)*dist,roy=ey,roz=Math.cos(ang)*dist;
+  var fx=-rox,fy=.05-roy,fz=-roz,fl=Math.sqrt(fx*fx+fy*fy+fz*fz);
+  fx/=fl;fy/=fl;fz/=fl;
+  var rx=fz,ry=0,rz=-fx,rl=Math.sqrt(rx*rx+rz*rz); rx/=rl;rz/=rl;
+  var ux=ry*fz-rz*fy,uy=rz*fx-rx*fz,uz=rx*fy-ry*fx;
+  /* bank rolls the whole basis about the view axis, so the march never pays for it */
+  var cb=Math.cos(bank),sb=Math.sin(bank);
+  var r2x=rx*cb+ux*sb,r2y=ry*cb+uy*sb,r2z=rz*cb+uz*sb;
+  ux=ux*cb-rx*sb; uy=uy*cb-ry*sb; uz=uz*cb-rz*sb;
+  rx=r2x;ry=r2y;rz=r2z;
+  roy-=bob;
+  /* the key light rides with the camera, so the craft never orbits into its own shadow */
+  var Lx=-.46*rx+.76*ux-.45*fx,Ly=-.46*ry+.76*uy-.45*fy,Lz=-.46*rz+.76*uz-.45*fz;
+  var Ll=Math.sqrt(Lx*Lx+Ly*Ly+Lz*Lz); Lx/=Ll;Ly/=Ll;Lz/=Ll;
+
+  var FOV=.27,BR=1.12,ocy=roy-.05;
+  var cc=rox*rox+ocy*ocy+roz*roz-BR*BR;
+  var out='',open=-1,row,col,i;
+
+  for(row=0;row<QR;row++){
+    var v=1-(row+.5)/QR*2;
+    for(col=0;col<QC;col++){
+      var u=((col+.5)/QC*2-1)*qasp;
+      var dx=fx+rx*u*FOV+ux*v*FOV,dy=fy+ry*u*FOV+uy*v*FOV,dz=fz+rz*u*FOV+uz*v*FOV;
+      var dl=Math.sqrt(dx*dx+dy*dy+dz*dz); dx/=dl;dy/=dl;dz/=dl;
+
+      /* the sky is most of the grid - one quadratic keeps it nearly free */
+      var b=rox*dx+ocy*dy+roz*dz,disc=b*b-cc,ch=' ',cls=-1;
+      if(disc>0){
+        var sq=Math.sqrt(disc),t0=-b-sq,t1=-b+sq;
+        if(t1>0){
+          var tt=t0>0?t0:0,hit=0;
+          for(i=0;i<52;i++){
+            var d=map(rox+dx*tt,roy+dy*tt,roz+dz*tt);
+            if(d<.005){hit=1;break;}
+            tt+=d; if(tt>t1)break;
+          }
+          if(hit){
+            var hx=rox+dx*tt,hy=roy+dy*tt,hz=roz+dz*tt,e=.004;
+            var d0=map(hx,hy,hz);
+            var nx=map(hx+e,hy,hz)-d0,ny=map(hx,hy+e,hz)-d0,nz=map(hx,hy,hz+e)-d0;
+            var nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1; nx/=nl;ny/=nl;nz/=nl;
+
+            var lam=nx*Lx+ny*Ly+nz*Lz; if(lam<0)lam=0;
+            var rim=1+(nx*dx+ny*dy+nz*dz); if(rim<0)rim=0;
+            var lum=.12+lam*.95+rim*rim*.40;
+            if(lum>1)lum=1;
+
+            var mat=matAt(hx,hy,hz);
+            var sh=lum<.40?0:lum<.70?1:2;
+            if(lum<.52){
+              var k=Math.round(Math.atan2(nx*ux+ny*uy+nz*uz,nx*rx+ny*ry+nz*rz)/.7853981634)+2;
+              ch=HATCH[((k%4)+4)%4];
+            }
+            else if(lum<.72) ch='+';
+            else if(lum<.88) ch='#';
+            else ch='@';
+            cls=mat*3+sh;
+          }
+        }
+      }
+      if(cls<0){ if(open>=0){out+='</i>';open=-1;} out+=ch; }
+      else{
+        if(cls!==open){ if(open>=0)out+='</i>'; out+='<i class=q'+cls+'>'; open=cls; }
+        out+=ch;
+      }
+    }
+    if(open>=0){out+='</i>';open=-1;}
+    out+='\n';
+  }
+  art.innerHTML=out;
+}
+
+qsize();
+/* the headline's wrap is only final once its font is, and the band depends on it */
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){qsize(); if(reduce)qdraw();});
+addEventListener('resize',function(){qsize(); if(reduce)qdraw();});
+if(reduce)qdraw();
 
 /* copy, on both connect lines */
 function wire(codeId,btnId){
