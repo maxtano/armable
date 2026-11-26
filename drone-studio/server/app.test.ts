@@ -121,7 +121,11 @@ describe('an assistant over MCP, a person in a tab, a simulated drone on the ben
     // Anthropic's directory requires a title and a read-only or destructive hint on every tool, panel tools included.
     for (const t of all) expect([t.name, !!t.title, typeof t.annotations?.readOnlyHint === 'boolean' || typeof t.annotations?.destructiveHint === 'boolean']).toEqual([t.name, true, true]);
     expect(tools.find(t => t.name === 'propose_change')!.inputSchema.required).toEqual(['changes']);
-    expect(claude.client.getInstructions()).toContain('"Start Armable", or a first message: call get_workspace');
+    // First contact opens the panel, and the demo comes before anyone is sent to fetch hardware.
+    const instructions = claude.client.getInstructions()!;
+    expect(instructions).toContain('First message, or "Start Armable": call get_workspace');
+    expect(instructions).toContain("opens Armable's panel beside the chat");
+    expect(instructions.indexOf('demo drone')).toBeLessThan(instructions.indexOf('browser tab (Chrome or Edge)'));
     expect((await claude.client.listPrompts()).prompts.map(p => p.name)).toContain('motor_wrong_way');
     expect(JSON.stringify(tools).length).toBeLessThan(12000);
   });
