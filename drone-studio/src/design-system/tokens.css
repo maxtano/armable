@@ -60,19 +60,21 @@
   --ds-axis-z: #9eb7cc;
   /* The ASCII craft, raymarched in the panel and on armable.ai: three brightness tiers each
      for body, motors and blades, plus the sky it flies in. Fixed like the canvas material
-     above - the drawing is a drawing, and does not restyle with the UI theme. */
-  --quad-body-dim: #9c4712;
-  --quad-body: #ff8c3a;
-  --quad-body-lit: #ffe0c4;
+     above - the drawing is a drawing, and does not restyle with the UI theme.
+     The intro page serves its own stylesheet and cannot read these, so the body tiers are
+     repeated as .q0/.q1/.q2 in site/home.css. Change the signal colour and change both. */
+  --quad-body-dim: #8a1a46;
+  --quad-body: #ff4d97;
+  --quad-body-lit: #ffd0e4;
   --quad-motor-dim: #2b7f8c;
   --quad-motor: #5fc8d6;
   --quad-motor-lit: #cfeef5;
   --quad-blade-dim: #8e887c;
   --quad-blade: #ded7c9;
   --quad-blade-lit: #ffffff;
-  --quad-sky-near: #2a2522;
-  --quad-sky-mid: #1a1a18;
-  --quad-sky-far: #141413;
+  --quad-sky-near: #2a1c2a;
+  --quad-sky-mid: #191419;
+  --quad-sky-far: #121013;
   --quad-grid: #ffffff1c;
 }
 
