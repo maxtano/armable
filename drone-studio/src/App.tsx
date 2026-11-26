@@ -74,6 +74,7 @@ import { isOneFootHoverStoryboard } from './components/first-flight-preview';
 import { createFirstLiveHoverStoryboard, isFirstLiveHoverStoryboard } from './core/first-live-show';
 import { StudioHome } from './components/StudioHome';
 import { WorkspaceNavigation, useWorkspaceNavigation } from './platform/WorkspaceNavigation';
+import { ArmableMark } from './platform/Visuals';
 import {
   createStoryboard,
   deleteStoryboard,
@@ -823,7 +824,7 @@ export default function App({
               }}
               aria-label="Armable home"
             >
-              <span className="brand-symbol">✳</span>
+              <ArmableMark className="brand-symbol" />
               <span>
                 armable<span className="brand-period">.</span>
               </span>

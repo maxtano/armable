@@ -41,3 +41,20 @@
 :is(.ds-input,.ds-select,.ds-textarea):disabled { opacity: .5; cursor: not-allowed; }
 @media (pointer: coarse) { .ds-button, .ds-input, .ds-select { min-height: var(--control-lg); } }
 @media (prefers-reduced-motion: reduce) { .ds-button { transition: none; } }
+
+/* Brand mark, and the arming-sequence loading indicator built from it. */
+.armable-mark,
+.armable-spinner svg { width: var(--icon-lg); height: var(--icon-lg); }
+.armable-spinner { display: inline-flex; line-height: 0; }
+.armable-core { fill: var(--ds-brand); transform-box: fill-box; transform-origin: center; }
+.armable-spinner .armable-core { opacity: 0.22; animation: armable-arm 1.4s linear infinite; }
+.armable-spinner .armable-core:nth-of-type(2) { animation-delay: 0.175s; }
+.armable-spinner .armable-core:nth-of-type(3) { animation-delay: 0.35s; }
+.armable-spinner .armable-core:nth-of-type(4) { animation-delay: 0.525s; }
+@keyframes armable-arm {
+  0%, 35%, 100% { opacity: 0.22; transform: scale(1); filter: none; }
+  10% { opacity: 1; transform: scale(1.75); filter: drop-shadow(0 0 3px var(--ds-brand-glow)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .armable-spinner .armable-core { animation: none; opacity: 0.9; }
+}

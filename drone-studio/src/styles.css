@@ -672,10 +672,9 @@ body {
   letter-spacing: -1px;
 }
 .brand-symbol {
-  font-size: 30px;
-  color: var(--accent);
-  line-height: 1;
-  font-weight: 400;
+  width: 26px;
+  height: 26px;
+  color: var(--ds-text);
 }
 .brand-period {
   color: var(--accent);
@@ -2174,7 +2173,8 @@ body {
     font-size: 19px;
   }
   .brand-symbol {
-    font-size: 27px;
+    width: 23px;
+    height: 23px;
   }
   .header-slash,
   .avatar,
