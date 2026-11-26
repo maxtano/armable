@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { App } from '@modelcontextprotocol/ext-apps/app-with-deps';
 import { Diagram } from '../web/Diagram';
+import { Welcome } from './Welcome';
 import { EMPTY_SNAP, set, useStore, type ProposalCard } from '../web/store';
 import type { Setting } from '../device/types';
 
@@ -40,13 +41,26 @@ export function Panel() {
       setInline(c?.displayMode !== 'fullscreen');
       setCanExpand(!!c?.availableDisplayModes?.includes('fullscreen'));
     };
-    app.onhostcontextchanged = context;
+    /* Beside the chat is where this belongs: a drone worth watching is no use as a strip
+       the height of a paragraph. The host has the last word - it answers with the mode it
+       actually set - so asking is all we can do, and the button below stays for when it
+       says no. Asked once per mount, which is also what puts the panel back on the right
+       when the host drops it back to inline on returning to a chat. */
+    let asked = false;
+    const prefer = async () => {
+      const c = app.getHostContext();
+      if (asked || c?.displayMode === 'fullscreen' || !c?.availableDisplayModes?.includes('fullscreen')) return;
+      asked = true;
+      try { setInline((await app.requestDisplayMode({ mode: 'fullscreen' })).mode !== 'fullscreen'); }
+      catch { /* an inline panel is still a working panel */ }
+    };
+    app.onhostcontextchanged = () => { context(); void prefer(); };
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       await run('armable_panel');
       timer = setTimeout(() => void poll(), document.visibilityState === 'hidden' ? 5000 : 1000);
     };
-    void app.connect().then(() => { context(); void poll(); });
+    void app.connect().then(() => { context(); void prefer(); void poll(); });
     return () => clearTimeout(timer);
   }, []);
   /** Call one of the panel's tools; each answers with what the panel should now show. */
@@ -90,17 +104,7 @@ export function Panel() {
         ))}
         {busy && <p className="pn-note" role="status">{busy}</p>}
         {state.cloudDemo && <p className="pn-note">This is the demo drone. <button className="lu-link" onClick={() => void run('armable_demo', { stop: true })}>Stop the demo</button> · <button className="lu-link" onClick={() => open('/')}>Plug in your own drone</button></p>}
-      </> : (
-        <section className="pn-welcome">
-          <h1>Armable is ready</h1>
-          <ol><li>You chat on the left.</li><li>Your drone shows here.</li><li>Nothing changes until you approve it.</li></ol>
-          <div className="pn-actions">
-            <button className="lu-btn is-primary is-big" data-panel="demo" disabled={!!busy} onClick={() => void demo()}>{busy || 'Try the demo drone'}</button>
-            <button className="lu-btn is-big" data-panel="plug" onClick={() => open('/')}>Plug in your drone</button>
-          </div>
-          <p className="pn-note">To plug in a drone, Armable opens in your browser. Use Chrome or Edge, props off.</p>
-        </section>
-      )}
+      </> : <Welcome busy={busy} onDemo={() => void demo()} onPlug={() => open('/')} />}
       <footer className="pn-foot"><button className="lu-link" onClick={() => open('/')}>Open Armable in the browser</button></footer>
     </div>
   );
