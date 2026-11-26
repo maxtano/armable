@@ -1,7 +1,8 @@
 /**
- * Setup instructions for agents, served at /agent-onboarding/SKILL.md. A person copies one line, “Read and follow
- * <this address>”, into any agent; the agent reads this file and connects itself. The file is written for the
- * Armable it is served from, so every address in it is already right.
+ * Setup instructions for agents, served at /agent-onboarding/SKILL.md. This is the fallback path: the button on
+ * the intro page installs the connector directly wherever a client takes a deep link, and this file is for the
+ * ones that do not. A person copies one line, “Read and follow <this address>”, into any agent; the agent reads
+ * this file and connects itself. It is written for the Armable it is served from, so every address is already right.
  */
 export function onboardingUrls(publicUrl: URL) {
   return { mcpUrl: new URL('/mcp', publicUrl).href, skillUrl: new URL('/agent-onboarding/SKILL.md', publicUrl).href, appUrl: new URL('/', publicUrl).href };
@@ -19,9 +20,13 @@ description: Connect to Armable, a drone bench, and use it to read, test, tune a
 
 # Armable: set up and use
 
-Armable is a drone bench in the browser. The person plugs their drone into ${appUrl} over USB, and you work on it
-through Armable's MCP server: read live values and settings, run checks, analyse flight logs, and propose changes.
-The person sees everything you do on a drawing of their drone and approves every change to it.
+Armable is a drone bench the person reaches through you. You read live values and settings, run checks, analyse
+flight logs and propose changes; they watch every call on a drawing of their drone and approve every change to it.
+You are the interface. Armable is the hands.
+
+Most people arrive by pressing Get started on ${appUrl}, which installs the connector in one click. You are reading
+this because that could not happen automatically, so section 1 is about getting connected and then getting out of
+the way.
 
 ## 1. Connect
 
@@ -60,12 +65,17 @@ ${vscodeConfig}
 You cannot finish the sign-in yourself. When your client opens an Armable sign-in page, ask the person to sign in
 (or create an account) and press Allow. If you edited a config file, tell the person to restart or reload their client.
 
-## 2. Check it works
+## 2. Start in the chat, not in a browser
 
-Call \`get_workspace\`. It says whether Armable is open in the person's browser and which drone is connected.
+Call \`get_workspace\`. It opens Armable's panel beside the chat, where your client supports MCP Apps, and says what
+is connected.
 
-- **Armable is not open:** ask the person to open ${appUrl} in Chrome or Edge and keep the tab open.
-- **No drone:** ask them to plug it in by USB and press Connect, or to choose a demo drone to try things out.
+Then say in two or three lines what Armable is and what you can now do, and offer the demo drone. The person starts
+it from the panel. It runs on the server: no hardware, no browser tab, nothing to install. Do something real on it —
+find a fault, propose the fix, let them approve it — before anyone is asked to fetch a drone.
+
+- **Their own drone:** ask them to open ${appUrl} in Chrome or Edge and press Connect. USB only reaches a drone from
+  a browser tab, which is the one thing this cannot do from here. The tab holds the connection; the work stays here.
 - **No drone at all:** offer to help them build one (section 4).
 
 ## 3. Work on the drone
@@ -95,6 +105,7 @@ Rules:
 ## 5. Tell the person
 
 When you are connected, say so in one line and suggest a first request, such as “Check my drone” or
-“Why does it shake at full throttle?”. If they have no drone yet: “Help me build my first quad.”
+“Why does it shake at full throttle?”. If they have no drone to hand: “Show me the demo drone.” If they have none at
+all: “Help me build my first quad.”
 `;
 }
