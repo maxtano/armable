@@ -373,6 +373,21 @@ var HATCH=['-','/','|','\\'];
 var QC=0,QR=0,qasp=1,qt=0,qlast=0;
 
 function qsize(){
+  /* Wide enough and the stylesheet centres it in the empty right half. Otherwise
+     it lives in the air between the top bar and the headline block - and that gap
+     moves with however the headline wraps, so measure it instead of guessing it
+     with a breakpoint. Too little air and it stands down. */
+  art.classList.remove('q-off');
+  if(matchMedia('(min-width:1000px)').matches){ art.style.top=''; art.style.height=''; }
+  else{
+    var fr=document.querySelector('.frame').getBoundingClientRect();
+    var tb=document.querySelector('.top').getBoundingClientRect();
+    var md=document.querySelector('.mid').getBoundingClientRect();
+    var y0=Math.round(tb.bottom-fr.top+16), y1=Math.round(md.top-fr.top-16);
+    if(y1-y0<120){ art.classList.add('q-off'); return; }
+    art.style.top=y0+'px'; art.style.height=(y1-y0)+'px';
+  }
+  if(getComputedStyle(art).display==='none')return;
   art.style.paddingTop='0px';
   var b=art.getBoundingClientRect(); if(!b.width||!b.height)return;
   QC=b.width>=560?84:b.width>=380?64:46;
@@ -469,6 +484,8 @@ function qdraw(){
 }
 
 qsize();
+/* the headline's wrap is only final once its font is, and the band depends on it */
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){qsize(); if(reduce)qdraw();});
 addEventListener('resize',function(){qsize(); if(reduce)qdraw();});
 if(reduce)qdraw();
 
