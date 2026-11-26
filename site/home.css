@@ -53,10 +53,9 @@ body:not([data-app=""]) .no-app { display: none; }
   .q6{color:#8e887c}.q7{color:#ded7c9}.q8{color:#fff}      /* blades */
   /* Only once the hero is wide enough for its right half to be empty top to
      bottom does centring there beat sitting above the headline. */
-  @media(min-width:1000px){
-    .quad{left:40%;top:50%;transform:translateY(-50%);height:min(58%,28rem)}
-  }
-  @media(min-width:1000px) and (max-height:820px){.quad{height:46%}}
+  /* A plain fallback; the script sets left, top and height from where the
+     headline actually lands, and a transform here would fight it. */
+  @media(min-width:1000px){.quad{left:34%;top:22%;height:min(58%,28rem)}}
   @media(max-width:700px){.quad{left:8%;right:0}}
   .quad.q-off{display:none}
   /* A hero this short has nothing to give at any width. Everything else is the

@@ -372,20 +372,50 @@ var HATCH=['-','/','|','\\'];
 
 var QC=0,QR=0,qasp=1,qt=0,qlast=0;
 
+/* How far right the headline block actually inks. Its elements run the full
+   width of the hero, so their boxes say nothing - only the glyphs do. */
+function inkRight(el){
+  var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),n,m=0,i,rs;
+  while(n=w.nextNode()){
+    var r=document.createRange(); r.selectNodeContents(n);
+    rs=r.getClientRects();
+    for(i=0;i<rs.length;i++) if(rs[i].width&&rs[i].height&&rs[i].right>m) m=rs[i].right;
+  }
+  [].forEach.call(el.querySelectorAll('.act>*,.pill'),function(e){
+    var b=e.getBoundingClientRect(); if(b.right>m)m=b.right;
+  });
+  return m;
+}
+
 function qsize(){
   /* Wide enough and the stylesheet centres it in the empty right half. Otherwise
      it lives in the air between the top bar and the headline block - and that gap
      moves with however the headline wraps, so measure it instead of guessing it
      with a breakpoint. Too little air and it stands down. */
   art.classList.remove('q-off');
-  if(matchMedia('(min-width:1000px)').matches){ art.style.top=''; art.style.height=''; }
+  var fr=document.querySelector('.frame').getBoundingClientRect();
+  var tb=document.querySelector('.top').getBoundingClientRect();
+  var mdEl=document.querySelector('.mid'), md=mdEl.getBoundingClientRect();
+  if(matchMedia('(min-width:1000px)').matches){
+    /* Beside the headline, and level with it. The hero's own middle is the wrong
+       mark: the headline block sits at the bottom of the hero, so centring on the
+       box leaves the quad floating well above the text it is meant to sit next to. */
+    var x0=Math.max(inkRight(mdEl)-fr.left+56, fr.width*.30);
+    var h=Math.min(fr.height*.62,460);
+    var y0=md.top+md.height/2-fr.top-h/2;
+    var lo=tb.bottom-fr.top+12, hi=fr.height-12;
+    if(y0<lo)y0=lo;
+    if(y0+h>hi)h=hi-y0;
+    if(fr.width-x0<300||h<160){ art.classList.add('q-off'); return; }
+    art.style.left=Math.round(x0)+'px';
+    art.style.top=Math.round(y0)+'px';
+    art.style.height=Math.round(h)+'px';
+  }
   else{
-    var fr=document.querySelector('.frame').getBoundingClientRect();
-    var tb=document.querySelector('.top').getBoundingClientRect();
-    var md=document.querySelector('.mid').getBoundingClientRect();
-    var y0=Math.round(tb.bottom-fr.top+16), y1=Math.round(md.top-fr.top-16);
-    if(y1-y0<120){ art.classList.add('q-off'); return; }
-    art.style.top=y0+'px'; art.style.height=(y1-y0)+'px';
+    art.style.left='';
+    var a0=Math.round(tb.bottom-fr.top+16), a1=Math.round(md.top-fr.top-16);
+    if(a1-a0<120){ art.classList.add('q-off'); return; }
+    art.style.top=a0+'px'; art.style.height=(a1-a0)+'px';
   }
   if(getComputedStyle(art).display==='none')return;
   art.style.paddingTop='0px';
