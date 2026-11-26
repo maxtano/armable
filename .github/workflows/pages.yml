@@ -4,7 +4,7 @@ name: Publish the Armable intro page to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
+    paths: ['site/**', 'drone-studio/public/favicon.*', '.github/workflows/pages.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,7 +22,8 @@ jobs:
           ARMABLE_URL: ${{ vars.ARMABLE_URL }}
         run: |
           cp -r site _site
-          cp drone-studio/public/favicon.svg _site/
+          # The app owns the mark; the page borrows it rather than keeping a second copy.
+          cp drone-studio/public/favicon.svg drone-studio/public/favicon.ico _site/
           touch _site/.nojekyll
           python3 - <<'PY'
           import os, re, pathlib
