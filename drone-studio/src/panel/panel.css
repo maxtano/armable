@@ -13,11 +13,56 @@ body { background: var(--ds-bg); }
 .pn-ask { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border: 1px solid var(--ds-accent-border); border-radius: 4px; background: var(--ds-accent-bg); }
 .pn-ask span { display: grid; gap: 2px; font-size: 14px; }
 .pn-ask b { font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ds-text-muted); }
-.pn-welcome { display: grid; gap: 14px; padding: 18px; border: 1px solid var(--ds-border); border-radius: 4px; background: var(--ds-surface); }
-.pn-welcome h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
-.pn-welcome ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 15px; }
-.pn-actions { display: grid; gap: 8px; }
+/* The intro is a dark slab whatever theme the host is in. Looking like more of the
+   conversation is exactly what made it read as a block of text rather than as a tool sitting
+   beside one. `.stage` is the design system's fixed-dark scope, so every control inside
+   resolves to the dark palette without a second set of rules for it. */
+.pn-welcome { display: grid; gap: 16px; padding: 0 0 16px; border: 1px solid var(--ds-border); border-radius: var(--radius-panel); background: var(--ds-bg); color: var(--ds-text); overflow: hidden; }
+
+/* The sky. A horizon grid behind the craft, fading out before it reaches the text, so the
+   slab has depth without anything competing with the headline. */
+.pn-sky { position: relative; aspect-ratio: 16 / 9; min-height: 136px; max-height: 208px; border-bottom: 1px solid var(--ds-border); background:
+  radial-gradient(120% 90% at 50% 18%, var(--quad-sky-near) 0%, var(--quad-sky-mid) 58%, var(--quad-sky-far) 100%); }
+.pn-sky::before { content: ''; position: absolute; inset: 0; opacity: .5; background:
+  repeating-linear-gradient(to right, var(--quad-grid) 0 1px, transparent 1px 34px),
+  repeating-linear-gradient(to bottom, var(--quad-grid) 0 1px, transparent 1px 34px);
+  -webkit-mask-image: radial-gradient(90% 70% at 50% 42%, black 20%, transparent 78%);
+  mask-image: radial-gradient(90% 70% at 50% 42%, black 20%, transparent 78%); }
+/* Instrument ticks: four corner marks, the cheapest way to say "this is a readout". */
+.pn-sky::after { content: ''; position: absolute; inset: 8px; pointer-events: none; background:
+  linear-gradient(var(--lu-signal) 0 0) 0 0 / 9px 1px,            linear-gradient(var(--lu-signal) 0 0) 0 0 / 1px 9px,
+  linear-gradient(var(--lu-signal) 0 0) 100% 0 / 9px 1px,         linear-gradient(var(--lu-signal) 0 0) 100% 0 / 1px 9px,
+  linear-gradient(var(--lu-signal) 0 0) 0 100% / 9px 1px,         linear-gradient(var(--lu-signal) 0 0) 0 100% / 1px 9px,
+  linear-gradient(var(--lu-signal) 0 0) 100% 100% / 9px 1px,      linear-gradient(var(--lu-signal) 0 0) 100% 100% / 1px 9px;
+  background-repeat: no-repeat; opacity: .6; }
+
+.pn-quad { position: absolute; inset: 0; margin: 0; z-index: 1; font-family: var(--font-mono);
+  white-space: pre; line-height: 1; letter-spacing: 0; text-align: center; overflow: hidden;
+  pointer-events: none; -webkit-user-select: none; user-select: none; }
+.pn-quad i { font-style: normal; }
+/* The craft's own materials, not UI palette: three tiers each for body, motors and blades. */
+.pn-quad .q0 { color: var(--quad-body-dim); }  .pn-quad .q1 { color: var(--quad-body); }  .pn-quad .q2 { color: var(--quad-body-lit); }
+.pn-quad .q3 { color: var(--quad-motor-dim); } .pn-quad .q4 { color: var(--quad-motor); } .pn-quad .q5 { color: var(--quad-motor-lit); }
+.pn-quad .q6 { color: var(--quad-blade-dim); } .pn-quad .q7 { color: var(--quad-blade); } .pn-quad .q8 { color: var(--quad-blade-lit); }
+
+.pn-tag { position: absolute; left: 14px; bottom: 12px; z-index: 2; display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ds-text-subtle); }
+.pn-tag i { width: 6px; height: 6px; border-radius: 50%; background: var(--lu-lamp); box-shadow: 0 0 7px var(--lu-lamp); animation: pn-pulse 2.4s ease-in-out infinite; }
+@keyframes pn-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+
+.pn-pitch { padding: 0 16px; display: grid; gap: 8px; }
+.pn-welcome h1 { margin: 0; font-size: 21px; letter-spacing: -0.015em; }
+.pn-lead { margin: 0; color: var(--ds-text-muted); font-size: 14px; }
+/* Numbered by the counter rather than by a marker, so the digits can be monospaced and
+   coloured without a second element to hang them on. */
+.pn-steps { margin: 4px 0 0; padding: 0; list-style: none; counter-reset: pn; display: grid; gap: 6px; font-size: 13.5px; }
+.pn-steps li { counter-increment: pn; display: grid; grid-template-columns: 22px 1fr; align-items: baseline; color: var(--ds-text-muted); }
+.pn-steps li::before { content: counter(pn, decimal-leading-zero); font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--lu-signal); }
+
+.pn-actions { padding: 0 16px; display: grid; gap: 8px; }
 .pn-actions .lu-btn { justify-content: center; }
 .pn-note { margin: 0; color: var(--ds-text-subtle); font-size: 12.5px; }
+.pn-welcome > .pn-note { padding: 0 16px; }
 .pn-note.is-bad { color: var(--ds-danger); }
 .pn-foot { display: flex; justify-content: center; }

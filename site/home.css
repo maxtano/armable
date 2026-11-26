@@ -49,6 +49,9 @@ body:not([data-app=""]) .no-app { display: none; }
         opacity:0;transition:opacity 1.6s ease .4s}
   .lit .quad{opacity:.95}
   .quad i{font-style:normal}
+  /* The same craft flies in the app's chat panel, which serves its own stylesheet and
+     cannot read these. The body tiers are repeated there as --quad-body-* in
+     drone-studio/src/design-system/tokens.css. Change the signal colour and change both. */
   .q0{color:#8a1a46}.q1{color:#ff4d97}.q2{color:#ffd0e4}   /* body */
   .q3{color:#2b7f8c}.q4{color:#5fc8d6}.q5{color:#cfeef5}   /* motors */
   .q6{color:#8e887c}.q7{color:#ded7c9}.q8{color:#fff}      /* blades */
