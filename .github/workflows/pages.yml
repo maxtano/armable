@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The sitemap dates each page from its own history, which a shallow clone does not carry.
+          fetch-depth: 0
       - uses: actions/configure-pages@v6
       - name: Assemble the site
         env:
@@ -26,12 +29,36 @@ jobs:
           cp drone-studio/public/favicon.svg drone-studio/public/favicon.ico _site/
           touch _site/.nojekyll
           python3 - <<'PY'
-          import os, re, pathlib
+          import os, re, pathlib, subprocess
           url = os.environ.get('ARMABLE_URL', '').strip().rstrip('/')
           if url and not re.fullmatch(r'https://[A-Za-z0-9.-]+(:[0-9]+)?(/[A-Za-z0-9._~/-]*)?', url):
               raise SystemExit(f'ARMABLE_URL must be a plain https address, got: {url!r}')
           for page in pathlib.Path('_site').rglob('*.html'):
               page.write_text(page.read_text().replace('__ARMABLE_URL__', url))
+
+          # The sitemap says when each page last changed, and Google reads it when deciding whether to
+          # come back. Written by hand it goes stale on the next edit, and a date that never moves is a
+          # reason to stay away - so take it from the history of the files the page is actually made of.
+          def last_changed(*paths):
+              seen = [subprocess.run(['git', 'log', '-1', '--format=%cs', '--', p],
+                                     capture_output=True, text=True).stdout.strip() for p in paths]
+              return max((d for d in seen if d), default='')
+
+          sitemap = pathlib.Path('_site/sitemap.xml')
+          for loc, dated in re.findall(r'<loc>([^<]*)</loc><lastmod>([^<]*)</lastmod>', sitemap.read_text()):
+              page = pathlib.Path('site') / re.sub(r'^https?://[^/]+/', '', loc)
+              if page.is_dir():
+                  page = page / 'index.html'
+              if not page.exists():
+                  raise SystemExit(f'sitemap lists {loc}, which is no page in site/')
+              # Its markup and the stylesheets it loads: a page restyled is a page changed.
+              sheets = [os.path.normpath(page.parent / a)
+                        for a in re.findall(r'(?:href|src)="([^"?#:]+\.(?:css|js))"', page.read_text())]
+              fresh = last_changed(str(page), *sheets)
+              if fresh:
+                  sitemap.write_text(sitemap.read_text().replace(
+                      f'<loc>{loc}</loc><lastmod>{dated}</lastmod>',
+                      f'<loc>{loc}</loc><lastmod>{fresh}</lastmod>'))
           PY
       - uses: actions/upload-pages-artifact@v5
         with:
