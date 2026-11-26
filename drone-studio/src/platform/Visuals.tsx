@@ -1,16 +1,48 @@
 import { useId } from 'react';
 
+/** Motor positions in the mark, in motor order: front left, front right, rear right, rear left. */
+const MOTORS = [
+  [9, 9],
+  [23, 9],
+  [23, 23],
+  [9, 23],
+] as const;
+
 /** Decorative artwork is deliberately independent of aircraft state. */
 export function ArmableMark({ className = '' }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <path
-        d="M16 1v9M16 22v9M1 16h9M22 16h9M5.4 5.4l6.4 6.4M20.2 20.2l6.4 6.4M5.4 26.6l6.4-6.4M20.2 11.8l6.4-6.4"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      <path d="m16 9 7 7-7 7-7-7Z" fill="currentColor" />
+    <svg className={`armable-mark ${className}`.trim()} viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <g transform="rotate(22 16 16)">
+        <g stroke="currentColor" strokeWidth="2">
+          {MOTORS.map(([cx, cy]) => (
+            <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="5" />
+          ))}
+        </g>
+        <g>
+          {MOTORS.map(([cx, cy]) => (
+            <circle className="armable-core" key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.75" />
+          ))}
+        </g>
+      </g>
     </svg>
+  );
+}
+
+/**
+ * The mark's cores light in motor order while work is in flight. It reports only that this
+ * interface is busy; it is not aircraft state, and it never implies an armed or flying aircraft.
+ */
+export function ArmableSpinner({
+  className = '',
+  label = 'Working',
+}: {
+  className?: string;
+  label?: string;
+}) {
+  return (
+    <span className={`armable-spinner ${className}`.trim()} role="status" aria-label={label}>
+      <ArmableMark />
+    </span>
   );
 }
 

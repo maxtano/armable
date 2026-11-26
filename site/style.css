@@ -1,14 +1,14 @@
-/* Armable's public pages, in the app's look: warm grey casing, charcoal, one signal orange, copper. */
+/* Armable's public pages, in the app's look: cool porcelain casing, charcoal, one signal magenta, plum. */
 @font-face { font-family: 'Manrope'; font-style: normal; font-weight: 200 800; font-display: swap; src: url(fonts/manrope-normal-latin.woff2) format('woff2'); }
 :root {
-  --bg: #e9e7e2; --surface: #f6f5f1; --raised: #e0ded8; --ink: #1c1c1a; --muted: #45443f; --subtle: #57554f;
-  --line: #cdcac2; --strong: #7a776f; --primary: #262624; --on-primary: #f6f5f1; --signal: #c2440f; --signal-bright: #e2561c;
-  --copper: #b8692f; --ok: #2d6731; --ok-bg: #dfeada; --warn: #7a5200; --warn-bg: #f4e9d0;
-  --shadow: 0 1px 0 #ffffff inset, 0 1px 2px #3a2f2214, 0 6px 16px #3a2f220f;
+  --bg: #ece9ec; --surface: #f8f6f8; --raised: #e2dee3; --ink: #1a181c; --muted: #45414a; --subtle: #575260;
+  --line: #d2ccd4; --strong: #78717e; --primary: #a8004f; --on-primary: #ffffff; --signal: #c2005c; --signal-bright: #e6007a;
+  --copper: #b4557f; --ok: #1f6b3a; --ok-bg: #dcecdf; --warn: #7a5200; --warn-bg: #f6e9cf;
+  --shadow: 0 1px 0 #ffffff inset, 0 1px 2px #2a1f2a14, 0 6px 16px #2a1f2a0f;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #151514; --surface: #1f1f1d; --raised: #2b2a27; --ink: #efede7; --muted: #c4c1b8; --subtle: #aaa79e; --line: #3c3b37; --strong: #85827a;
-    --primary: #efede7; --on-primary: #1a1a18; --signal: #f08a4b; --signal-bright: #f2733a; --copper: #c9824a; --ok: #9fd38f; --ok-bg: #1f2c1d; --warn: #e6c27a; --warn-bg: #322a18;
+  :root { --bg: #141317; --surface: #1e1d22; --raised: #2a2831; --ink: #f0ecf0; --muted: #c3bdc8; --subtle: #a8a2ae; --line: #3a3842; --strong: #8a8494;
+    --primary: #ff2e88; --on-primary: #2b0015; --signal: #ff5fa5; --signal-bright: #ff3d93; --copper: #c9679a; --ok: #93d6a4; --ok-bg: #1a2a1f; --warn: #f0c97a; --warn-bg: #30260f;
     --shadow: 0 1px 0 #ffffff0d inset, 0 1px 2px #00000066, 0 8px 20px #00000040; }
 }
 * { box-sizing: border-box; margin: 0; }

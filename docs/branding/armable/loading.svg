@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Loading">
+  <defs>
+    <filter id="armable-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="1.6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g transform="rotate(22 16 16)">
+    <g fill="none" stroke="currentColor" stroke-width="2" opacity=".55">
+      <circle cx="9" cy="9" r="5"/><circle cx="23" cy="9" r="5"/><circle cx="9" cy="23" r="5"/><circle cx="23" cy="23" r="5"/>
+    </g>
+    <g fill="var(--armable-accent, #ff2e88)" filter="url(#armable-glow)">
+      <circle cx="9" cy="9" r="1.75" opacity=".2">
+        <animate attributeName="opacity" values=".2;1;.2" keyTimes="0;0.1;0.35" dur="1.4s" begin="0s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="1.75;3;1.75" keyTimes="0;0.1;0.35" dur="1.4s" begin="0s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="23" cy="9" r="1.75" opacity=".2">
+        <animate attributeName="opacity" values=".2;1;.2" keyTimes="0;0.1;0.35" dur="1.4s" begin="0.175s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="1.75;3;1.75" keyTimes="0;0.1;0.35" dur="1.4s" begin="0.175s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="23" cy="23" r="1.75" opacity=".2">
+        <animate attributeName="opacity" values=".2;1;.2" keyTimes="0;0.1;0.35" dur="1.4s" begin="0.35s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="1.75;3;1.75" keyTimes="0;0.1;0.35" dur="1.4s" begin="0.35s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="9" cy="23" r="1.75" opacity=".2">
+        <animate attributeName="opacity" values=".2;1;.2" keyTimes="0;0.1;0.35" dur="1.4s" begin="0.525s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="1.75;3;1.75" keyTimes="0;0.1;0.35" dur="1.4s" begin="0.525s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+  </g>
+</svg>
