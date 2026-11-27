@@ -448,28 +448,30 @@ if(APP){
      tile and not beside Claude: to somebody who has never heard of Armable the two names read as
      one product with a word added, and choosing between them is not a question they can answer. */
   var AGENTS=[
-    {name:'Claude',mark:'claude',cls:'cl',sub:'Opens the Claude app',
-     href:'https://claude.ai/new?q='+q,app:'claude://claude.ai/new?q='+q},
-    {name:'ChatGPT',mark:'openai',sub:'Opens ChatGPT',href:'https://chatgpt.com/?q='+q},
+    {name:'Claude',mark:'claude',cls:'cl',sub:'Opens a new chat at claude.ai',
+     href:'https://claude.ai/new?q='+q,
+     note:'Opening a new chat in Claude. The question is on your clipboard too.'},
+    {name:'ChatGPT',mark:'openai',sub:'Opens ChatGPT - paste the question in',
+     href:'https://chatgpt.com/?q='+q,
+     note:'Opening ChatGPT. Paste the question - it is on your clipboard.'},
     {name:'Any other agent',mark:'bot',sub:'Claude Code, Cursor, VS Code, anything with MCP',
-     as:'your assistant'}
+     note:'Question copied. Paste it into your assistant and send it.'}
   ];
-  /* Try the installed app, and keep the web address in hand. Nothing can ask the browser whether a
-     scheme is registered, so the only tell is the page itself: if the app takes over, this document
-     goes hidden and the fallback stands down. If it does not, we were never going anywhere else. */
-  var touch=(navigator.maxTouchPoints||0)>0;
-  function reach(a){
-    if(!a.app||touch){ if(a.href)location.href=a.href; return; }
-    var fall=setTimeout(function(){ if(!document.hidden)location.href=a.href; },1200);
-    document.addEventListener('visibilitychange',function(){ if(document.hidden)clearTimeout(fall); },{once:true});
-    location.href=a.app;
-  }
   var start=document.getElementById('start'),box=document.getElementById('pick'),
       tiles=document.getElementById('tiles'),hint=document.getElementById('pickhint'),
       shut=document.getElementById('pickx');
   if(start&&box&&tiles&&hint){
     AGENTS.forEach(function(a){
-      var b=document.createElement('button');b.type='button';b.className='tile';
+      /* A real link for the two that lead somewhere, so the browser does the navigating: a new tab,
+         this page left where it was, and cmd-click and the rest still behaving. What stood here
+         raced the browser instead - it asked for a claude:// deep link and, a second and a bit
+         later, gave up and followed the web address, so the "Open in Claude?" prompt was still on
+         screen when the page walked out from under it, and the app, handed the question by the
+         scheme, dropped it into whatever chat was already open. Nothing can ask the browser whether
+         a scheme is registered, so there was never an honest moment to stop waiting. */
+      var b=document.createElement(a.href?'a':'button');
+      if(a.href){ b.href=a.href; b.target='_blank'; b.rel='noopener'; } else b.type='button';
+      b.className='tile';
       b.innerHTML='<svg class="tmark '+(a.cls||'')+'" viewBox="0 0 24 24" aria-hidden="true">'
         +'<use href="#m-'+a.mark+'" /></svg>'
         +'<span class="tname"></span><span class="tsub"></span>';
@@ -478,11 +480,8 @@ if(APP){
       b.addEventListener('click',function(){
         if(navigator.clipboard&&navigator.clipboard.writeText)
           navigator.clipboard.writeText(ASK).catch(function(){});
-        /* One line: the hint sits in reserved space, and a second line resizes the dialog. */
-        hint.textContent=a.href
-          ? 'Opening '+a.name+'. The question is on your clipboard too.'
-          : 'Question copied. Paste it into '+(a.as||a.name)+' and send it.';
-        reach(a);
+        /* Two lines of reserved space; a third would resize the dialog under the cursor. */
+        hint.textContent=a.note;
       });
       tiles.appendChild(b);
     });
