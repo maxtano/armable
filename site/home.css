@@ -141,7 +141,7 @@ body:not([data-app=""]) .no-app { display: none; }
   @keyframes pickin{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
   .pickbox h2{margin:0;font-size:1.12rem;font-weight:800;letter-spacing:-.01em}
   .picksub{margin:0 0 .35rem;font-size:.82rem;line-height:1.5;color:var(--mut)}
-  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  .tiles{display:grid;gap:.5rem}
   .tile{display:grid;grid-template-columns:22px 1fr;grid-template-rows:auto auto;
         gap:.1rem .6rem;align-items:center;text-align:left;font-family:inherit;cursor:pointer;
         background:rgba(255,255,255,.035);border:1px solid var(--rule);border-radius:12px;
@@ -159,7 +159,6 @@ body:not([data-app=""]) .no-app { display: none; }
          font-family:inherit;font-size:1.3rem;line-height:1;color:var(--faint)}
   .pickx:hover{color:var(--ink);background:rgba(255,255,255,.07)}
   @media(max-width:480px){
-    .tiles{grid-template-columns:1fr}
     .pickbox{padding:1.3rem 1.1rem 1rem}
   }
 
