@@ -72,6 +72,11 @@ export function createApp(options: AppOptions) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'same-origin');
     res.setHeader('X-Frame-Options', 'DENY');
+    // The app is not a search destination; armable.ai is. Google had this host ranking above the landing page,
+    // which is the one place somebody who has not heard of Armable can find out what it is. noindex rather than a
+    // robots.txt Disallow: a crawler kept out never reads the rule telling it to leave, so the entry it already has
+    // just goes quiet instead of going away.
+    res.setHeader('X-Robots-Tag', 'noindex');
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-src https://www.youtube-nocookie.com; worker-src 'self' blob:; base-uri 'none'; form-action 'self'");
     next();
   });
@@ -325,6 +330,9 @@ export function createApp(options: AppOptions) {
   // ---- The built interface -----------------------------------------------------------------------------------------
 
   // Setup instructions an agent can read and follow on its own (“Setup for agents”).
+  // Crawling stays open on purpose: the noindex header above only works on a page a crawler is allowed to fetch.
+  // Without this route the catch-all below answers with the app's HTML, which is no answer at all.
+  app.get('/robots.txt', (_req, res) => { res.type('text/plain; charset=utf-8').set('Cache-Control', 'public, max-age=3600').send('User-agent: *\nAllow: /\n'); });
   app.get('/agent-onboarding/SKILL.md', (_req, res) => { res.type('text/markdown; charset=utf-8').set('Cache-Control', 'public, max-age=300').send(agentSkill(publicUrl)); });
 
   // ---- Sign in with Google -------------------------------------------------------------------------------------------
