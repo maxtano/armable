@@ -443,15 +443,16 @@ if(APP){
     +'useful to me, and what it cannot do. If it sounds like a fit, walk me through connecting it to you, one step '
     +'at a time.';
   var q=encodeURIComponent(ASK);
-  /* Four doors, not six. Cursor, VS Code and “anything else” all did the same thing once the
-     button stopped installing connectors - copy the question, paste it in - so they are one tile
-     with its own mark, and nobody has to find their editor in a list to learn what Armable is. */
+  /* Two doors and a drawer. Everything that is not Claude or ChatGPT does the same thing here -
+     copy the question, paste it in - so it is one tile that names the rest. Claude Code is in that
+     tile and not beside Claude: to somebody who has never heard of Armable the two names read as
+     one product with a word added, and choosing between them is not a question they can answer. */
   var AGENTS=[
     {name:'Claude',mark:'claude',cls:'cl',sub:'Opens the Claude app',
      href:'https://claude.ai/new?q='+q,app:'claude://claude.ai/new?q='+q},
     {name:'ChatGPT',mark:'openai',sub:'Opens ChatGPT',href:'https://chatgpt.com/?q='+q},
-    {name:'Claude Code',mark:'term',cls:'tm',sub:'Copies the question'},
-    {name:'Any other agent',mark:'bot',sub:'Cursor, VS Code, anything with MCP',as:'your assistant'}
+    {name:'Any other agent',mark:'bot',sub:'Claude Code, Cursor, VS Code, anything with MCP',
+     as:'your assistant'}
   ];
   /* Try the installed app, and keep the web address in hand. Nothing can ask the browser whether a
      scheme is registered, so the only tell is the page itself: if the app takes over, this document
