@@ -44,6 +44,11 @@ describe('agent onboarding', () => {
     // The button it used to name is gone from the page; a document that still points at it sends
     // somebody looking for something that is not there.
     expect(text).not.toContain('Get started');
+    // And it says how long the answer should be, not only what is in it. Given the facts and no
+    // shape, an assistant writes the brief back out, which is the wall of text it is meant to avoid.
+    expect(text).toContain('under 150 words');
+    expect(text).toMatch(/\*\*Then ask\.\*\*/);
+    expect(text).toContain('Do not list features');
   });
 
   it('tells the intro page where assistants connect, without signing in', async () => {

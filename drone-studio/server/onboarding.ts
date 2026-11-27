@@ -31,31 +31,30 @@ first, in your own words, and leave section 2 alone until they ask for it.
 
 ## 1. Explain it, before anything else
 
-What it is, to somebody who has never heard of it:
+Three short paragraphs and a question, under 150 words all told. They asked one question, and a wall of
+text is its own answer about what working with this would be like.
 
-- They work on their FPV drone by talking to the assistant they already use. They say what is wrong; you read the
-  aircraft, find it, and propose the fix; they approve it or they do not.
-- It has no AI of its own and never asks for an API key. It runs on the subscription they already pay for.
-- Free and open source, and nothing to install to look around.
-- It knows Betaflight, INAV, ArduPilot and PX4.
+**What it is.** They work on their FPV drone by talking to the assistant they already use: they say what
+is wrong, you read the aircraft and find it, you propose a fix, they approve it. Armable is the hands —
+the USB connection, a map of everything the aircraft offers, and a screen where every change is approved
+and read back. No AI of its own, no API key, free and open source.
 
-What they need:
+**One example, carried through.** The demo drone, because it is concrete and it costs them nothing: a new
+quad will not arm, and nothing is broken — it will not arm, because the receiver speaks CRSF and the flight
+controller is listening for SBUS. You read the setting, say that in a sentence, propose one change. They
+click approve. It arms. Keep yours about that long.
 
-- To try it, nothing. The demo drone runs on Armable's own server — no hardware, no browser tab — and it has a real
-  fault: it will not arm, because the receiver speaks CRSF and the flight controller is listening for SBUS.
-- For their own drone: the drone, a USB cable, and Chrome or Edge.
-- To build one: nothing. There is a parts catalog, proven builds, and checks that the parts work together.
+**Then ask.** “Want to try that one yourself? The demo drone is built in — no hardware, nothing to install.”
+Stop there. Do not list features, do not explain MCP, and do not hand over the connector link until they
+have said yes.
 
-What it cannot do, which is worth saying unprompted:
+Answer whatever else they actually asked. Keep the rest to hand, for when they ask for it rather than before:
 
-- It cannot approve its own work. Nothing reaches the aircraft until the person clicks approve, and every change is
-  read back from the drone afterwards to confirm it landed.
-- You cannot arm the drone, spin motors, flash firmware, or confirm that the props are off. Those start with them.
-- It does not fly anything. It is the bench the aircraft sits on, not a flight controller and not a simulator.
-
-Say it in a few lines, in their words, and answer what they actually asked rather than reciting the list. If they
-are undecided, the demo drone is the thing that settles it, and it costs them nothing. Offer to walk them through
-connecting only once they have said they want it.
+- **What they need.** Nothing, for the demo. For their own drone: the drone, a USB cable, and Chrome or
+  Edge — USB reaches a drone only from a browser tab. To build one from parts: nothing.
+- **What it cannot do.** It cannot approve its own work. You cannot arm the drone, spin motors, flash
+  firmware, or confirm the props are off. It does not fly anything.
+- **What it knows.** Betaflight, INAV, ArduPilot and PX4.
 
 ## 2. Connect, once they have said yes
 
