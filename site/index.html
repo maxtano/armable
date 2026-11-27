@@ -91,12 +91,12 @@
        so it can read it, fix it, and help you build one.</p>
 
     <div class="act rise" style="--d:.60s">
-      <a class="btn big needs-app" id="start" href="__ARMABLE_URL__">Get started <i>&rsaquo;</i></a>
-      <button class="lnk needs-app" id="other" type="button" aria-expanded="false" aria-controls="agents">Another agent</button>
+      <button class="btn big needs-app" id="start" type="button" aria-expanded="false" aria-controls="agents">Learn more <i>&rsaquo;</i></button>
       <a class="btn no-app" href="https://github.com/maxtano/armable#run-it">Run it yourself</a>
     </div>
 
     <div class="agents needs-app" id="agents" hidden>
+      <p class="pick">Which assistant do you use?</p>
       <div class="row" id="agentrow"></div>
       <p class="hint" id="agenthint" role="status"></p>
     </div>
@@ -417,48 +417,65 @@ if('IntersectionObserver' in window){
   },{threshold:0}).observe(document.querySelector('.frame'));
 }
 
-/* One door. Claude is the only client with an install address we can send somebody to, so it
-   gets the button; every other agent gets the one thing it needs on the clipboard and a line
-   saying where to put it. The MCP address can only be assembled here, because the build
-   substitutes a bare URL and it has to be percent-encoded inside the link. */
+/* One action: find out what this is, inside the assistant that would be using it. Nobody installs a
+   connector for a thing nobody has explained to them yet, so the button opens a conversation rather
+   than an install dialog, and the assistant reads Armable's own onboarding file before it answers -
+   a fresh chat has never heard of Armable and would otherwise invent it.
+
+   The question goes on the clipboard whichever agent is picked, because opening it in the box is the
+   part we do not control: ChatGPT drops ?q= on the floor (it rewrites the URL to /uc/<id> and leaves
+   the composer empty), and Claude's own behaviour here has changed before. Pasting always works. */
 var APP=(document.body.dataset.app||'').replace(/\/+$/,'');
 if(APP){
-  var MCP=APP+'/mcp', SKILL=APP+'/agent-onboarding/SKILL.md';
-  var start=document.getElementById('start');
-  if(start)start.href='https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Armable&connectorUrl='+encodeURIComponent(MCP);
-
-  function b64(t){return btoa(String.fromCharCode.apply(null,new TextEncoder().encode(t)));}
+  var SKILL=APP+'/agent-onboarding/SKILL.md';
+  var ASK='I am looking at Armable - https://armable.ai - and I want to understand it before I install anything. '
+    +'Read '+SKILL+', then tell me in plain words what it does with an FPV drone, what I would need before it is '
+    +'useful to me, and what it cannot do. If it sounds like a fit, walk me through connecting it to you, one step '
+    +'at a time.';
+  var q=encodeURIComponent(ASK);
   var AGENTS=[
-    {name:'ChatGPT',href:'https://chatgpt.com/#settings/Connectors',copy:MCP,
-     hint:'Address copied. In ChatGPT: Settings \u2192 Apps & Connectors \u2192 Advanced, turn on Developer mode, then Create and paste it.'},
-    {name:'Claude Code',copy:'claude mcp add --transport http armable '+MCP,
-     hint:'Command copied. Paste it in a terminal, then run /mcp and choose armable.'},
-    {name:'Cursor',href:'cursor://anysphere.cursor-deeplink/mcp/install?name=armable&config='+encodeURIComponent(b64(JSON.stringify({url:MCP}))),copy:MCP,
-     hint:'Cursor opens to add Armable. Confirm it, then sign in.'},
-    {name:'VS Code',href:'vscode:mcp/install?'+encodeURIComponent(JSON.stringify({name:'armable',type:'http',url:MCP})),copy:MCP,
-     hint:'VS Code opens to add Armable. Confirm it, then sign in.'},
-    {name:'Any other agent',copy:'Read and follow '+SKILL,
-     hint:'Setup prompt copied. Paste it into your agent: it reads Armable\u2019s instructions and connects itself.'}
+    /* app: Anthropic's documented desktop scheme, which launches Claude if it is not already running
+       and prefills the composer. Only tried on a mouse: on a phone the https link is a universal link
+       and the operating system opens the app itself, which is the same destination without the risk. */
+    {name:'Claude',href:'https://claude.ai/new?q='+q,app:'claude://claude.ai/new?q='+q},
+    {name:'ChatGPT',href:'https://chatgpt.com/?q='+q},
+    {name:'Claude Code'},
+    {name:'Cursor'},
+    {name:'VS Code'},
+    {name:'Something else',as:'your assistant'}
   ];
-  var other=document.getElementById('other'),box=document.getElementById('agents'),
+  /* Try the installed app, and keep the web address in hand. Nothing can ask the browser whether a
+     scheme is registered, so the only tell is the page itself: if the app takes over, this document
+     goes hidden and the fallback stands down. If it does not, we were never going anywhere else. */
+  var touch=(navigator.maxTouchPoints||0)>0;
+  function reach(a){
+    if(!a.app||touch){ if(a.href)location.href=a.href; return; }
+    var fall=setTimeout(function(){ if(!document.hidden)location.href=a.href; },1200);
+    document.addEventListener('visibilitychange',function(){ if(document.hidden)clearTimeout(fall); },{once:true});
+    location.href=a.app;
+  }
+  var start=document.getElementById('start'),box=document.getElementById('agents'),
       row=document.getElementById('agentrow'),hint=document.getElementById('agenthint');
-  if(other&&box&&row&&hint){
+  if(start&&box&&row&&hint){
     AGENTS.forEach(function(a){
       var b=document.createElement('button');b.type='button';b.textContent=a.name;
       b.addEventListener('click',function(){
         if(navigator.clipboard&&navigator.clipboard.writeText)
-          navigator.clipboard.writeText(a.copy).catch(function(){});
-        hint.textContent=a.hint;
-        if(a.href)location.href=a.href;
+          navigator.clipboard.writeText(ASK).catch(function(){});
+        /* One line: the hint sits in reserved space, and a second line pushes the page past the fold. */
+        hint.textContent=a.href
+          ? 'Opening '+a.name+'. The question is on your clipboard too.'
+          : 'Question copied. Paste it into '+(a.as||a.name)+' and send it.';
+        reach(a);
       });
       row.appendChild(b);
     });
-    other.addEventListener('click',function(){
+    start.addEventListener('click',function(){
       var show=box.hidden;
       box.hidden=!show;
-      other.setAttribute('aria-expanded',String(show));
-      /* preventScroll: the frame is overflow:hidden, and a plain focus() scrolls the
-         button into view inside it, sliding the whole one-screen layout out of place. */
+      start.setAttribute('aria-expanded',String(show));
+      /* preventScroll: the frame is overflow:clip, and a plain focus() scrolls the button into view
+         inside it, sliding the whole one-screen layout out of place. */
       if(show&&row.firstChild)row.firstChild.focus({preventScroll:true});
     });
   }
