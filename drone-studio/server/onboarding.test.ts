@@ -33,6 +33,19 @@ describe('agent onboarding', () => {
     }
   });
 
+  it('explains Armable before it installs it, because that is why people arrive', async () => {
+    const text = await (await fetch(`${app.base}/agent-onboarding/SKILL.md`)).text();
+    // The intro page has one button and it opens an assistant with a question, so the reader has
+    // usually decided nothing. Connecting is what happens after they say yes, not the opening move.
+    expect(text.indexOf('## 1. Explain it')).toBeLessThan(text.indexOf('## 2. Connect'));
+    expect(text).toContain('before they have decided anything');
+    expect(text).toContain('it will not arm, because the receiver speaks CRSF');
+    expect(text).toContain('What it cannot do');
+    // The button it used to name is gone from the page; a document that still points at it sends
+    // somebody looking for something that is not there.
+    expect(text).not.toContain('Get started');
+  });
+
   it('tells the intro page where assistants connect, without signing in', async () => {
     const response = await fetch(`${app.base}/api/connect`);
     expect(await response.json()).toEqual({ mcpUrl: `${app.base}/mcp`, skillUrl: `${app.base}/agent-onboarding/SKILL.md` });
