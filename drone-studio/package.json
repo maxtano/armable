@@ -14,7 +14,9 @@
     "e2e": "E2E=1 vitest run e2e",
     "build": "tsc -b && vite build && vite build -c vite.panel.config.ts",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sim:nightly": "NIGHTLY=1 vitest run src/core/sim/sim-nightly.test.ts",
+    "sim:report": "tsx scripts/sim-report.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "2.0.4",
