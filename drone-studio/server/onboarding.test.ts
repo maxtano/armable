@@ -21,6 +21,18 @@ describe('agent onboarding', () => {
     expect(text).toMatch(/If you are a chat assistant/);
   });
 
+  it('keeps itself out of search, and stays readable enough to be told so', async () => {
+    // Google ranked this host above armable.ai. A Disallow would have left the old entry in place for good:
+    // a crawler that cannot fetch the page never learns it should drop it.
+    const robots = await fetch(`${app.base}/robots.txt`);
+    expect(robots.status).toBe(200);
+    expect(robots.headers.get('content-type')).toMatch(/text\/plain/);
+    expect(await robots.text()).toBe('User-agent: *\nAllow: /\n');
+    for (const path of ['/', '/robots.txt', '/agent-onboarding/SKILL.md', '/anything-the-app-routes-itself']) {
+      expect((await fetch(`${app.base}${path}`)).headers.get('x-robots-tag'), path).toBe('noindex');
+    }
+  });
+
   it('tells the intro page where assistants connect, without signing in', async () => {
     const response = await fetch(`${app.base}/api/connect`);
     expect(await response.json()).toEqual({ mcpUrl: `${app.base}/mcp`, skillUrl: `${app.base}/agent-onboarding/SKILL.md` });
