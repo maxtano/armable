@@ -110,6 +110,7 @@ body:not([data-app=""]) .no-app { display: none; }
 
   .act{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.1rem}
   .btn{display:inline-flex;align-items:center;gap:.6rem;background:var(--ink);color:var(--ground);
+       font-family:inherit;cursor:pointer;
        font-weight:700;font-size:.88rem;letter-spacing:0;padding:.95rem 1.5rem;border:0;
        transition:transform .35s var(--ease),background .25s ease,color .25s ease,border-color .25s ease}
   .btn i{font-style:normal;display:inline-block;transition:transform .35s var(--ease)}
@@ -120,7 +121,9 @@ body:not([data-app=""]) .no-app { display: none; }
        font-family:inherit;font-size:.82rem;color:var(--mut);text-decoration:underline;
        text-underline-offset:3px;text-decoration-color:var(--rule)}
   .lnk:hover{color:var(--ink);text-decoration-color:currentColor}
-  .agents{margin:0 0 1.1rem;display:grid;gap:.6rem;max-width:34rem}
+  /* No bottom margin and a tight gap: the chooser opens inside a layout that already fills the
+     screen exactly, and .act above it is carrying the separation. */
+  .agents{margin:0;display:grid;gap:.5rem;max-width:34rem}
   .agents[hidden]{display:none}
   .agents .row{display:flex;flex-wrap:wrap;gap:.4rem}
   .agents button{font-family:inherit;font-size:.78rem;color:var(--mut);cursor:pointer;
@@ -128,7 +131,7 @@ body:not([data-app=""]) .no-app { display: none; }
                  padding:.5rem .85rem;min-height:40px}
   .agents button:hover{color:var(--ink);border-color:rgba(255,255,255,.3)}
   .agents .hint{margin:0;font-size:.78rem;line-height:1.5;color:var(--faint);min-height:1.2rem}
-  .agents .hint:empty{min-height:0}
+  .agents .pick{margin:0;font-size:.78rem;color:var(--mut)}
 
   .tel{position:relative;z-index:3;display:flex;border-top:1px solid var(--rule);overflow-x:auto;scrollbar-width:none}
   .tel::-webkit-scrollbar{display:none}
@@ -194,4 +197,9 @@ body:not([data-app=""]) .no-app { display: none; }
   .lead.hero{font-size:.92rem}
   .pill{margin-bottom:.7rem}
   .mid{padding-bottom:.6rem}
+  /* The chooser is the one thing here that can still make the page scroll. The pills say plainly
+     enough what they are for, so the question above them goes, and they shrink. */
+  .agents{gap:.4rem}
+  .agents .pick{display:none}
+  .agents button{min-height:36px;padding:.4rem .7rem;font-size:.74rem}
 }
