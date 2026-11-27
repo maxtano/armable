@@ -5,6 +5,8 @@
 /* The deploy workflow leaves data-app empty when there is no hosted app to send people to. */
 body[data-app=""] .needs-app { display: none; }
 body:not([data-app=""]) .no-app { display: none; }
+/* The logo marks are defined once and used twice: in the pill, and on the chooser's tiles. */
+.sprite { display: none; }
 
   /* E - defence-hardware register. Square, near-black, enormous type, almost no words.
      60 black ground / 30 graphite / 10 magenta, and the magenta only ever marks live state.
@@ -121,17 +123,45 @@ body:not([data-app=""]) .no-app { display: none; }
        font-family:inherit;font-size:.82rem;color:var(--mut);text-decoration:underline;
        text-underline-offset:3px;text-decoration-color:var(--rule)}
   .lnk:hover{color:var(--ink);text-decoration-color:currentColor}
-  /* No bottom margin and a tight gap: the chooser opens inside a layout that already fills the
-     screen exactly, and .act above it is carrying the separation. */
-  .agents{margin:0;display:grid;gap:.5rem;max-width:34rem}
-  .agents[hidden]{display:none}
-  .agents .row{display:flex;flex-wrap:wrap;gap:.4rem}
-  .agents button{font-family:inherit;font-size:.78rem;color:var(--mut);cursor:pointer;
-                 background:rgba(255,255,255,.04);border:1px solid var(--rule);border-radius:100px;
-                 padding:.5rem .85rem;min-height:40px}
-  .agents button:hover{color:var(--ink);border-color:rgba(255,255,255,.3)}
-  .agents .hint{margin:0;font-size:.78rem;line-height:1.5;color:var(--faint);min-height:1.2rem}
-  .agents .pick{margin:0;font-size:.78rem;color:var(--mut)}
+  /* The chooser is a modal: picking an assistant is the one decision on this page, and under the
+     button it competed with the headline for attention and with the fold for room. The dialog fills
+     the viewport and draws the panel inside it, so a click landing on the dialog itself landed on
+     the backdrop - clicks on the panel never get this far. */
+  .pick{border:0;padding:0;margin:0;background:none;max-width:none;max-height:none;
+        width:100%;height:100%;overflow:visible;place-items:center;color:var(--ink)}
+  .pick[open]{display:grid}
+  .pick::backdrop{background:rgba(4,4,6,.74);backdrop-filter:blur(4px)}
+  /* A phone held sideways has less height than this panel wants. It scrolls itself rather than
+     running off the screen - the one place on this page where scrolling is the right answer. */
+  .pickbox{position:relative;width:min(30rem,calc(100vw - 2rem));background:var(--graphite);
+           max-height:calc(100svh - 2rem);overflow:auto;overscroll-behavior:contain;
+           border:1px solid var(--rule);border-radius:16px;padding:1.5rem 1.4rem 1.2rem;
+           display:grid;gap:.5rem;box-shadow:0 30px 80px rgba(0,0,0,.6);
+           animation:pickin .32s var(--ease) both}
+  @keyframes pickin{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+  .pickbox h2{margin:0;font-size:1.12rem;font-weight:800;letter-spacing:-.01em}
+  .picksub{margin:0 0 .35rem;font-size:.82rem;line-height:1.5;color:var(--mut)}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  .tile{display:grid;grid-template-columns:22px 1fr;grid-template-rows:auto auto;
+        gap:.1rem .6rem;align-items:center;text-align:left;font-family:inherit;cursor:pointer;
+        background:rgba(255,255,255,.035);border:1px solid var(--rule);border-radius:12px;
+        padding:.8rem .85rem;color:var(--ink);transition:border-color .2s ease,background .2s ease}
+  .tile:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.3)}
+  .tmark{grid-row:1 / span 2;width:22px;height:22px;fill:currentColor;opacity:.85}
+  .tmark.cl{fill:var(--signal);opacity:1}
+  .tmark.tm{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .tname{font-size:.9rem;font-weight:700}
+  .tsub{font-size:.72rem;line-height:1.35;color:var(--faint)}
+  /* Reserved from the start, so a chosen assistant does not resize the dialog under the cursor. */
+  .pickhint{margin:.25rem 0 0;font-size:.76rem;line-height:1.4;color:var(--faint);min-height:2.1rem}
+  .pickx{position:absolute;top:.55rem;right:.6rem;width:34px;height:34px;display:grid;
+         place-items:center;background:none;border:0;border-radius:8px;cursor:pointer;
+         font-family:inherit;font-size:1.3rem;line-height:1;color:var(--faint)}
+  .pickx:hover{color:var(--ink);background:rgba(255,255,255,.07)}
+  @media(max-width:480px){
+    .tiles{grid-template-columns:1fr}
+    .pickbox{padding:1.3rem 1.1rem 1rem}
+  }
 
   .tel{position:relative;z-index:3;display:flex;border-top:1px solid var(--rule);overflow-x:auto;scrollbar-width:none}
   .tel::-webkit-scrollbar{display:none}
@@ -168,6 +198,8 @@ body:not([data-app=""]) .no-app { display: none; }
     .btn,.btn i,.top a,.tel .v{transition:none}
     .btn:hover,.btn:hover i{transform:none}
     .tel .v.set{opacity:1;transform:none}
+    .pickbox{animation:none}
+    .tile{transition:none}
   }
 
 /* Says where Armable lives. Not a control: the one action is the button below it. */
@@ -197,9 +229,4 @@ body:not([data-app=""]) .no-app { display: none; }
   .lead.hero{font-size:.92rem}
   .pill{margin-bottom:.7rem}
   .mid{padding-bottom:.6rem}
-  /* The chooser is the one thing here that can still make the page scroll. The pills say plainly
-     enough what they are for, so the question above them goes, and they shrink. */
-  .agents{gap:.4rem}
-  .agents .pick{display:none}
-  .agents button{min-height:36px;padding:.4rem .7rem;font-size:.74rem}
 }
